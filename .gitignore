@@ -1,0 +1,24 @@
+# Keil MDK build outputs
+projects/mouse_demo/keil5/out/
+projects/mouse_demo/keil5/_build/
+projects/mouse_demo/keil5/SE73K.bin
+*.o
+*.d
+*.i
+*.lst
+*.axf
+*.map
+*.lnp
+*.dep
+*.crf
+*.htm
+*.dis
+
+# Keil per-user IDE settings
+*.uvguix
+*.uvguix.*
+
+# OS files
+Thumbs.db
+desktop.ini
+.DS_Store
