@@ -11,7 +11,7 @@
 #define _LED_H_
 
 #include "board_config.h"
-#include "light_port.h"
+#include "periph.h"           // 可选外设的统一入口
 
 //=============================================================================;
 // 配置引用区                                                                  ;
@@ -120,58 +120,25 @@ typedef enum {
 //
 extern bool                     blogo_status;
 extern bool                     bled_bright_en;
-extern bool                     bback_led_status;
 
-extern uint8_t                  gtemp_i;
-extern uint8_t                  gtemp_j;
-extern uint8_t                  gtemp_x;
 
-extern uint8_t                  led_hint_mode;
 extern uint8_t                  led_cur_mode;
 extern uint8_t                  led_mode_bak;
 
-extern uint8_t                  logo_hint_time_count;
-extern uint8_t                  logo_hint_on_time;
-extern uint8_t                  logo_hint_off_time;
 
-extern uint8_t                  rgb_enable;
 
-extern uint16_t                 led_ctrl_reg;
-extern uint16_t                 led_status_reg;
-extern uint8_t                  led_use_flag;
 
 extern uint8_t                  led_cur_mode;
-extern uint8_t                  led_pre_mode;
 extern enum speed_level         led_speed_lev;
 extern unsigned char            led_rgb_index;
-extern unsigned char            pwm_value;
 extern enum led_level           led_light_lev;
 
-extern uint16_t                 lfsr_value;
-extern uint8_t                  start_dec_count;
-extern uint8_t                  snake_led_index;
 
-extern uint8_t                  pwm_time_count;
-extern uint16_t                 delay_time_count;
-extern uint8_t                  rgb_index;
-extern uint8_t                  led_process_index;
 extern uint8_t                  hint_time_count;
 
-extern uint8_t                  pwm_rgb_tbl[iLED_MAX][3];
 
-extern uint8_t                  pwm_duty_array_0[];
-extern uint8_t                  pwm_duty_array_1[];
-extern uint8_t                  pwm_duty_array_2[];
-extern uint8_t                  pwm_duty_array_3[];
 
-extern unsigned char    const   rgb_en_tbl[];
 
-extern unsigned char    const   led_liuguang_l_r_tbl[];
-extern unsigned char    const   led_liuguang_rgb_tbl[];
-extern unsigned char    const   sbzl_r_tbl[];
-extern unsigned char    const   sbzl_g_tbl[];
-extern unsigned char    const   sbzl_b_tbl[];
-extern unsigned char    const   sbzl_ctrl_tbl[];
 
 
 //-----------------------------------------------------------------------------;
@@ -179,31 +146,16 @@ extern unsigned char    const   sbzl_ctrl_tbl[];
 //
 extern void led_status_hint(void);
 
-extern void logo_off(void);
 extern void device_led_on(void);
 extern void device_led_off(void);
 
 extern void device_led_process(void);
-extern void logo_process(void);
 
-extern void clr_rgb(void);
-extern void rgb_pwm0_w(void);
-extern void rgb_w_max(void);
 
-extern void led_mode_on(void);
-extern void led_mode_breath(void);
-extern void led_mode_snake(void);
-extern void led_mode_nhjb(void);
-extern void led_mode_liuguang(void);
-extern void led_mode_star(void);
-extern void led_mode_sbzl(void);
 
-extern void led_mode_baoshan(void);
-extern void led_mode_qcnh(void);
-extern void led_mode_lhtw(void);
-extern void led_mode_dxtw(void);
-extern void led_mode_sxtw(void);
-extern void led_mode_txtw(void);
 //
 //-----------------------------------------------------------------------------;
+// 界面刷新（保存设置 + 可选外设刷新一帧），见 led.c
+extern void ui_frame_process(void);
+
 #endif

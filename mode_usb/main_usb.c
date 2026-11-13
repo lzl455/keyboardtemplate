@@ -10,6 +10,9 @@
 #include "main.h"
 #include "main_usb.h"
 #include "matrix_key.h"
+#include "board_config.h"
+
+#if (BOARD_HAS_USB)            /* USB 有线模式，关掉时整个文件编译为空 */
 
 //-----------------------------------------------------------------------------;
 // 变量定义
@@ -72,8 +75,8 @@ int main_usb(void)
             if(mMS_TO_TICK(7) < (drv_rtc_read(OM_RTC)-logo_scan_time))
             {
                 logo_scan_time = drv_rtc_read(OM_RTC);
-                logo_process();
-                light_port_flush();
+                ui_frame_process();
+                periph_flush_all();
             }
 
             sys_ctrl &= ~bscan_flag;
@@ -138,7 +141,7 @@ void usb_sleep(void)
         return;
     }
 
-    logo_off();
+    periph_blank_all();
     mouse_periph_wakeup_enable(WAKEUP_SLEEP_LEVEL2);
     mLED_VDD_DIS;
     if(0 == (usb_ctrl_flag & bwakeup_usb_enable))
@@ -226,3 +229,4 @@ usb_wakeup_process:
 
 /** @} */
 
+#endif /* (BOARD_HAS_USB) */

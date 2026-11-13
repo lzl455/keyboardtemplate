@@ -48,7 +48,7 @@ void sleep_process(void)
                 sys_ctrl |= bscan_flag;
                 bperiph_int = 0;
                 device_led_off();
-                logo_off();
+                periph_blank_all();
 
                 while(1)
                 {
@@ -100,7 +100,7 @@ void sleep_process(void)
                     rf_ctrl_reg &= ~(brf_sync_time|brf_sync_status);
 
                     mouse_periph_wakeup_enable(WAKEUP_ALL_DISABLE);
-                    logo_off();
+                    periph_blank_all();
                     key_tx_count = 0;
                     mmk_tx_count = 0;
                     rtc_value = drv_rtc_read(OM_RTC);
@@ -119,7 +119,7 @@ void sleep_process(void)
                             scan_mode_swtich(iMODE_CHECK_NO_DELAY);
                             if(true == bmode_swtich_valid)
                                 return;
-                            logo_process();
+                            ui_frame_process();
                         }
                         matrixkey_scan();
 
@@ -169,7 +169,7 @@ void sleep_process(void)
             break;
         default:                                // iMCU_MODE_PD:
 MCU_MODE_PD_PRPCESS:
-            logo_off();
+            periph_blank_all();
             mouse_periph_wakeup_enable(WAKEUP_SLEEP_LEVEL2);
             drv_pmu_set_low_power_mode(PMU_LPM_DEEP_SLEEP);
             while(1);

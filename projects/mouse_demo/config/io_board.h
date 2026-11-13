@@ -8,7 +8,35 @@
 #ifndef __IO_BOARD_H
 #define __IO_BOARD_H
 
-/* ---- 旋转编码器（periph/knob.c） ------------------------------------- */
+/* ---- 灯光（modules/light/），ARGB 和 PWM 二选一 ------------------------- */
+#ifndef BOARD_LIGHT
+#define BOARD_LIGHT              LIGHT_ARGB   /* ARGB 灯珠（LEDC） */
+#endif
+#ifndef BOARD_ARGB_DATA_PIN
+#define BOARD_ARGB_DATA_PIN      1   /* P01 */
+#endif
+#ifndef BOARD_ARGB_LEDC_SEL
+#define BOARD_ARGB_LEDC_SEL      PMU_LEDC_SEL_IO_01
+#endif
+#ifndef BOARD_LIGHT_PWR_PIN
+#define BOARD_LIGHT_PWR_PIN      0   /* P00 灯电源开关 */
+#endif
+#ifndef BOARD_LIGHT_PWR_ON
+#define BOARD_LIGHT_PWR_ON       1   /* 打开灯电源时输出的电平 */
+#endif
+
+/* ---- 可选功能（关掉的不编进固件；电量检测是必需功能，没有开关） -------- */
+#ifndef BOARD_HAS_USB
+#define BOARD_HAS_USB            1   /* USB 有线模式 */
+#endif
+#ifndef BOARD_HAS_FCC_TEST
+#define BOARD_HAS_FCC_TEST       1   /* FCC / SRRC 认证测试 */
+#endif
+#ifndef BOARD_LIGHT_KEYS
+#define BOARD_LIGHT_KEYS         1   /* 灯光 Fn 键 */
+#endif
+
+/* ---- 旋转编码器（modules/knob/） -------------------------------------- */
 /* 配置器里没有启用编码器 */
 #ifndef BOARD_HAS_KNOB
 #define BOARD_HAS_KNOB           0

@@ -1,0 +1,1253 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OM62xx 矩阵表配置器</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+[hidden]{display:none!important}
+body{margin:0}
+/* 布局：顶栏 + 标签页；键位页 = 键位图 | 检查器，窄屏上下排列 */
+:root{
+  --bg:#e9edf1; --panel:#ffffff; --panel-2:#f4f6f8; --ink:#17202b; --muted:#5a6676; --line:#cfd6de;
+  --accent:#0d6e8a; --accent-ink:#ffffff;
+  --err:#c0392b; --err-bg:#fbe6e3; --warn:#a86400; --warn-bg:#fdf0d8; --info:#356bb3; --info-bg:#e4edf9;
+  --k-std:#e8eef6; --k-std-b:#9fb3cc; --k-mod:#e6e2f3; --k-mod-b:#a596cf; --k-mmk:#e1f1ec; --k-mmk-b:#7fb8a5;
+  --k-light:#f8e4ef; --k-light-b:#d58ab4; --k-mode:#fdeedb; --k-mode-b:#d9a35a; --k-func:#e7eedb; --k-func-b:#98b26a;
+  --k-none:transparent; --k-none-b:#cfd6de; --k-sel:#0d6e8a; --k-role:#0d6e8a; --k-bad:#c0392b;
+  --code-bg:#f6f8fa; --code-cm:#5e7a5e; --code-kw:#8a3fb5; --code-num:#a14d00; --code-pp:#0d6e8a;
+  --sans:"IBM Plex Sans","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#12171d; --panel:#1a2129; --panel-2:#212a34; --ink:#e3e9ef; --muted:#97a3b1; --line:#334050;
+  --accent:#4cb8d6; --accent-ink:#0b1a20;
+  --err:#ff8a7a; --err-bg:#3d1f1b; --warn:#f2b552; --warn-bg:#3a2c12; --info:#8db6f2; --info-bg:#1b2a40;
+  --k-std:#223042; --k-std-b:#4d6684; --k-mod:#2c2840; --k-mod-b:#6c5ea0; --k-mmk:#1d3530; --k-mmk-b:#4c8a75;
+  --k-light:#3a2231; --k-light-b:#a85c88; --k-mode:#3a2d1a; --k-mode-b:#a87a3a; --k-func:#28331d; --k-func-b:#6f8a45;
+  --k-none-b:#334050; --k-sel:#4cb8d6; --k-role:#4cb8d6; --k-bad:#ff8a7a;
+  --code-bg:#141a20; --code-cm:#86a886; --code-kw:#c99bf0; --code-num:#f0a35e; --code-pp:#6cc8e2; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#12171d; --panel:#1a2129; --panel-2:#212a34; --ink:#e3e9ef; --muted:#97a3b1; --line:#334050;
+  --accent:#4cb8d6; --accent-ink:#0b1a20;
+  --err:#ff8a7a; --err-bg:#3d1f1b; --warn:#f2b552; --warn-bg:#3a2c12; --info:#8db6f2; --info-bg:#1b2a40;
+  --k-std:#223042; --k-std-b:#4d6684; --k-mod:#2c2840; --k-mod-b:#6c5ea0; --k-mmk:#1d3530; --k-mmk-b:#4c8a75;
+  --k-light:#3a2231; --k-light-b:#a85c88; --k-mode:#3a2d1a; --k-mode-b:#a87a3a; --k-func:#28331d; --k-func-b:#6f8a45;
+  --k-none-b:#334050; --k-sel:#4cb8d6; --k-role:#4cb8d6; --k-bad:#ff8a7a;
+  --code-bg:#141a20; --code-cm:#86a886; --code-kw:#c99bf0; --code-num:#f0a35e; --code-pp:#6cc8e2; color-scheme:dark }
+*{box-sizing:border-box}
+html,body{background:var(--bg)}
+body{color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5}
+button,input,select,textarea{font:inherit;color:inherit}
+.app{max-width:1480px;margin:0 auto;padding-block:16px 40px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:14px}
+header.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px}
+.brand{display:flex;align-items:baseline;gap:10px;min-width:0;flex:1 1 260px}
+.brand h1{font-size:19px;margin:0;font-weight:700;letter-spacing:.01em}
+.brand span{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.actions{display:flex;flex-wrap:wrap;gap:6px}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:5px 11px;cursor:pointer;font-size:13px;white-space:nowrap}
+.btn:hover{border-color:var(--muted)}
+.btn.sm{padding:2px 8px;font-size:12px}
+.btn:focus-visible,.tab:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible,.seg button:focus-visible,.kc:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.on{border-color:var(--accent);color:var(--accent);font-weight:600}
+.btn:disabled{opacity:.45;cursor:default}
+input[type=text],input[type=search],select,textarea{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:5px 8px;min-width:0}
+nav.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tab{border:none;background:none;padding:8px 14px;cursor:pointer;font-weight:600;font-size:13.5px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.tab[aria-selected=true]{color:var(--ink);border-bottom-color:var(--accent)}
+.badge{display:inline-block;min-width:18px;padding:0 5px;border-radius:9px;font-size:11px;line-height:18px;text-align:center;margin-left:6px;font-family:var(--mono)}
+.badge.err{background:var(--err);color:var(--panel)} .badge.warn{background:var(--warn);color:var(--panel)} .badge.ok{background:var(--line);color:var(--muted)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;min-width:0}
+.ph{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:9px 12px;border-bottom:1px solid var(--line)}
+.ph h2{font-size:13px;margin:0;font-weight:700;letter-spacing:.02em}
+.pb{padding:10px 12px;display:flex;flex-direction:column;gap:10px}
+.muted{color:var(--muted)} .small{font-size:12.5px} .mono{font-family:var(--mono)}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:14px;align-items:start}
+@media (max-width:980px){.grid{grid-template-columns:minmax(0,1fr)}}
+.col{display:flex;flex-direction:column;gap:14px;min-width:0}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg button{border:none;background:var(--panel);padding:4px 10px;cursor:pointer;font-size:12.5px;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:none}
+.seg button[aria-pressed=true]{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}
+.bar .lbl{font-size:12px;color:var(--muted);font-weight:600}
+/* 键位图 */
+.kwrap{overflow-x:auto;padding:10px 12px 12px}
+table.km{border-collapse:separate;border-spacing:2px;margin:0 auto}
+table.km th{font-size:10.5px;font-weight:600;color:var(--muted);text-align:center;padding:0 1px;line-height:1.2;white-space:nowrap}
+table.km th .pn{display:block;font-family:var(--mono);font-weight:400;font-size:9.5px}
+table.km th.rh{text-align:right;padding-right:4px}
+.kc{position:relative;width:46px;height:42px;border:1px solid var(--k-none-b);border-radius:6px;background:var(--k-none);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;text-align:center;font-size:11px;line-height:1.15;padding:2px;overflow:hidden;word-break:break-all}
+.kc.empty{border-style:dashed;color:var(--muted);opacity:.65;font-size:13px}
+.kc.std{background:var(--k-std);border-color:var(--k-std-b)}
+.kc.mod{background:var(--k-mod);border-color:var(--k-mod-b)}
+.kc.mmk{background:var(--k-mmk);border-color:var(--k-mmk-b)}
+.kc.light{background:var(--k-light);border-color:var(--k-light-b)}
+.kc.mode{background:var(--k-mode);border-color:var(--k-mode-b)}
+.kc.func{background:var(--k-func);border-color:var(--k-func-b)}
+.kc.inv{color:var(--muted)}
+.kc.na{visibility:hidden}
+.kc.sel{outline:2.5px solid var(--k-sel);outline-offset:1px}
+.kc.diff::after{content:"";position:absolute;right:3px;bottom:3px;width:5px;height:5px;border-radius:50%;background:var(--accent)}
+.kc .tag{position:absolute;left:2px;top:1px;font-size:8.5px;font-family:var(--mono);color:var(--k-role);font-weight:600;letter-spacing:-.02em}
+.kc .sh{position:absolute;right:2px;top:1px;font-size:8.5px;color:var(--muted)}
+.kc.bad{box-shadow:inset 0 0 0 1.5px var(--k-bad)}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;padding:0 12px 10px;font-size:12px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.sw{width:12px;height:12px;border-radius:3px;border:1px solid;display:inline-block}
+.pickhint{margin:0 12px 10px;padding:6px 10px;border-radius:6px;background:var(--info-bg);border-left:3px solid var(--info);font-size:12.5px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+/* 检查器 */
+.insp-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.insp-h b{font-family:var(--mono);font-size:22px;line-height:1}
+.field{display:flex;flex-direction:column;gap:4px}
+.field>span{font-size:12px;font-weight:600;color:var(--muted)}
+.field select,.field input{width:100%}
+.layer{border:1px solid var(--line);border-radius:7px;padding:8px 10px;display:flex;flex-direction:column;gap:7px;background:var(--panel-2)}
+.layer h3{margin:0;font-size:12.5px;display:flex;align-items:center;justify-content:space-between;gap:6px}
+.layer .cur{font-family:var(--mono);font-size:11.5px;color:var(--muted);word-break:break-all}
+.row2{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.row2 select{flex:1 1 150px}
+.mods{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:12.5px;align-items:center}
+.mods label{display:inline-flex;align-items:center;gap:4px}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chip{font-size:11.5px;border:1px solid var(--k-role);color:var(--k-role);border-radius:10px;padding:0 7px}
+.note{font-size:12px;color:var(--muted)}
+.capture{animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion:reduce){.capture{animation:none}}
+/* 问题列表 */
+.probs{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
+.probs li{border-radius:6px;padding:6px 9px 6px 10px;font-size:12.5px;border-left:3px solid}
+.probs li.click{cursor:pointer}
+.probs li.err{background:var(--err-bg);border-color:var(--err)}
+.probs li.warn{background:var(--warn-bg);border-color:var(--warn)}
+.probs li.info{background:var(--info-bg);border-color:var(--info)}
+.probs .none{background:var(--panel-2);border-color:var(--line);color:var(--muted)}
+.probs li .fix{margin-left:6px}
+/* 表格 */
+.tblwrap{overflow-x:auto}
+table.t{border-collapse:collapse;width:100%;font-size:12.5px}
+table.t th,table.t td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+table.t th{font-size:11.5px;color:var(--muted);font-weight:600;background:var(--panel-2);white-space:nowrap}
+table.t td.mono{font-family:var(--mono)}
+table.t tr.hl{background:var(--info-bg)}
+table.t select{max-width:100%}
+.hwgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}
+@media (max-width:980px){.hwgrid{grid-template-columns:minmax(0,1fr)}}
+/* 代码 */
+.codebar{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.codebar .btn[aria-pressed=true]{border-color:var(--accent);color:var(--accent);font-weight:600}
+pre.code{margin:0;background:var(--code-bg);border:1px solid var(--line);border-radius:6px;padding:12px;overflow:auto;max-height:640px;font-family:var(--mono);font-size:12px;line-height:1.5;tab-size:4}
+pre.code .cm{color:var(--code-cm)} pre.code .pp{color:var(--code-pp)} pre.code .num{color:var(--code-num)} pre.code .kw{color:var(--code-kw)}
+.steps{margin:0;padding-left:20px;font-size:13px;display:flex;flex-direction:column;gap:6px}
+.steps code,.note code,.small code{font-family:var(--mono);font-size:12px;background:var(--panel-2);padding:0 4px;border-radius:3px}
+dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);padding:0;width:min(720px,calc(100vw - 32px))}
+dialog::backdrop{background:rgba(0,0,0,.35)}
+dialog .pb textarea{width:100%;min-height:300px;font-family:var(--mono);font-size:12px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:var(--panel);padding:7px 14px;border-radius:7px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:calc(100vw - 32px)}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand"><h1>OM62xx 矩阵表配置器</h1><span>SE73K 键盘 · 键表 + 矩阵硬件 + 特殊键位置</span></div>
+    <div class="actions">
+      <button class="btn" id="btnUndo" title="Ctrl+Z">撤销</button>
+      <button class="btn" id="btnPreset">载入 SE73K 默认</button>
+      <button class="btn" id="btnImportH">导入键表 .h</button>
+      <button class="btn" id="btnImport">导入配置</button>
+      <button class="btn" id="btnExport">导出配置</button>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tab-keys" aria-selected="true" aria-controls="pg-keys">键位</button>
+    <button class="tab" role="tab" id="tab-hw" aria-selected="false" aria-controls="pg-hw">矩阵硬件</button>
+    <button class="tab" role="tab" id="tab-roles" aria-selected="false" aria-controls="pg-roles">特殊键位置</button>
+    <button class="tab" role="tab" id="tab-code" aria-selected="false" aria-controls="pg-code">生成代码<span class="badge ok" id="probBadge">0</span></button>
+  </nav>
+
+  <!-- 键位 -->
+  <section id="pg-keys" role="tabpanel">
+    <div class="grid">
+      <div class="col">
+        <div class="panel">
+          <div class="ph">
+            <div class="bar">
+              <span class="lbl">层</span>
+              <div class="seg" id="segLayer"><button data-v="win" aria-pressed="true">基础层</button><button data-v="fn" aria-pressed="false">Fn 层</button></div>
+              <span class="lbl">视图</span>
+              <div class="seg" id="segView"><button data-v="phys" aria-pressed="true">物理矩阵</button><button data-v="slot" aria-pressed="false">键表位置</button></div>
+            </div>
+            <span class="small muted" id="kmStat"></span>
+          </div>
+          <div class="pickhint" id="pickHint" hidden><span id="pickText"></span><button class="btn sm" id="pickCancel">取消</button></div>
+          <div class="kwrap" id="kmWrap"></div>
+          <div class="legend" id="legend"></div>
+        </div>
+        <div class="panel">
+          <div class="ph"><h2>检查</h2><span class="small muted">点一条可以定位到对应的键</span></div>
+          <div class="pb"><ul class="probs" id="probs"></ul></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="panel"><div class="ph"><h2>按键</h2></div><div class="pb" id="insp"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 矩阵硬件 -->
+  <section id="pg-hw" role="tabpanel" hidden>
+    <div class="hwgrid">
+      <div class="col">
+        <div class="panel">
+          <div class="ph"><h2>列线</h2><div class="bar"><button class="btn sm" id="btnAddCol">加一列</button></div></div>
+          <div class="pb">
+            <p class="note" style="margin:0">列有两种：<b>GPIO 直连</b>（扫描时把这个脚拉低）和<b>扩展列</b>（由 PA5 控制，固件每翻转一次 KEY_EX 换到下一列，顺序固定）。列名只是给人看的，和原理图一致就行；键表位置在「键位」页里看。</p>
+            <div class="tblwrap"><table class="t" id="colTbl"></table></div>
+            <label class="field"><span>扩展列控制脚（KEY_EX，接扩展芯片的 PA5）</span><select id="exPin"></select></label>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="panel">
+          <div class="ph"><h2>行线</h2></div>
+          <div class="pb">
+            <p class="note" style="margin:0">按下时行线读到低电平。行线需要上拉，并且是休眠唤醒脚，这两项在<b>引脚配置器</b>（tools/om6239-io-config）里设。</p>
+            <div class="tblwrap"><table class="t" id="rowTbl"></table></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="ph"><h2>指示灯（和列线复用）</h2></div>
+          <div class="pb">
+            <p class="note" style="margin:0">SE73K 的指示灯阳极接 LED 供电脚（P23），阴极接在列线上：扫描时先关掉供电，扫完再按状态把列线拉低点灯。供电脚可以换成别的脚，也可以不用（阳极直接接电源）；每个灯也可以接到不和列复用的独立脚上。</p>
+            <div class="tblwrap"><table class="t" id="ledTbl"></table></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 特殊键位置 -->
+  <section id="pg-roles" role="tabpanel" hidden>
+    <div class="panel">
+      <div class="ph"><h2>固件里按位置读取的键</h2><div class="bar"><button class="btn sm" id="btnRolesAuto">全部按键码自动定位</button></div></div>
+      <div class="pb">
+        <p class="note" style="margin:0">这些键不走键表解码，固件直接按位置读：<b>FCC 测试</b>（rf_fcc.c）在连接过程中检测 Fn + 「切换频点」+ 当前模式键同时按下进入测试，测试中用 4 个方向键操作；<b>WASD 互换</b>（userdefined_key_callback.c）打开后把 WASD 和方向键对调。位置可以随便指定：点「点选」再到键位图上点一个键，或者按键码自动找。生成到 <code>matrix_cfg.h</code>。</p>
+        <div class="tblwrap"><table class="t" id="roleTbl"></table></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 生成代码 -->
+  <section id="pg-code" role="tabpanel" hidden>
+    <div class="grid">
+      <div class="col">
+        <div class="panel">
+          <div class="ph">
+            <div class="codebar" id="fileBtns">
+              <button class="btn" data-file="cfg" aria-pressed="true">matrix_cfg.h</button>
+              <button class="btn" data-file="win" aria-pressed="false">matrix_key_tbl_win.h</button>
+              <button class="btn" data-file="fn" aria-pressed="false">matrix_key_tbl_win_fn.h</button>
+            </div>
+            <div class="bar"><button class="btn sm" id="btnCopy">复制</button><button class="btn sm primary" id="btnSave">下载</button></div>
+          </div>
+          <div class="pb"><pre class="code" id="codeOut"></pre></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="panel">
+          <div class="ph"><h2>接进工程</h2></div>
+          <div class="pb">
+            <ol class="steps">
+              <li><code>matrix_cfg.h</code> → <code>projects/mouse_demo/config/</code></li>
+              <li><code>matrix_key_tbl_win.h</code>、<code>matrix_key_tbl_win_fn.h</code> → <code>projects/mouse_demo/periph/</code></li>
+              <li>用 UTF-8 保存，覆盖原文件后重新编译。工程已经接好，不用改别的代码。</li>
+              <li><b>键表存在 Flash 里</b>：烧录后要长按 <b>Fn + Esc</b> 2 秒恢复出厂，新键表才会生效（固件只在 Flash 里没有键表时才从代码复制）。</li>
+              <li>改了行列引脚或指示灯脚，还要到<b>引脚配置器</b>里同步改上拉、唤醒和初始电平，重新生成 <code>io_config.c</code>。</li>
+            </ol>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="ph"><h2>检查</h2></div>
+          <div class="pb"><ul class="probs" id="probs2"></ul></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<dialog id="dlg">
+  <div class="ph"><h2 id="dlgTitle"></h2><button class="btn sm" id="dlgClose">关闭</button></div>
+  <div class="pb">
+    <p class="note" id="dlgNote" style="margin:0"></p>
+    <textarea id="dlgText" spellcheck="false"></textarea>
+    <div class="bar"><button class="btn primary" id="dlgOk">确定</button><button class="btn" id="dlgFile">从文件读取…</button><input type="file" id="dlgFileIn" hidden></div>
+  </div>
+</dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+const DATA = {"std":[["iSTD_NULL",0],["iSTD_KEY",0],["iSTD_ALL",0],["iSTD_A",4],["iSTD_B",5],["iSTD_C",6],["iSTD_D",7],["iSTD_E",8],["iSTD_F",9],["iSTD_G",10],["iSTD_H",11],["iSTD_I",12],["iSTD_J",13],["iSTD_K",14],["iSTD_L",15],["iSTD_M",16],["iSTD_N",17],["iSTD_O",18],["iSTD_P",19],["iSTD_Q",20],["iSTD_R",21],["iSTD_S",22],["iSTD_T",23],["iSTD_U",24],["iSTD_V",25],["iSTD_W",26],["iSTD_X",27],["iSTD_Y",28],["iSTD_Z",29],["iSTD_1",30],["iSTD_2",31],["iSTD_3",32],["iSTD_4",33],["iSTD_5",34],["iSTD_6",35],["iSTD_7",36],["iSTD_8",37],["iSTD_9",38],["iSTD_0",39],["iSTD_ENTER",40],["iSTD_RETURN",40],["iSTD_ESCAPE",41],["iSTD_BACKSPACE",42],["iSTD_TAB",43],["iSTD_SPACE",44],["iSTD_SUBTRACT",45],["iSTD_ADD",46],["iSTD_SQUARE_BRACKET_LEFT",47],["iSTD_SQUARE_BRACKET_RIGHT",48],["iSTD_BACKSLASH",49],["iSTD_EUROPE1",50],["iSTD_SEMICOLON",51],["iSTD_QUOTATION_SIGN",52],["iSTD_WAVE",53],["iSTD_COMMA",54],["iSTD_FULLSTOP",55],["iSTD_SLASH",56],["iSTD_CAPITAL",57],["iSTD_F1",58],["iSTD_F2",59],["iSTD_F3",60],["iSTD_F4",61],["iSTD_F5",62],["iSTD_F6",63],["iSTD_F7",64],["iSTD_F8",65],["iSTD_F9",66],["iSTD_F10",67],["iSTD_F11",68],["iSTD_F12",69],["iSTD_SNAPSHOT",70],["iSTD_SCROLL",71],["iSTD_CANCEL",72],["iSTD_PAUSE",72],["iSTD_INSERT",73],["iSTD_HOME",74],["iSTD_PAGEUP",75],["iSTD_DELETE",76],["iSTD_END",77],["iSTD_PAGEDOWN",78],["iSTD_RIGHT",79],["iSTD_LEFT",80],["iSTD_DOWN",81],["iSTD_UP",82],["iSTD_NUMLOCK",83],["iSTD_NUMPAD_DIVIDE",84],["iSTD_NUMPAD_MULTIPLY",85],["iSTD_NUMPAD_SUBTRACT",86],["iSTD_NUMPAD_ADD",87],["iSTD_NUMPAD_ENTER",88],["iSTD_NUMPAD1",89],["iSTD_NUMPAD2",90],["iSTD_NUMPAD3",91],["iSTD_NUMPAD4",92],["iSTD_NUMPAD5",93],["iSTD_NUMPAD6",94],["iSTD_NUMPAD7",95],["iSTD_NUMPAD8",96],["iSTD_NUMPAD9",97],["iSTD_NUMPAD0",98],["iSTD_NUMPAD_FULLSTOP",99],["iSTD_QUROPE2",100],["iSTD_APP",101],["iSTD_KEYBOARD_POWER",102],["iSTD_NUMPAD_EQUAL_SIGN",103],["iSTD_F13",104],["iSTD_F14",105],["iSTD_F15",106],["iSTD_F16",107],["iSTD_F17",108],["iSTD_F18",109],["iSTD_F19",110],["iSTD_F20",111],["iSTD_F21",112],["iSTD_F22",113],["iSTD_F23",114],["iSTD_F24",115],["iSTD_KEYBOARD_EXECUTE",116],["iSTD_KEYBOARD_HELP",117],["iSTD_KEYBOARD_MENU",118],["iSTD_KEYBOARD_SELECT",119],["iSTD_KEYBOARD_STOP",120],["iSTD_KEYBOARD_AGAIN",121],["iSTD_KEYBOARD_UNDO",122],["iSTD_KEYBOARD_CUT",123],["iSTD_KEYBOARD_COPY",124],["iSTD_KEYBOARD_PASTE",125],["iSTD_KEYBOARD_FIND",126],["iSTD_KEYBOARD_MUTE",127],["iSTD_KEYBOARD_VOLUMEUP",128],["iSTD_KEYBOARD_VOLUMEDOWN",129],["iSTD_KEYBOARD_CAPITAL",130],["iSTD_KEYBOARD_NUMLOCK",131],["iSTD_KEYBOARD_SCROLL",132],["iSTD_KEYBOARD_NUMPAD_COMMA",133],["iSTD_KEYBOARD_QUEAL_SIGN",134],["iSTD_KEYBOARD_RO",135],["iSTD_KEYBOARD_KATAKANA_HIRAGANA",136],["iSTD_KEYBOARD_YEN",137],["iSTD_KEYBOARD_HENKAN",138],["iSTD_KEYBOARD_MUHENKAN",139],["iSTD_KEYBOARD_PC9800_COMMA",140],["iSTD_KEYBOARD_INTL7",141],["iSTD_KEYBOARD_INTL8",142],["iSTD_KEYBOARD_INTL9",143],["iSTD_KEYBOARD_LANG1",144],["iSTD_KEYBOARD_LANG2",145],["iSTD_KEYBOARD_LANG3",146],["iSTD_KEYBOARD_LANG4",147],["iSTD_KEYBOARD_LANG5",148],["iSTD_KEYBOARD_LANG6",149],["iSTD_KEYBOARD_LANG7",150],["iSTD_KEYBOARD_LANG8",151],["iSTD_KEYBOARD_LANG9",152],["iSTD_KEYBOARD_ALTERNATE_ERASE",153],["iSTD_KEYBOARD_SYSREQ",154],["iSTD_KEYBOARD_CANCEL",155],["iSTD_KEYBOARD_CLEAR",156],["iSTD_KEYBOARD_PRIOR",157],["iSTD_KEYBOARD_RETURN",158],["iSTD_KEYBOARD_SEPARATOR",159],["iSTD_KEYBOARD_OUT",160],["iSTD_KEYBOARD_OPER",161],["iSTD_KEYBOARD_CLEAR_AGAIN",162],["iSTD_KEYBOARD_CRSEL_PROPS",163],["iSTD_KEYBOARD_EXSEL",164]],"mmk":["IOS_SIRI","MAC_CTRL","BRIGHT_ADD","BRIGHT_SUM","NEXT_TRACK","PREV_TRACK","STOP","PLAY_PAUSE","MUTE","BASS_BOOST","LOUDNESS","VOLUMEUP","VOLUMEDOWN","BASS_UP","BASS_DOWN","TREBLE_UP","TREBLE_DOWN","MEDIA_SELECT","MAIL","CALCULATOR","MY_COMPUTER","WWW_SEARCH","WWW_HOME","WWW_BACK","WWW_FORWARD","WWW_STOP","WWW_REFRESH","WWW_FAVORITES"],"macros":{"iKEY_STD_MASK":192,"iKEY_TRANSFER_MASK":224,"iDEF_DELAY_MASK":224,"iKEY_TYPE_MASK":240,"iKEY_TYPE_STD":0,"iKEY_TYPE_EX":64,"iKEY_TYPE_SYS":64,"iKEY_TYPE_MOUSE":65,"iKEY_TYPE_WHEEL":66,"iKEY_TYPE_FIRE":67,"iDEF_MOUSE_X":68,"iDEF_MOUSE_Y":69,"iKEY_TYPE_SPECIAL":72,"iKEY_SPECIAL_MASK":240,"iDEF_DPI_SUB":0,"iDEF_DPI_ADD":1,"iDEF_DPI_CYC_ADD":2,"iDEF_MODE_SUB":3,"iDEF_MODE_ADD":4,"iDEF_MODE_CYC_ADD":5,"iDEF_REPORT_SUB":6,"iDEF_REPORT_ADD":7,"iDEF_REPORT_CYC_ADD":8,"iDEF_LOCK_KEY":9,"iDEF_SNIPER_ADD":10,"iDEF_SNIPER_SUM":11,"iDEF_RUNNING_FIRE":12,"iLED_BRIGHT_SUB":16,"iLED_BRIGHT_ADD":17,"iLED_BRIGHT_CYC_ADD":18,"iLED_MODE_SUB":19,"iLED_MODE_ADD":20,"iLED_MODE_CYC_ADD":21,"iLED_SPEED_SUB":22,"iLED_SPEED_ADD":23,"iLED_SPEED_CYC_ADD":24,"iLED_DIR_L_R":25,"iLED_DIR_R_L":26,"iLED_DIR_CYC":27,"iLED_OFF":28,"iLED_RGB_SWTICH":29,"iLED_MODE_0":32,"iLED_MODE_1":33,"iLED_MODE_2":34,"iLED_MODE_3":35,"iLED_MODE_4":36,"iMODE_KEY_FN":48,"iMODE_KEY_CONN":49,"iMODE_KEY_USB":49,"iMODE_KEY_BT0":50,"iMODE_KEY_BT1":51,"iMODE_KEY_BT2":52,"iMODE_KEY_24G":53,"iKEY_CTRL_PRESS":54,"iKEY_CTRL_REALSE":55,"iKEY_DIR_WASD":56,"iKEY_WIN":57,"iKEY_MAC":58,"iKEY_WIN_MAC":59,"iKEY_WIN_LOCK":60,"iKEY_DIR_LOCK":62,"iKEY_LOCK":63,"iKEY_DEFAULT":64,"iKEY_ALT_TAB":65,"iKEY_CMD_TAB":66,"iKEY_CTRL_SPACE":67,"iKEY_CMD_SPACE":68,"iKEY_DESK_MAC":69,"iKEY_TYPE_MMK":80,"iKEY_MMK_MASK":240,"iDEFINE_CMD_TRANSFER":96,"iTRANSFER_MASK":24,"iTRANSFER_KEY_STATUS":8,"iTRANSFER_TIMES":16,"iDEF_DELAY":192,"iDEF_COM":128,"iDEF_COM_MASK":192,"iREALSE_NO_DID":0,"iREALSE_DID":1,"iDIS_KEY_BREAK":0,"iEN_KEY_BREAK":1,"iKEY_TYPE_INVALID":255,"iINVALID_KEY":255,"iSYS_POWER":1,"iSYS_SLEEP":2,"iSYS_WAKEUP":4,"iSTD_NULL":0,"iSTD_KEY":0,"iFUNTION_KEY":1,"iDIR_SW_KEY":2,"iKEY_PRESS":32,"iKEY_REALSE":0,"iSTD_ALL":0,"iSTD_A":4,"iSTD_B":5,"iSTD_C":6,"iSTD_D":7,"iSTD_E":8,"iSTD_F":9,"iSTD_G":10,"iSTD_H":11,"iSTD_I":12,"iSTD_J":13,"iSTD_K":14,"iSTD_L":15,"iSTD_M":16,"iSTD_N":17,"iSTD_O":18,"iSTD_P":19,"iSTD_Q":20,"iSTD_R":21,"iSTD_S":22,"iSTD_T":23,"iSTD_U":24,"iSTD_V":25,"iSTD_W":26,"iSTD_X":27,"iSTD_Y":28,"iSTD_Z":29,"iSTD_1":30,"iSTD_2":31,"iSTD_3":32,"iSTD_4":33,"iSTD_5":34,"iSTD_6":35,"iSTD_7":36,"iSTD_8":37,"iSTD_9":38,"iSTD_0":39,"iSTD_ENTER":40,"iSTD_RETURN":40,"iSTD_ESCAPE":41,"iSTD_BACKSPACE":42,"iSTD_TAB":43,"iSTD_SPACE":44,"iSTD_SUBTRACT":45,"iSTD_ADD":46,"iSTD_SQUARE_BRACKET_LEFT":47,"iSTD_SQUARE_BRACKET_RIGHT":48,"iSTD_BACKSLASH":49,"iSTD_EUROPE1":50,"iSTD_SEMICOLON":51,"iSTD_QUOTATION_SIGN":52,"iSTD_WAVE":53,"iSTD_COMMA":54,"iSTD_FULLSTOP":55,"iSTD_SLASH":56,"iSTD_CAPITAL":57,"iSTD_F1":58,"iSTD_F2":59,"iSTD_F3":60,"iSTD_F4":61,"iSTD_F5":62,"iSTD_F6":63,"iSTD_F7":64,"iSTD_F8":65,"iSTD_F9":66,"iSTD_F10":67,"iSTD_F11":68,"iSTD_F12":69,"iSTD_SNAPSHOT":70,"iSTD_SCROLL":71,"iSTD_CANCEL":72,"iSTD_PAUSE":72,"iSTD_INSERT":73,"iSTD_HOME":74,"iSTD_PAGEUP":75,"iSTD_DELETE":76,"iSTD_END":77,"iSTD_PAGEDOWN":78,"iSTD_RIGHT":79,"iSTD_LEFT":80,"iSTD_DOWN":81,"iSTD_UP":82,"iSTD_NUMLOCK":83,"iSTD_NUMPAD_DIVIDE":84,"iSTD_NUMPAD_MULTIPLY":85,"iSTD_NUMPAD_SUBTRACT":86,"iSTD_NUMPAD_ADD":87,"iSTD_NUMPAD_ENTER":88,"iSTD_NUMPAD1":89,"iSTD_NUMPAD2":90,"iSTD_NUMPAD3":91,"iSTD_NUMPAD4":92,"iSTD_NUMPAD5":93,"iSTD_NUMPAD6":94,"iSTD_NUMPAD7":95,"iSTD_NUMPAD8":96,"iSTD_NUMPAD9":97,"iSTD_NUMPAD0":98,"iSTD_NUMPAD_FULLSTOP":99,"iSTD_QUROPE2":100,"iSTD_APP":101,"iSTD_KEYBOARD_POWER":102,"iSTD_NUMPAD_EQUAL_SIGN":103,"iSTD_F13":104,"iSTD_F14":105,"iSTD_F15":106,"iSTD_F16":107,"iSTD_F17":108,"iSTD_F18":109,"iSTD_F19":110,"iSTD_F20":111,"iSTD_F21":112,"iSTD_F22":113,"iSTD_F23":114,"iSTD_F24":115,"iSTD_KEYBOARD_EXECUTE":116,"iSTD_KEYBOARD_HELP":117,"iSTD_KEYBOARD_MENU":118,"iSTD_KEYBOARD_SELECT":119,"iSTD_KEYBOARD_STOP":120,"iSTD_KEYBOARD_AGAIN":121,"iSTD_KEYBOARD_UNDO":122,"iSTD_KEYBOARD_CUT":123,"iSTD_KEYBOARD_COPY":124,"iSTD_KEYBOARD_PASTE":125,"iSTD_KEYBOARD_FIND":126,"iSTD_KEYBOARD_MUTE":127,"iSTD_KEYBOARD_VOLUMEUP":128,"iSTD_KEYBOARD_VOLUMEDOWN":129,"iSTD_KEYBOARD_CAPITAL":130,"iSTD_KEYBOARD_NUMLOCK":131,"iSTD_KEYBOARD_SCROLL":132,"iSTD_KEYBOARD_NUMPAD_COMMA":133,"iSTD_KEYBOARD_QUEAL_SIGN":134,"iSTD_KEYBOARD_RO":135,"iSTD_KEYBOARD_KATAKANA_HIRAGANA":136,"iSTD_KEYBOARD_YEN":137,"iSTD_KEYBOARD_HENKAN":138,"iSTD_KEYBOARD_MUHENKAN":139,"iSTD_KEYBOARD_PC9800_COMMA":140,"iSTD_KEYBOARD_INTL7":141,"iSTD_KEYBOARD_INTL8":142,"iSTD_KEYBOARD_INTL9":143,"iSTD_KEYBOARD_LANG1":144,"iSTD_KEYBOARD_LANG2":145,"iSTD_KEYBOARD_LANG3":146,"iSTD_KEYBOARD_LANG4":147,"iSTD_KEYBOARD_LANG5":148,"iSTD_KEYBOARD_LANG6":149,"iSTD_KEYBOARD_LANG7":150,"iSTD_KEYBOARD_LANG8":151,"iSTD_KEYBOARD_LANG9":152,"iSTD_KEYBOARD_ALTERNATE_ERASE":153,"iSTD_KEYBOARD_SYSREQ":154,"iSTD_KEYBOARD_CANCEL":155,"iSTD_KEYBOARD_CLEAR":156,"iSTD_KEYBOARD_PRIOR":157,"iSTD_KEYBOARD_RETURN":158,"iSTD_KEYBOARD_SEPARATOR":159,"iSTD_KEYBOARD_OUT":160,"iSTD_KEYBOARD_OPER":161,"iSTD_KEYBOARD_CLEAR_AGAIN":162,"iSTD_KEYBOARD_CRSEL_PROPS":163,"iSTD_KEYBOARD_EXSEL":164,"iLEFT_CTRL":17,"iLEFT_SHIFT":18,"iLEFT_ALT":20,"iLEFT_GUI":24,"iRIGHT_CTRL":1,"iRIGHT_SHIFT":2,"iRIGHT_ALT":4,"iRIGHT_GUI":8,"iMMK_IOS_SIRI_H":0,"iMMK_IOS_SIRI_L":207,"iMMK_MAC_CTRL_H":2,"iMMK_MAC_CTRL_L":160,"iMMK_BRIGHT_ADD_H":0,"iMMK_BRIGHT_ADD_L":111,"iMMK_BRIGHT_SUM_H":0,"iMMK_BRIGHT_SUM_L":112,"iMMK_NEXT_TRACK_H":0,"iMMK_NEXT_TRACK_L":181,"iMMK_PREV_TRACK_H":0,"iMMK_PREV_TRACK_L":182,"iMMK_STOP_H":0,"iMMK_STOP_L":183,"iMMK_PLAY_PAUSE_H":0,"iMMK_PLAY_PAUSE_L":205,"iMMK_MUTE_H":0,"iMMK_MUTE_L":226,"iMMK_BASS_BOOST_H":0,"iMMK_BASS_BOOST_L":229,"iMMK_LOUDNESS_H":0,"iMMK_LOUDNESS_L":231,"iMMK_VOLUMEUP_H":0,"iMMK_VOLUMEUP_L":233,"iMMK_VOLUMEDOWN_H":0,"iMMK_VOLUMEDOWN_L":234,"iMMK_BASS_UP_H":1,"iMMK_BASS_UP_L":82,"iMMK_BASS_DOWN_H":1,"iMMK_BASS_DOWN_L":83,"iMMK_TREBLE_UP_H":1,"iMMK_TREBLE_UP_L":84,"iMMK_TREBLE_DOWN_H":1,"iMMK_TREBLE_DOWN_L":85,"iMMK_MEDIA_SELECT_H":1,"iMMK_MEDIA_SELECT_L":131,"iMMK_MAIL_H":1,"iMMK_MAIL_L":138,"iMMK_CALCULATOR_H":1,"iMMK_CALCULATOR_L":146,"iMMK_MY_COMPUTER_H":1,"iMMK_MY_COMPUTER_L":148,"iMMK_WWW_SEARCH_H":2,"iMMK_WWW_SEARCH_L":33,"iMMK_WWW_HOME_H":2,"iMMK_WWW_HOME_L":35,"iMMK_WWW_BACK_H":2,"iMMK_WWW_BACK_L":36,"iMMK_WWW_FORWARD_H":2,"iMMK_WWW_FORWARD_L":37,"iMMK_WWW_STOP_H":2,"iMMK_WWW_STOP_L":38,"iMMK_WWW_REFRESH_H":2,"iMMK_WWW_REFRESH_L":39,"iMMK_WWW_FAVORITES_H":2,"iMMK_WWW_FAVORITES_L":42},"win":[["iSTD_NULL","iKEY_TYPE_STD|iKEY_PRESS|iLEFT_SHIFT"],["iSTD_U","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_F6","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_F2","iKEY_TYPE_STD|iKEY_PRESS"],["iMMK_MUTE_L","iKEY_TYPE_MMK|iMMK_MUTE_H"],["iSTD_RETURN","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_1","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NULL","iKEY_TYPE_STD|iKEY_PRESS|iRIGHT_ALT"],["iSTD_NULL","iKEY_TYPE_STD|iKEY_PRESS|iLEFT_CTRL"],["iSTD_K","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_P","iKEY_TYPE_STD|iKEY_PRESS"],["iMODE_KEY_BT1","iKEY_TYPE_SPECIAL"],["iMODE_KEY_BT0","iKEY_TYPE_SPECIAL"],["iLED_MODE_CYC_ADD","iKEY_TYPE_SPECIAL"],["iSTD_ESCAPE","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NULL","iKEY_TYPE_INVALID"],["iSTD_SPACE","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_I","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NULL","iKEY_TYPE_INVALID"],["iSTD_NULL","iKEY_TYPE_STD|iKEY_PRESS|iLEFT_GUI"],["iSTD_C","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_3","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NULL","iKEY_TYPE_STD|iKEY_PRESS|iRIGHT_CTRL"],["iSTD_Z","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_A","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_F4","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_O","iKEY_TYPE_STD|iKEY_PRESS"],["iMMK_CALCULATOR_L","iKEY_TYPE_MMK|iMMK_CALCULATOR_H"],["iSTD_DOWN","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_M","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NULL","iKEY_TYPE_STD|iKEY_PRESS|iLEFT_ALT"],["iSTD_SCROLL","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_TAB","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_WAVE","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_F7","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_Y","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_END","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_7","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_SEMICOLON","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_ESCAPE","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_S","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_SUBTRACT","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_F8","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_4","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_SQUARE_BRACKET_LEFT","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_8","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_INSERT","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_N","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_D","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_ADD","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_F9","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NULL","iKEY_TYPE_INVALID"],["iSTD_SQUARE_BRACKET_RIGHT","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_9","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_QUOTATION_SIGN","iKEY_TYPE_STD|iKEY_PRESS"],["iMODE_KEY_FN","iKEY_TYPE_SPECIAL"],["iSTD_W","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_BACKSPACE","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_F11","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_SNAPSHOT","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_HOME","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_DELETE","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_H","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_FULLSTOP","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_E","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_L","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_F12","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_APP","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_PAUSE","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_PAGEUP","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_EUROPE1","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_SLASH","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_Q","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_J","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_F10","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NULL","iKEY_TYPE_INVALID"],["iSTD_BACKSLASH","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_0","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_PAGEDOWN","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_COMMA","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_B","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NULL","iKEY_TYPE_INVALID"],["iSTD_NULL","iKEY_TYPE_INVALID"],["iSTD_NUMLOCK","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NUMPAD7","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NUMPAD4","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NUMPAD1","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NULL","iKEY_TYPE_INVALID"],["iSTD_V","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_5","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NULL","iKEY_TYPE_INVALID"],["iSTD_NUMPAD_DIVIDE","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NUMPAD8","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NUMPAD5","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NUMPAD2","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NUMPAD0","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_R","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_6","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NULL","iKEY_TYPE_INVALID"],["iSTD_NUMPAD_MULTIPLY","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NUMPAD9","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NUMPAD6","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NUMPAD3","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NUMPAD_FULLSTOP","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_T","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_F3","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NULL","iKEY_TYPE_INVALID"],["iSTD_NUMPAD_SUBTRACT","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NUMPAD_ADD","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NULL","iKEY_TYPE_INVALID"],["iSTD_NUMPAD_ENTER","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_RIGHT","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_X","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_2","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_F","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_F1","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_F5","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NULL","iKEY_TYPE_STD|iKEY_PRESS|iRIGHT_SHIFT"],["iMMK_MUTE_L","iKEY_TYPE_MMK|iMMK_MUTE_H"],["iSTD_CAPITAL","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_APP","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_G","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_UP","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_LEFT","iKEY_TYPE_STD|iKEY_PRESS"]],"fn":[["iSTD_NULL","iKEY_TYPE_STD|iKEY_PRESS|iLEFT_SHIFT"],["iSTD_U","iKEY_TYPE_STD|iKEY_PRESS"],["iMMK_PREV_TRACK_L","iKEY_TYPE_MMK|iMMK_PREV_TRACK_H"],["iMMK_VOLUMEDOWN_L","iKEY_TYPE_MMK|iMMK_VOLUMEDOWN_H"],["iMMK_MUTE_L","iKEY_TYPE_MMK|iMMK_MUTE_H"],["iSTD_RETURN","iKEY_TYPE_STD|iKEY_PRESS"],["iLED_MODE_0","iKEY_TYPE_SPECIAL"],["iSTD_KEYBOARD_LANG1","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NULL","iKEY_TYPE_STD|iKEY_PRESS|iLEFT_CTRL"],["iSTD_K","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_P","iKEY_TYPE_STD|iKEY_PRESS"],["iMODE_KEY_BT1","iKEY_TYPE_SPECIAL"],["iMODE_KEY_BT0","iKEY_TYPE_SPECIAL"],["iLED_MODE_CYC_ADD","iKEY_TYPE_SPECIAL"],["iSTD_ESCAPE","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NULL","iKEY_TYPE_INVALID"],["iSTD_SPACE","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_I","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NULL","iKEY_TYPE_INVALID"],["iKEY_WIN_LOCK","iKEY_TYPE_SPECIAL"],["iSTD_C","iKEY_TYPE_STD|iKEY_PRESS"],["iLED_MODE_2","iKEY_TYPE_SPECIAL"],["iSTD_KEYBOARD_LANG2","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_Z","iKEY_TYPE_STD|iKEY_PRESS"],["iKEY_WIN","iKEY_TYPE_SPECIAL"],["iMMK_MUTE_L","iKEY_TYPE_MMK|iMMK_MUTE_H"],["iSTD_O","iKEY_TYPE_STD|iKEY_PRESS"],["iMMK_CALCULATOR_L","iKEY_TYPE_MMK|iMMK_CALCULATOR_H"],["iSTD_DOWN","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_M","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NULL","iKEY_TYPE_STD|iKEY_PRESS|iLEFT_ALT"],["iLED_OFF","iKEY_TYPE_SPECIAL"],["iMODE_KEY_CONN","iKEY_TYPE_SPECIAL"],["iSTD_WAVE","iKEY_TYPE_STD|iKEY_PRESS"],["iMMK_PLAY_PAUSE_L","iKEY_TYPE_MMK|iMMK_PLAY_PAUSE_H"],["iSTD_Y","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_END","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_7","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_SEMICOLON","iKEY_TYPE_STD|iKEY_PRESS"],["iKEY_DEFAULT","iKEY_TYPE_SPECIAL"],["iKEY_MAC","iKEY_TYPE_SPECIAL"],["iSTD_SUBTRACT","iKEY_TYPE_STD|iKEY_PRESS"],["iMMK_NEXT_TRACK_L","iKEY_TYPE_MMK|iMMK_NEXT_TRACK_H"],["iLED_MODE_3","iKEY_TYPE_SPECIAL"],["iSTD_SQUARE_BRACKET_LEFT","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_8","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_INSERT","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_N","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_D","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_ADD","iKEY_TYPE_STD|iKEY_PRESS"],["iMMK_MAIL_L","iKEY_TYPE_MMK|iMMK_MAIL_H"],["iSTD_NULL","iKEY_TYPE_INVALID"],["iSTD_SQUARE_BRACKET_RIGHT","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_9","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_QUOTATION_SIGN","iKEY_TYPE_STD|iKEY_PRESS"],["iMODE_KEY_FN","iKEY_TYPE_SPECIAL"],["iKEY_DIR_WASD","iKEY_TYPE_SPECIAL"],["iSTD_BACKSPACE","iKEY_TYPE_STD|iKEY_PRESS"],["iKEY_LOCK","iKEY_TYPE_SPECIAL"],["iSTD_SNAPSHOT","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_HOME","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_DELETE","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_H","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_FULLSTOP","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_E","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_L","iKEY_TYPE_STD|iKEY_PRESS"],["iMMK_CALCULATOR_L","iKEY_TYPE_MMK|iMMK_CALCULATOR_H"],["iSTD_APP","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_PAUSE","iKEY_TYPE_STD|iKEY_PRESS"],["iLED_BRIGHT_ADD","iKEY_TYPE_SPECIAL"],["iSTD_EUROPE1","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_SLASH","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_Q","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_J","iKEY_TYPE_STD|iKEY_PRESS"],["iMMK_WWW_HOME_L","iKEY_TYPE_MMK|iMMK_WWW_HOME_H"],["iSTD_NULL","iKEY_TYPE_INVALID"],["iSTD_BACKSLASH","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_0","iKEY_TYPE_STD|iKEY_PRESS"],["iLED_BRIGHT_SUB","iKEY_TYPE_SPECIAL"],["iSTD_COMMA","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_B","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NULL","iKEY_TYPE_INVALID"],["iSTD_NULL","iKEY_TYPE_INVALID"],["iSTD_NUMLOCK","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NUMPAD7","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NUMPAD4","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NUMPAD1","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NULL","iKEY_TYPE_INVALID"],["iSTD_V","iKEY_TYPE_STD|iKEY_PRESS"],["iLED_MODE_4","iKEY_TYPE_SPECIAL"],["iSTD_NULL","iKEY_TYPE_INVALID"],["iSTD_NUMPAD_DIVIDE","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NUMPAD8","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NUMPAD5","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NUMPAD2","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NUMPAD0","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_R","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_6","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NULL","iKEY_TYPE_INVALID"],["iSTD_NUMPAD_MULTIPLY","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NUMPAD9","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NUMPAD6","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NUMPAD3","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NUMPAD_FULLSTOP","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_T","iKEY_TYPE_STD|iKEY_PRESS"],["iMMK_VOLUMEUP_L","iKEY_TYPE_MMK|iMMK_VOLUMEUP_H"],["iSTD_NULL","iKEY_TYPE_INVALID"],["iSTD_NUMPAD_SUBTRACT","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NUMPAD_ADD","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_NULL","iKEY_TYPE_INVALID"],["iSTD_NUMPAD_ENTER","iKEY_TYPE_STD|iKEY_PRESS"],["iLED_SPEED_ADD","iKEY_TYPE_SPECIAL"],["iSTD_X","iKEY_TYPE_STD|iKEY_PRESS"],["iLED_MODE_1","iKEY_TYPE_SPECIAL"],["iSTD_F","iKEY_TYPE_STD|iKEY_PRESS"],["iMMK_MEDIA_SELECT_L","iKEY_TYPE_MMK|iMMK_MEDIA_SELECT_H"],["iMMK_STOP_L","iKEY_TYPE_MMK|iMMK_STOP_H"],["iSTD_NULL","iKEY_TYPE_STD|iKEY_PRESS|iRIGHT_SHIFT"],["iMMK_MUTE_L","iKEY_TYPE_MMK|iMMK_MUTE_H"],["iSTD_CAPITAL","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_APP","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_G","iKEY_TYPE_STD|iKEY_PRESS"],["iSTD_UP","iKEY_TYPE_STD|iKEY_PRESS"],["iLED_SPEED_SUB","iKEY_TYPE_SPECIAL"]]};
+
+/* ============================================================================
+ * 常量
+ * ========================================================================== */
+const SLOT_NUM = 124;                         // 键表 C3..C18 × R0..R7，C18 只有 R0-R3
+const slotName = s => 'C' + ((s >> 3) + 3) + ' R' + (s & 7);
+const slotOf = (c, r) => (c - 3) * 8 + r;
+const pinName = n => 'P' + (n >> 3) + (n & 7);
+// OM6252 QFN48 引出的 GPIO（P14-P17 是内部 Flash，P37 是 BOOT，不能用）
+const PINS = [0,1,2,3,4,5,6,7,8,9,10,11,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30];
+// SE73K 板子上这些脚另有用途，拿来做矩阵要先在引脚配置器里改掉
+const BOARD_USE = {0:'ARGB_OFF',1:'ARGB_OUT',2:'USB_DN',3:'USB_DP',26:'KEY_EX',27:'BAT_LVD',28:'CHR_OK',29:'MODE_SW',30:'USB_5V'};
+// 扩展列：翻转顺序（main.h 注释），由 PA5 控制
+const EXT_ORDER = ['PA7','PA6','PA4','PA3','PA2','PB0','PB1','PB2','PB3','PB4','PB5','PA0','PA1'];
+
+const M = DATA.macros;
+const STD = DATA.std;                          // [[name, value]]
+const STD_SKIP = new Set(['iSTD_KEY','iSTD_ALL','iSTD_ENTER','iSTD_CANCEL','iSTD_NULL']);
+const STD_LABEL = {RETURN:'Enter',ESCAPE:'Esc',BACKSPACE:'Bksp',TAB:'Tab',SPACE:'Space',SUBTRACT:'-',ADD:'=',
+  SQUARE_BRACKET_LEFT:'[',SQUARE_BRACKET_RIGHT:']',BACKSLASH:'\\',EUROPE1:'#~ ISO',SEMICOLON:';',QUOTATION_SIGN:"'",
+  WAVE:'`',COMMA:',',FULLSTOP:'.',SLASH:'/',CAPITAL:'Caps',SNAPSHOT:'PrtSc',SCROLL:'ScrLk',PAUSE:'Pause',INSERT:'Ins',
+  HOME:'Home',PAGEUP:'PgUp',DELETE:'Del',END:'End',PAGEDOWN:'PgDn',RIGHT:'→',LEFT:'←',DOWN:'↓',UP:'↑',NUMLOCK:'NumLk',
+  NUMPAD_DIVIDE:'KP /',NUMPAD_MULTIPLY:'KP *',NUMPAD_SUBTRACT:'KP -',NUMPAD_ADD:'KP +',NUMPAD_ENTER:'KP Ent',
+  NUMPAD_FULLSTOP:'KP .',NUMPAD_EQUAL_SIGN:'KP =',QUROPE2:'\\| ISO',APP:'Menu',KEYBOARD_LANG1:'Lang1',KEYBOARD_LANG2:'Lang2',
+  KEYBOARD_POWER:'Power'};
+const MMK_LABEL = {NEXT_TRACK:'下一曲',PREV_TRACK:'上一曲',STOP:'停止',PLAY_PAUSE:'播放/暂停',MUTE:'静音',VOLUMEUP:'音量+',
+  VOLUMEDOWN:'音量-',MEDIA_SELECT:'播放器',MAIL:'邮件',CALCULATOR:'计算器',MY_COMPUTER:'我的电脑',WWW_SEARCH:'搜索',
+  WWW_HOME:'主页',WWW_BACK:'后退',WWW_FORWARD:'前进',WWW_STOP:'停止加载',WWW_REFRESH:'刷新',WWW_FAVORITES:'收藏夹',
+  IOS_SIRI:'Siri',MAC_CTRL:'调度中心',BRIGHT_ADD:'屏幕亮+',BRIGHT_SUM:'屏幕亮-',BASS_BOOST:'低音增强',LOUDNESS:'响度',
+  BASS_UP:'低音+',BASS_DOWN:'低音-',TREBLE_UP:'高音+',TREBLE_DOWN:'高音-'};
+// 特殊键：impl=固件里 key_decode_cmd_0x10..0x40 有实现；grp 决定颜色和分组
+const SPECIAL = [
+  ['iLED_BRIGHT_SUB','灯亮度-','light',1],['iLED_BRIGHT_ADD','灯亮度+','light',1],['iLED_BRIGHT_CYC_ADD','亮度循环','light',0],
+  ['iLED_MODE_SUB','上一个灯效','light',0],['iLED_MODE_ADD','下一个灯效','light',0],['iLED_MODE_CYC_ADD','灯效切换','light',1],
+  ['iLED_SPEED_SUB','灯速度-','light',1],['iLED_SPEED_ADD','灯速度+','light',1],['iLED_SPEED_CYC_ADD','速度循环','light',0],
+  ['iLED_DIR_L_R','灯方向→','light',0],['iLED_DIR_R_L','灯方向←','light',0],['iLED_DIR_CYC','灯方向循环','light',0],
+  ['iLED_OFF','开关灯','light',1],['iLED_RGB_SWTICH','切换颜色','light',1],
+  ['iLED_MODE_0','灯效 0','light',1],['iLED_MODE_1','灯效 1','light',1],['iLED_MODE_2','灯效 2','light',1],['iLED_MODE_3','灯效 3','light',1],['iLED_MODE_4','灯效 4','light',1],
+  ['iMODE_KEY_FN','Fn','mode',1],['iMODE_KEY_CONN','配对','mode',1],['iMODE_KEY_BT0','蓝牙 1','mode',1],['iMODE_KEY_BT1','蓝牙 2','mode',1],
+  ['iMODE_KEY_BT2','蓝牙 3','mode',1],['iMODE_KEY_24G','2.4G','mode',1],['iKEY_CTRL_PRESS','CTRL_PRESS','mode',0],['iKEY_CTRL_REALSE','CTRL_REALSE','mode',0],
+  ['iKEY_DIR_WASD','WASD 互换','mode',1],['iKEY_WIN','Win 模式','mode',1],['iKEY_MAC','Mac 模式','mode',1],['iKEY_WIN_MAC','Win/Mac 切换','mode',1],
+  ['iKEY_WIN_LOCK','锁 Win 键','mode',1],['iKEY_DIR_LOCK','方向锁','mode',0],['iKEY_LOCK','锁键盘','mode',1],
+  ['iKEY_DEFAULT','恢复出厂','func',1],['iKEY_ALT_TAB','Alt+Tab','func',1],['iKEY_CMD_TAB','Cmd+Tab','func',1],
+  ['iKEY_CTRL_SPACE','Ctrl+Space','func',1],['iKEY_CMD_SPACE','Cmd+Space','func',1],['iKEY_DESK_MAC','显示桌面(Mac)','func',1]];
+const SP = Object.fromEntries(SPECIAL.map(x => [x[0], {label:x[1], grp:x[2], impl:!!x[3]}]));
+const SYS = [['iSYS_POWER','系统电源'],['iSYS_SLEEP','系统睡眠'],['iSYS_WAKEUP','系统唤醒']];
+const MODS = [['CTRL','Ctrl'],['SHIFT','Shift'],['ALT','Alt'],['GUI','Win']];
+const T_STD = 'iKEY_TYPE_STD|iKEY_PRESS', T_INV = 'iKEY_TYPE_INVALID';
+
+// 固件按位置读取的键。expect = 这个位置应该放的键码（用于检查和自动定位）
+const ROLES = [
+  {id:'FCC_FN',     grp:'FCC 测试', name:'进入测试：Fn',            expect:['iMODE_KEY_FN'],  old:'iKEY_FN_C / iKEY_FN_R'},
+  {id:'FCC_SWITCH', grp:'FCC 测试', name:'切换频点（下）· 也用于进入测试', expect:['iSTD_DOWN'], old:'iKEY_SWTICH_FREQ_C / _R'},
+  {id:'FCC_BT0',    grp:'FCC 测试', name:'进入测试：蓝牙模式下要按的键', expect:['iMODE_KEY_BT0'], old:'iKEY_BT0_C / iKEY_BT0_R'},
+  {id:'FCC_24G',    grp:'FCC 测试', name:'进入测试：2.4G 模式下要按的键', expect:['iMODE_KEY_24G'], old:'iKEY_24G_C / iKEY_24G_R'},
+  {id:'FCC_TX',     grp:'FCC 测试', name:'切换定频收发（右）',       expect:['iSTD_RIGHT'],    old:'iKEY_FCC_TX_C / _R'},
+  {id:'FCC_FREQ',   grp:'FCC 测试', name:'进入跳频（左）',           expect:['iSTD_LEFT'],     old:'iKEY_FCC_FREQ_C / _R'},
+  {id:'FCC_WAVE',   grp:'FCC 测试', name:'切换空载波（上）',         expect:['iSTD_UP'],       old:'iKEY_FCC_WAVE_C / _R'},
+  {id:'WASD_W',     grp:'WASD 互换', name:'W',  expect:['iSTD_W'],     old:'iKEY_INDEX_W'},
+  {id:'WASD_A',     grp:'WASD 互换', name:'A',  expect:['iSTD_A'],     old:'iKEY_INDEX_A'},
+  {id:'WASD_S',     grp:'WASD 互换', name:'S',  expect:['iSTD_S'],     old:'iKEY_INDEX_S'},
+  {id:'WASD_D',     grp:'WASD 互换', name:'D',  expect:['iSTD_D'],     old:'iKEY_INDEX_D'},
+  {id:'WASD_UP',    grp:'WASD 互换', name:'↑',  expect:['iSTD_UP'],    old:'iKEY_INDEX_UP'},
+  {id:'WASD_LEFT',  grp:'WASD 互换', name:'←',  expect:['iSTD_LEFT'],  old:'iKEY_INDEX_LEFT'},
+  {id:'WASD_DOWN',  grp:'WASD 互换', name:'↓',  expect:['iSTD_DOWN'],  old:'iKEY_INDEX_DOWN'},
+  {id:'WASD_RIGHT', grp:'WASD 互换', name:'→',  expect:['iSTD_RIGHT'], old:'iKEY_INDEX_RIGHT'}];
+const ROLE_TAG = {FCC_FN:'Fn',FCC_SWITCH:'F↓',FCC_BT0:'FBT',FCC_24G:'F24',FCC_TX:'F→',FCC_FREQ:'F←',FCC_WAVE:'F↑',
+  WASD_W:'W',WASD_A:'A',WASD_S:'S',WASD_D:'D',WASD_UP:'↑',WASD_LEFT:'←',WASD_DOWN:'↓',WASD_RIGHT:'→'};
+
+/* ============================================================================
+ * SE73K 默认配置：还原自 main.h、matrix_key.c（scan_key / matrixkey_scan）和 matrix_key.h
+ * ========================================================================== */
+function presetState(){
+  const cols = [
+    ['C0',{ext:10}],['C1',{pin:21}],['C2',{pin:22}],['C3',{pin:23}],['C4',{pin:24}],['C5',{pin:25}],
+    ['C6',{ext:2}],['C7',{ext:3}],['C8',{ext:0}],['C9',{ext:9}],['C10',{ext:1}],['C11',{ext:7}],['C12',{ext:6}],
+    ['C13',{ext:5}],['C14',{ext:4}],['C15',{ext:8}],['C16',{ext:11}],['C17',{ext:12}],['C18',{pin:20}],['C19',{pin:18}]
+  ].map(([name, src]) => Object.assign({name}, src));
+  // 物理位置 -> 键表位置：C3..C18 同位置直通，下面这些是 matrixkey_scan() 里手写的搬移
+  const keys = {};
+  const drop = {3:[6,7], 5:[4,5,6,7], 6:[4,5,6], 17:[2,3,4,6,7], 18:[4,5,6,7]};
+  for (let c = 3; c <= 18; c++) for (let r = 0; r < 8; r++){
+    if ((drop[c] || []).includes(r)) continue;
+    keys['C' + c + ',' + r] = slotOf(c, r);
+  }
+  const moves = [[0,1,3,6],[0,4,3,7],[1,0,5,4],[1,1,5,5],[1,6,5,6],[0,0,5,7],[2,0,17,2],[2,1,17,3],[2,2,17,4],
+                 [19,0,17,7],[18,7,16,7],[18,4,6,4],[18,5,6,5],[18,6,6,6]];
+  for (const [pc, pr, lc, lr] of moves) keys['C' + pc + ',' + pr] = slotOf(lc, lr);
+  const roles = {FCC_FN:slotOf(8,7), FCC_BT0:slotOf(7,7), FCC_24G:slotOf(12,7), FCC_TX:slotOf(6,7), FCC_FREQ:slotOf(6,3),
+    FCC_WAVE:slotOf(6,2), FCC_SWITCH:slotOf(6,4), WASD_W:slotOf(10,0), WASD_A:slotOf(6,0), WASD_S:slotOf(8,0), WASD_D:slotOf(9,0),
+    WASD_UP:slotOf(18,2), WASD_LEFT:slotOf(18,3), WASD_DOWN:slotOf(6,4), WASD_RIGHT:slotOf(16,7)};
+  return {
+    v:1, cols, rows:[4,5,6,7,8,9,10,11], exPin:26,
+    led:{vdd:19, vddOn:1, num:{pin:20,on:0}, caps:{pin:21,on:0}, low:{pin:22,on:0}},
+    keys, roles,
+    win: DATA.win.map(e => e.slice()), fn: DATA.fn.map(e => e.slice())
+  };
+}
+const ORIG = {win: DATA.win.map(e => e.join('|').replace(/\s/g,'')), fn: DATA.fn.map(e => e.join('|').replace(/\s/g,''))};
+
+/* ============================================================================
+ * 状态、撤销、本地保存
+ * ========================================================================== */
+let state = presetState();
+let ui = {layer:'win', view:'phys', sel:{c:'C9', r:7}, tab:'keys', file:'cfg', pick:null, capture:null};
+const undoStack = [];
+function commit(fn){
+  undoStack.push(JSON.stringify(state));
+  if (undoStack.length > 100) undoStack.shift();
+  fn();
+  save(); render();
+}
+function undo(){ if (!undoStack.length) return toast('没有可以撤销的操作'); state = JSON.parse(undoStack.pop()); save(); render(); }
+function save(){ try { localStorage.setItem('om62xx-keymap', JSON.stringify(state)); } catch(e){} }
+function load(){
+  try { const s = JSON.parse(localStorage.getItem('om62xx-keymap') || 'null'); if (s && s.v === 1 && validState(s)) state = s; } catch(e){}
+}
+function validState(s){
+  return s && Array.isArray(s.cols) && Array.isArray(s.rows) && s.keys && s.roles && s.led &&
+    Array.isArray(s.win) && s.win.length === SLOT_NUM && Array.isArray(s.fn) && s.fn.length === SLOT_NUM;
+}
+
+/* ============================================================================
+ * 键码解析
+ * ========================================================================== */
+function evalExpr(expr){
+  let v = 0;
+  for (let t of String(expr).split('|')){
+    t = t.trim(); if (!t) continue;
+    if (t in M) v |= M[t]; else if (/^(0x[0-9a-f]+|\d+)$/i.test(t)) v |= parseInt(t); else return NaN;
+  }
+  return v;
+}
+// 把 [键码, 类型] 解析成 {kind, ...}
+function parseKey(e){
+  const code = e[0].trim(), type = e[1].replace(/\s/g,''), tv = evalExpr(type);
+  if (tv === 0xFF) return {kind:'none'};
+  if (tv === M.iKEY_TYPE_SPECIAL) return {kind:'sp', code};
+  if (tv === M.iKEY_TYPE_SYS) return {kind:'sys', code};
+  if ((tv & 0xF0) === M.iKEY_TYPE_MMK){ const m = /^iMMK_(\w+)_L$/.exec(code); return {kind:'mmk', name: m ? m[1] : code}; }
+  if ((tv & 0xC0) === 0){
+    const mods = type.split('|').filter(t => /^i(LEFT|RIGHT)_/.test(t));
+    return {kind: code === 'iSTD_NULL' ? (mods.length ? 'mod' : 'none') : 'std', code, mods};
+  }
+  return {kind:'raw', code, type};
+}
+function makeKey(k){
+  switch (k.kind){
+    case 'none': return ['iSTD_NULL', T_INV];
+    case 'sp':   return [k.code, 'iKEY_TYPE_SPECIAL'];
+    case 'sys':  return [k.code, 'iKEY_TYPE_SYS'];
+    case 'mmk':  return ['iMMK_' + k.name + '_L', 'iKEY_TYPE_MMK|iMMK_' + k.name + '_H'];
+    case 'std': case 'mod': return [k.code || 'iSTD_NULL', T_STD + (k.mods || []).map(m => '|' + m).join('')];
+    default: return [k.code, k.type];
+  }
+}
+const stdShort = code => { const n = code.replace(/^iSTD_/, ''), m = /^NUMPAD(\d)$/.exec(n); return m ? 'KP ' + m[1] : STD_LABEL[n] || n.replace(/^KEYBOARD_/, ''); };
+const modShort = m => { const [, side, k] = /^i(LEFT|RIGHT)_(\w+)$/.exec(m); return (side === 'RIGHT' ? 'R' : 'L') + (k === 'GUI' ? 'Win' : k[0] + k.slice(1).toLowerCase()); };
+function keyLabel(e){
+  const k = parseKey(e);
+  switch (k.kind){
+    case 'none': return '';
+    case 'std':  return (k.mods.length ? k.mods.map(modShort).join('+') + '+' : '') + stdShort(k.code);
+    case 'mod':  return k.mods.map(modShort).join('+');
+    case 'mmk':  return MMK_LABEL[k.name] || k.name;
+    case 'sp':   return SP[k.code] ? SP[k.code].label : k.code;
+    case 'sys':  return (SYS.find(x => x[0] === k.code) || [0, k.code])[1];
+    default:     return k.code;
+  }
+}
+function keyClass(e){
+  const k = parseKey(e);
+  if (k.kind === 'sp') return SP[k.code] ? SP[k.code].grp : 'func';
+  return {none:'inv', std:'std', mod:'mod', mmk:'mmk', sys:'func', raw:'func'}[k.kind];
+}
+const keyCode = e => { const k = parseKey(e); return k.kind === 'mmk' ? 'iMMK_' + k.name + '_L' : (k.kind === 'none' ? null : k.code); };
+
+/* ============================================================================
+ * 矩阵模型
+ * ========================================================================== */
+const colByName = n => state.cols.find(c => c.name === n);
+const colSrcText = c => c.pin != null ? pinName(c.pin) : (c.ext != null ? '扩' + (c.ext + 1) + '·' + EXT_ORDER[c.ext] : '不用');
+// 扫描顺序：GPIO 直连列按列表顺序，接着是扩展列按翻转顺序
+function scanOrder(){
+  const direct = state.cols.filter(c => c.pin != null);
+  const ext = state.cols.filter(c => c.ext != null).sort((a, b) => a.ext - b.ext);
+  const exNum = ext.length ? Math.max(...ext.map(c => c.ext)) + 1 : 0;
+  const raw = direct.slice();
+  for (let i = 0; i < exNum; i++) raw.push(ext.find(c => c.ext === i) || null);  // 没接列的扩展步也要翻转一次
+  return {direct, exNum, raw};
+}
+function slotSources(){                       // 键表位置 -> [物理位置]
+  const m = Array.from({length:SLOT_NUM}, () => []);
+  for (const [pos, s] of Object.entries(state.keys)) if (s >= 0 && s < SLOT_NUM) m[s].push(pos);
+  return m;
+}
+const posText = pos => { const [c, r] = pos.split(','); return c + ' R' + r; };
+function physOfSlot(s){ return slotSources()[s] || []; }
+function freeSlot(pref){
+  const used = new Set(Object.values(state.keys));
+  if (pref != null && pref >= 0 && pref < SLOT_NUM && !used.has(pref)) return pref;
+  for (let s = 0; s < SLOT_NUM; s++) if (!used.has(s)) return s;
+  return -1;
+}
+
+/* ============================================================================
+ * 检查
+ * ========================================================================== */
+function problems(){
+  const P = [], add = (lvl, msg, sel, fix) => P.push({lvl, msg, sel, fix});
+  const S = state, src = slotSources(), {raw, exNum} = scanOrder();
+  // 引脚
+  const use = {};
+  const claim = (pin, what) => { if (pin == null || pin < 0) return; (use[pin] = use[pin] || []).push(what); };
+  S.rows.forEach((p, i) => claim(p, '行 R' + i));
+  S.cols.forEach(c => { if (c.pin != null) claim(c.pin, '列 ' + c.name); });
+  if (exNum) claim(S.exPin, '扩展列控制 KEY_EX');
+  if (S.led.vdd >= 0) claim(S.led.vdd, '指示灯供电');
+  for (const [pin, w] of Object.entries(use)){
+    const real = w.filter(x => !/^指示灯/.test(x));
+    if (w.length > 1) add('err', pinName(+pin) + ' 同时用作：' + w.join('、'));
+    if (BOARD_USE[pin] && !(+pin === 26 && w.length === 1 && w[0].startsWith('扩展列'))) add('warn', pinName(+pin) + ' 在 SE73K 板上是 ' + BOARD_USE[pin] + '，现在用作' + real.join('、') + '，记得在引脚配置器里改掉原来的用途');
+  }
+  if (!S.rows.some(p => p >= 0)) add('err', '一根行线都没有');
+  if (exNum && !(S.exPin >= 0)) add('err', '用了扩展列，但没有设扩展列控制脚（KEY_EX）');
+  const names = new Set();
+  S.cols.forEach(c => { if (names.has(c.name)) add('err', '列名 ' + c.name + ' 重复'); names.add(c.name); });
+  const exts = S.cols.filter(c => c.ext != null).map(c => c.ext);
+  exts.forEach((e, i) => { if (exts.indexOf(e) !== i) add('err', '扩展列第 ' + (e + 1) + ' 步（' + EXT_ORDER[e] + '）被两列同时使用'); });
+  if (raw.length > 32) add('err', '列太多（' + raw.length + '），最多 32');
+  if (!raw.length) add('err', '一列都没有');
+  // 指示灯
+  const colPins = new Set(S.cols.filter(c => c.pin != null).map(c => c.pin));
+  for (const [id, nm] of [['num','Num Lock 灯'],['caps','Caps Lock 灯'],['low','低电灯']]){
+    const L = S.led[id]; if (!(L.pin >= 0)) continue;
+    if (S.rows.includes(L.pin)) add('err', nm + ' 接在行线 ' + pinName(L.pin) + ' 上，行线不能点灯');
+    if (colPins.has(L.pin)){
+      if (L.on === 1) add('warn', nm + ' 和列线 ' + pinName(L.pin) + ' 复用却设成高电平点亮：熄灭时列线会被放开，但点亮时拉高会让这一列的键在扫描间隙误读，一般复用列都是低电平点亮');
+      if (!(S.led.vdd >= 0)) add('warn', nm + ' 和列线复用但没有 LED 供电脚：扫描到这一列时灯会被一起拉亮，会微微闪');
+    } else if (S.led.vdd === L.pin) add('err', nm + ' 和 LED 供电脚是同一个脚');
+    else if (use[L.pin]) add('err', nm + ' 的 ' + pinName(L.pin) + ' 已经用作' + use[L.pin].join('、'));
+  }
+  // 键表
+  const allPos = new Set();
+  for (const c of S.cols) for (let r = 0; r < 8; r++) allPos.add(c.name + ',' + r);
+  const deadCol = {}, deadRow = {};
+  for (const [pos, s] of Object.entries(S.keys)){
+    const [cn, r] = pos.split(',');
+    const col = colByName(cn);
+    if (!col) add('warn', '键 ' + posText(pos) + ' 所在的列已经删掉，这个键不会被扫到', {pos});
+    else if (col.pin == null && col.ext == null) (deadCol[cn] = deadCol[cn] || []).push(pos);
+    else if (!(S.rows[+r] >= 0)) (deadRow[r] = deadRow[r] || []).push(pos);
+    if (!(s >= 0 && s < SLOT_NUM)) add('err', '键 ' + posText(pos) + ' 的键表位置无效', {pos});
+  }
+  for (const [cn, l] of Object.entries(deadCol)) add('warn', '列 ' + cn + ' 没有接引脚，上面的 ' + l.length + ' 个键扫不到', {pos:l[0]});
+  for (const [r, l] of Object.entries(deadRow)) add('warn', '行 R' + r + ' 没有接引脚，' + l.map(posText).join('、') + ' 共 ' + l.length + ' 个键扫不到', {pos:l[0]});
+  for (let s = 0; s < SLOT_NUM; s++){
+    const w = S.win[s], f = S.fn[s], has = parseKey(w).kind !== 'none' || parseKey(f).kind !== 'none';
+    if (!src[s].length && has) add('info', '键表 ' + slotName(s) + ' 有键码（' + (keyLabel(w) || '—') + ' / ' + (keyLabel(f) || '—') + '），但没有物理按键接到这里，按不到', {slot:s});
+    if (src[s].length > 1) add('info', src[s].map(posText).join(' 和 ') + ' 共用键表 ' + slotName(s) + '，两个键效果一样', {slot:s});
+  }
+  let lightUsed = 0;
+  for (const L of ['win','fn']) for (let s = 0; s < SLOT_NUM; s++){
+    const k = parseKey(S[L][s]); const lname = L === 'win' ? '基础层' : 'Fn 层';
+    if (k.kind === 'sp'){
+      const sp = SP[k.code];
+      if (!sp) add('warn', lname + ' ' + slotName(s) + ' 的特殊键 ' + k.code + ' 不认识', {slot:s, layer:L});
+      else {
+        if (!sp.impl) add('warn', lname + ' ' + slotName(s) + ' 的「' + sp.label + '」固件里没有实现，按了没反应', {slot:s, layer:L});
+        if (sp.grp === 'light' && src[s].length) lightUsed++;
+      }
+    }
+    if (k.kind === 'raw') add('warn', lname + ' ' + slotName(s) + ' 的键码类型无法识别：' + k.type, {slot:s, layer:L});
+    if (k.kind === 'std' || k.kind === 'mod'){
+      const sides = new Set(k.mods.map(m => m.split('_')[0]));
+      if (sides.size > 1) add('err', lname + ' ' + slotName(s) + ' 同时用了左右两侧的修饰键，固件只支持一侧', {slot:s, layer:L});
+    }
+  }
+  if (lightUsed) add('info', '键表里用了 ' + lightUsed + ' 个灯光键，需要固件打开 BOARD_LIGHT_KEYS（有灯时默认打开）');
+  const fnSlots = [];
+  for (let s = 0; s < SLOT_NUM; s++) if (keyCode(S.win[s]) === 'iMODE_KEY_FN' && src[s].length) fnSlots.push(s);
+  if (!fnSlots.length) add('warn', '基础层没有能按到的 Fn 键，Fn 层用不了');
+  fnSlots.forEach(s => { if (keyCode(S.fn[s]) !== 'iMODE_KEY_FN') add('warn', 'Fn 键 ' + slotName(s) + ' 在 Fn 层不是 Fn，按住 Fn 时这个键会变成别的键', {slot:s, layer:'fn'}); });
+  // 特殊位置
+  for (const R of ROLES){
+    const s = S.roles[R.id];
+    if (s == null || s < 0){ add('warn', R.grp + '「' + R.name + '」没有指定位置', {role:R.id}); continue; }
+    const codes = [keyCode(S.win[s]), keyCode(S.fn[s])];
+    if (!src[s].length) add('warn', R.grp + '「' + R.name + '」在 ' + slotName(s) + '，这里没有物理按键', {role:R.id});
+    else if (!R.expect.some(e => codes.includes(e))){
+      const at = findCode(R.expect);
+      add('warn', R.grp + '「' + R.name + '」指定在 ' + slotName(s) + '，这个键是「' + (keyLabel(S.win[s]) || '无') + '」' +
+        (at != null ? '；' + keyLabelOf(R.expect[0]) + ' 在 ' + slotName(at) : '；键表里没有 ' + keyLabelOf(R.expect[0])),
+        {role:R.id}, at != null ? {role:R.id, slot:at} : null);
+    }
+  }
+  return P;
+}
+function findCode(codes){
+  const src = slotSources();
+  for (const L of ['win','fn']) for (let s = 0; s < SLOT_NUM; s++) if (src[s].length && codes.includes(keyCode(state[L][s]))) return s;
+  return null;
+}
+function keyLabelOf(code){
+  if (SP[code]) return SP[code].label;
+  if (code.startsWith('iSTD_')) return stdShort(code);
+  return code;
+}
+
+/* ============================================================================
+ * 渲染
+ * ========================================================================== */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function toast(msg){ const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2200); }
+
+function rolesAt(s){ return ROLES.filter(R => state.roles[R.id] === s); }
+function cellHTML(s, extra, title){
+  const L = ui.layer, e = state[L][s], lbl = keyLabel(e), cls = keyClass(e);
+  const tags = rolesAt(s).map(R => ROLE_TAG[R.id]).join(' ');
+  const diff = (state[L][s].join('|').replace(/\s/g,'') !== ORIG[L][s]);
+  return '<div class="kc ' + cls + (diff ? ' diff' : '') + extra + '" tabindex="0" role="button" title="' + esc(title) + '"' + '>' +
+    (tags ? '<span class="tag">' + esc(tags) + '</span>' : '') + esc(lbl || '—') + '</div>';
+}
+function renderKeymap(){
+  const src = slotSources();
+  let h = '<table class="km">';
+  const sel = ui.sel;
+  if (ui.view === 'phys'){
+    h += '<tr><th></th>' + state.cols.map(c => '<th>' + esc(c.name) + '<span class="pn">' + esc(colSrcText(c)) + '</span></th>').join('') + '</tr>';
+    for (let r = 0; r < 8; r++){
+      const rp = state.rows[r];
+      h += '<tr><th class="rh">R' + r + '<span class="pn">' + (rp >= 0 ? pinName(rp) : '不用') + '</span></th>';
+      for (const c of state.cols){
+        const pos = c.name + ',' + r, s = state.keys[pos], isSel = sel && sel.c === c.name && sel.r === r;
+        const attrs = ' data-c="' + esc(c.name) + '" data-r="' + r + '"';
+        if (s == null){
+          h += '<td><div class="kc empty' + (isSel ? ' sel' : '') + '"' + attrs + ' tabindex="0" role="button" title="' + esc(c.name + ' R' + r + '：没有按键') + '">+</div></td>';
+        } else {
+          const shared = src[s] && src[s].length > 1;
+          const title = c.name + ' R' + r + ' → 键表 ' + slotName(s) + (shared ? '（和 ' + src[s].filter(p => p !== pos).map(posText).join('、') + ' 共用）' : '');
+          h += '<td>' + cellHTML(s, (isSel ? ' sel' : ''), title).replace('<div ', '<div' + attrs + ' ') + '</td>';
+        }
+      }
+      h += '</tr>';
+    }
+  } else {
+    h += '<tr><th></th>';
+    for (let c = 3; c <= 18; c++) h += '<th>C' + c + '</th>';
+    h += '</tr>';
+    for (let r = 0; r < 8; r++){
+      h += '<tr><th class="rh">R' + r + '</th>';
+      for (let c = 3; c <= 18; c++){
+        const s = slotOf(c, r);
+        if (s >= SLOT_NUM){ h += '<td><div class="kc na"></div></td>'; continue; }
+        const isSel = sel && sel.slot === s;
+        const title = '键表 ' + slotName(s) + (src[s].length ? ' ← 物理 ' + src[s].map(posText).join('、') : '：没有物理按键');
+        h += '<td>' + cellHTML(s, (isSel ? ' sel' : '') + (src[s].length ? '' : ' bad'), title).replace('<div ', '<div data-slot="' + s + '" ') + '</td>';
+      }
+      h += '</tr>';
+    }
+  }
+  h += '</table>';
+  $('kmWrap').innerHTML = h;
+  const nKeys = Object.keys(state.keys).length;
+  $('kmStat').textContent = nKeys + ' 个键 · ' + state.cols.length + ' 列 × ' + state.rows.filter(p => p >= 0).length + ' 行';
+  $('legend').innerHTML = [['std','普通键'],['mod','修饰键'],['mmk','多媒体'],['light','灯光'],['mode','模式 / 连接'],['func','功能']]
+    .map(([c, t]) => '<span><i class="sw" style="background:var(--k-' + c + ');border-color:var(--k-' + c + '-b)"></i>' + t + '</span>').join('') +
+    '<span>角标 = 特殊键位置</span><span>右下圆点 = 和工程原键表不同</span>' + (ui.view === 'slot' ? '<span>红框 = 没有物理按键</span>' : '');
+}
+
+function pickerOptions(cur){
+  const k = parseKey(cur);
+  const selv = k.kind === 'none' ? 'none' : k.kind === 'std' ? 'std:' + k.code : k.kind === 'mod' ? 'mod' : k.kind === 'mmk' ? 'mmk:' + k.name :
+    k.kind === 'sp' ? 'sp:' + k.code : k.kind === 'sys' ? 'sys:' + k.code : 'raw';
+  const o = (v, t) => '<option value="' + esc(v) + '"' + (v === selv ? ' selected' : '') + '>' + esc(t) + '</option>';
+  let h = o('none', '（无 / 不输出）') + o('mod', '只有修饰键（在下面勾选）');
+  const groups = [
+    ['字母', n => /^[A-Z]$/.test(n)], ['数字', n => /^\d$/.test(n)], ['功能键 F1-F24', n => /^F\d+$/.test(n)],
+    ['编辑和方向', n => ['RETURN','ESCAPE','BACKSPACE','TAB','SPACE','CAPITAL','SNAPSHOT','SCROLL','PAUSE','INSERT','HOME','PAGEUP','DELETE','END','PAGEDOWN','RIGHT','LEFT','DOWN','UP','APP'].includes(n)],
+    ['符号', n => ['SUBTRACT','ADD','SQUARE_BRACKET_LEFT','SQUARE_BRACKET_RIGHT','BACKSLASH','EUROPE1','SEMICOLON','QUOTATION_SIGN','WAVE','COMMA','FULLSTOP','SLASH','QUROPE2'].includes(n)],
+    ['小键盘', n => /^NUM/.test(n)], ['其他标准键', () => true]];
+  const done = new Set();
+  for (const [g, f] of groups){
+    const items = STD.filter(([n]) => !STD_SKIP.has(n) && !done.has(n) && f(n.replace(/^iSTD_/, '')));
+    if (!items.length) continue;
+    h += '<optgroup label="' + g + '">' + items.map(([n, v]) => { done.add(n); return o('std:' + n, stdShort(n) + (stdShort(n) !== n.slice(5) ? '  (' + n.slice(5) + ')' : '')); }).join('') + '</optgroup>';
+  }
+  h += '<optgroup label="多媒体">' + DATA.mmk.map(n => o('mmk:' + n, (MMK_LABEL[n] || n) + '  (' + n + ')')).join('') + '</optgroup>';
+  for (const [g, t] of [['light','灯光（需要 BOARD_LIGHT_KEYS）'],['mode','模式 / 连接'],['func','功能']])
+    h += '<optgroup label="' + t + '">' + SPECIAL.filter(x => x[2] === g).map(x => o('sp:' + x[0], x[1] + (x[3] ? '' : '（未实现）'))).join('') + '</optgroup>';
+  h += '<optgroup label="系统">' + SYS.map(([c, t]) => o('sys:' + c, t)).join('') + '</optgroup>';
+  if (selv === 'raw') h += o('raw', '无法识别：' + cur.join(', '));
+  return h;
+}
+function layerEditor(L, s){
+  const e = state[L][s], k = parseKey(e), name = L === 'win' ? '基础层' : 'Fn 层';
+  const mods = (k.kind === 'std' || k.kind === 'mod') ? k.mods : [];
+  const side = mods.some(m => m.startsWith('iRIGHT')) ? 'RIGHT' : 'LEFT';
+  const showMods = k.kind === 'std' || k.kind === 'mod';
+  const orig = ORIG[L][s], now = e.join('|').replace(/\s/g,'');
+  return '<div class="layer" data-layer="' + L + '">' +
+    '<h3><span>' + name + '：' + esc(keyLabel(e) || '无') + '</span>' +
+    '<span class="row2">' + (L === 'fn' ? '<button class="btn sm" data-act="same">同基础层</button>' : '') +
+    '<button class="btn sm' + (ui.capture === L ? ' on capture' : '') + '" data-act="cap">' + (ui.capture === L ? '请按键…' : '按键录入') + '</button></span></h3>' +
+    '<div class="row2"><input type="search" placeholder="搜索键名" data-act="q" aria-label="搜索' + name + '键码"><select data-act="pick" aria-label="' + name + '键码">' + pickerOptions(e) + '</select></div>' +
+    (showMods ? '<div class="mods"><span class="small muted">修饰键</span>' + MODS.map(([m, t]) => '<label><input type="checkbox" data-mod="' + m + '"' + (mods.some(x => x.endsWith('_' + m)) ? ' checked' : '') + '>' + t + '</label>').join('') +
+      '<select data-act="side" aria-label="修饰键左右"><option value="LEFT"' + (side === 'LEFT' ? ' selected' : '') + '>左侧</option><option value="RIGHT"' + (side === 'RIGHT' ? ' selected' : '') + '>右侧</option></select></div>' : '') +
+    '<div class="cur">' + esc(e[0] + ', ' + e[1]) + (now !== orig ? '<br>原来：' + esc(DATA[L][s].join(', ')) : '') + '</div></div>';
+}
+function renderInspector(){
+  const el = $('insp'), sel = ui.sel;
+  if (!sel){ el.innerHTML = '<p class="note">在键位图上点一个键。</p>'; return; }
+  let s, posList, head;
+  if (sel.slot != null){
+    s = sel.slot; posList = physOfSlot(s);
+    head = '<div class="insp-h"><b>' + slotName(s) + '</b><span class="small muted">键表第 ' + s + ' 项</span></div>' +
+      '<div class="small">' + (posList.length ? '物理按键：' + posList.map(p => '<a href="#" data-goto="' + esc(p) + '">' + esc(posText(p)) + '</a>').join('、') : '<span style="color:var(--err)">没有物理按键接到这里，按不到。</span>') + '</div>';
+  } else {
+    const col = colByName(sel.c), pos = sel.c + ',' + sel.r; s = state.keys[pos];
+    const rp = state.rows[sel.r];
+    head = '<div class="insp-h"><b>' + esc(sel.c) + ' R' + sel.r + '</b><span class="small muted">' +
+      (col ? (col.pin != null ? '列 ' + pinName(col.pin) + ' 直连' : col.ext != null ? '扩展列第 ' + (col.ext + 1) + ' 步（' + EXT_ORDER[col.ext] + '）' : '列没接引脚') : '列已删除') +
+      ' · 行 ' + (rp >= 0 ? pinName(rp) : '没接') + '</span></div>';
+    if (s == null){
+      el.innerHTML = head + '<p class="note" style="margin:0">这个位置没有按键（电路上没有开关，或者原来的固件把它丢掉了）。</p>' +
+        '<button class="btn primary" data-act="addkey">在这里加一个按键</button>';
+      return;
+    }
+    posList = physOfSlot(s);
+  }
+  const slotOpts = (() => {
+    const src = slotSources(); let h = '';
+    for (let t = 0; t < SLOT_NUM; t++){
+      const others = src[t].filter(p => !(sel.c && p === sel.c + ',' + sel.r));
+      h += '<option value="' + t + '"' + (t === s ? ' selected' : '') + '>' + slotName(t) + (t === s ? '  · 当前' + (others.length ? '，和 ' + others.map(posText).join('、') + ' 共用' : '') : others.length ? '  · 已被 ' + others.map(posText).join('、') + ' 占用' : '  · 空') + '</option>';
+    }
+    return h;
+  })();
+  const roles = rolesAt(s);
+  el.innerHTML = head +
+    (sel.slot == null ? '<label class="field"><span>键表位置（键码写在键表的这一项）</span><select data-act="slot">' + slotOpts + '</select></label>' +
+      (posList.length > 1 ? '<p class="note" style="margin:0">和 ' + posList.filter(p => p !== sel.c + ',' + sel.r).map(posText).join('、') + ' 共用这一项。</p>' : '') : '') +
+    layerEditor('win', s) + layerEditor('fn', s) +
+    '<div class="field"><span>特殊键位置</span><div class="chips">' + (roles.length ? roles.map(R => '<span class="chip">' + esc(R.grp + ' · ' + R.name) + '</span>').join('') : '<span class="note">无</span>') + '</div></div>' +
+    (sel.slot == null ? '<div class="row2"><button class="btn" data-act="delkey">删掉这个键</button></div>' : '');
+}
+
+function renderProblems(){
+  const P = problems();
+  const order = {err:0, warn:1, info:2};
+  P.sort((a, b) => order[a.lvl] - order[b.lvl]);
+  const html = P.length ? P.map((p, i) => '<li class="' + p.lvl + (p.sel ? ' click' : '') + '" data-i="' + i + '">' + esc(p.msg) +
+    (p.fix ? '<button class="btn sm fix" data-fix="' + i + '">改到 ' + slotName(p.fix.slot) + '</button>' : '') + '</li>').join('')
+    : '<li class="none">没有问题</li>';
+  $('probs').innerHTML = html; $('probs2').innerHTML = html;
+  const ne = P.filter(p => p.lvl === 'err').length, nw = P.filter(p => p.lvl === 'warn').length;
+  const b = $('probBadge'); b.textContent = ne || nw || 0; b.className = 'badge ' + (ne ? 'err' : nw ? 'warn' : 'ok');
+  renderProblems.list = P;
+}
+
+function pinOptions(cur, allowNone, noneText){
+  let h = allowNone ? '<option value="-1"' + (!(cur >= 0) ? ' selected' : '') + '>' + (noneText || '不用') + '</option>' : '';
+  for (const p of PINS) h += '<option value="' + p + '"' + (p === cur ? ' selected' : '') + '>' + pinName(p) + (BOARD_USE[p] ? '（板上：' + BOARD_USE[p] + '）' : '') + '</option>';
+  return h;
+}
+function renderHW(){
+  const {raw} = scanOrder();
+  const rawIdx = c => raw.indexOf(c);
+  let h = '<tr><th>列名</th><th>接法</th><th>扫描顺序</th><th>键数</th><th></th></tr>';
+  state.cols.forEach((c, i) => {
+    const n = Object.keys(state.keys).filter(p => p.split(',')[0] === c.name).length;
+    const v = c.pin != null ? 'p' + c.pin : c.ext != null ? 'e' + c.ext : 'x';
+    let opts = '<option value="x"' + (v === 'x' ? ' selected' : '') + '>不用（列保留，键扫不到）</option><optgroup label="GPIO 直连">';
+    for (const p of PINS) opts += '<option value="p' + p + '"' + (v === 'p' + p ? ' selected' : '') + '>' + pinName(p) + (BOARD_USE[p] ? '（板上：' + BOARD_USE[p] + '）' : '') + '</option>';
+    opts += '</optgroup><optgroup label="扩展列（由 PA5 控制）">';
+    EXT_ORDER.forEach((nm, k) => { opts += '<option value="e' + k + '"' + (v === 'e' + k ? ' selected' : '') + '>第 ' + (k + 1) + ' 步：' + nm + '</option>'; });
+    opts += '</optgroup>';
+    const led = ['num','caps','low'].filter(id => c.pin != null && state.led[id].pin === c.pin).map(id => ({num:'Num',caps:'Caps',low:'低电'}[id]));
+    h += '<tr data-i="' + i + '"><td><input type="text" value="' + esc(c.name) + '" data-act="cname" style="width:64px" aria-label="列名"></td>' +
+      '<td><select data-act="csrc" aria-label="' + esc(c.name) + ' 接法">' + opts + '</select>' + (led.length ? ' <span class="small muted">和 ' + led.join('、') + ' 灯复用</span>' : '') + '</td>' +
+      '<td class="mono">' + (rawIdx(c) >= 0 ? rawIdx(c) : '—') + '</td><td class="mono">' + n + '</td>' +
+      '<td><button class="btn sm" data-act="cup" ' + (i ? '' : 'disabled') + ' aria-label="上移">↑</button> <button class="btn sm" data-act="cdel">删除</button></td></tr>';
+  });
+  $('colTbl').innerHTML = h;
+  $('exPin').innerHTML = pinOptions(state.exPin, true, '没有（不用扩展列）');
+  let r = '<tr><th>行</th><th>引脚</th></tr>';
+  state.rows.forEach((p, i) => { r += '<tr><td class="mono">R' + i + '</td><td><select data-row="' + i + '" aria-label="R' + i + ' 引脚">' + pinOptions(p, true) + '</select></td></tr>'; });
+  $('rowTbl').innerHTML = r;
+  const lv = (v, a, b) => '<select data-act="lvl" aria-label="点亮电平"><option value="0"' + (v ? '' : ' selected') + '>' + a + '</option><option value="1"' + (v ? ' selected' : '') + '>' + b + '</option></select>';
+  let l = '<tr><th>灯</th><th>引脚</th><th>点亮电平</th><th></th></tr>';
+  l += '<tr data-led="vdd"><td>LED 供电</td><td><select data-act="lpin" aria-label="LED 供电脚">' + pinOptions(state.led.vdd, true, '没有（阳极直接接电源）') + '</select></td><td>' + lv(state.led.vddOn, '低电平供电', '高电平供电') + '</td><td class="small muted">扫描时关掉</td></tr>';
+  for (const [id, nm, use] of [['num','Num Lock','蓝牙 1 提示'],['caps','Caps Lock','蓝牙 2 提示'],['low','低电','2.4G 提示']]){
+    const L = state.led[id], col = state.cols.find(c => c.pin != null && c.pin === L.pin);
+    l += '<tr data-led="' + id + '"><td>' + nm + '</td><td><select data-act="lpin" aria-label="' + nm + ' 灯引脚">' + pinOptions(L.pin, true, '没有') + '</select></td><td>' + lv(L.on, '低电平点亮', '高电平点亮') + '</td><td class="small muted">' + (col ? '和列 ' + esc(col.name) + ' 复用' : L.pin >= 0 ? '独立引脚' : '') + ' · ' + use + '</td></tr>';
+  }
+  $('ledTbl').innerHTML = l;
+}
+
+function renderRoles(){
+  const src = slotSources();
+  let h = '<tr><th>用途</th><th>位置</th><th>物理按键</th><th>基础层 / Fn 层</th><th>原来的宏</th><th></th></tr>';
+  let g = '';
+  for (const R of ROLES){
+    if (R.grp !== g){ g = R.grp; h += '<tr><th colspan="6" style="background:none;color:var(--ink);font-size:12.5px;padding-top:12px">' + esc(g) + '</th></tr>'; }
+    const s = state.roles[R.id], ok = s != null && s >= 0;
+    const match = ok && R.expect.some(e => [keyCode(state.win[s]), keyCode(state.fn[s])].includes(e));
+    h += '<tr data-role="' + R.id + '"' + (ui.pick === R.id ? ' class="hl"' : '') + '><td>' + esc(R.name) + '</td>' +
+      '<td class="mono">' + (ok ? slotName(s) : '—') + '</td>' +
+      '<td class="mono">' + (ok && src[s].length ? src[s].map(posText).join('、') : (ok ? '<span style="color:var(--warn)">没有</span>' : '')) + '</td>' +
+      '<td>' + (ok ? esc((keyLabel(state.win[s]) || '无') + ' / ' + (keyLabel(state.fn[s]) || '无')) + (match ? '' : ' <span style="color:var(--warn)">≠ ' + esc(keyLabelOf(R.expect[0])) + '</span>') : '') + '</td>' +
+      '<td class="mono small muted">' + esc(R.old) + '</td>' +
+      '<td style="white-space:nowrap"><button class="btn sm" data-act="rpick">' + (ui.pick === R.id ? '取消点选' : '点选') + '</button> ' +
+      '<button class="btn sm" data-act="rauto">自动</button> <button class="btn sm" data-act="rclr">清除</button></td></tr>';
+  }
+  $('roleTbl').innerHTML = h;
+}
+
+/* ============================================================================
+ * 代码生成
+ * ========================================================================== */
+const hex2 = v => '0x' + v.toString(16).toUpperCase().padStart(2, '0');
+const hex8 = v => '0x' + (v >>> 0).toString(16).toUpperCase().padStart(8, '0') + 'u';
+const pad = (s, n) => s + ' '.repeat(Math.max(1, n - s.length));
+function genTable(L){
+  const name = L === 'win' ? 'matrixkey_win_tbl' : 'matrixkey_win_fn_tbl';
+  const guard = L === 'win' ? '_MATRIX_KEY_WIN_TBL_' : '_MATRIX_KEY_WIN_FN_TBL_';
+  const src = slotSources();
+  let o = '/*******************************************************************************\n' +
+    '* 文件名称: matrix_key_tbl_win' + (L === 'fn' ? '_fn' : '') + '.h\n' +
+    '* 文件描述: ' + (L === 'win' ? '基础层' : 'Fn 层（按住 Fn 时）') + '键表，由 tools/om62xx-keymap 矩阵表配置器生成\n' +
+    '*\n' +
+    '* 每个键 2 字节：键码, 类型。顺序 C3..C18 × R0..R7（C18 只有 R0-R3），共 124 个，\n' +
+    '* 第 n 个键对应 matrix_status[n/8+3] 的第 n%8 位。物理按键和键表位置的对应关系见 matrix_cfg.h。\n' +
+    '* 注意：键表存在 Flash 里，烧录后长按 Fn+Esc 2 秒恢复出厂，新键表才生效。\n' +
+    '*******************************************************************************/\n' +
+    '#ifndef ' + guard + '\n#define ' + guard + '\n#include "key_code_define.h"\n\n' +
+    'unsigned char           const   ' + name + '[] =\n{\n';
+  for (let s = 0; s < SLOT_NUM; s++){
+    if (!(s & 7)) o += '// C' + ((s >> 3) + 3) + '\n';
+    const e = state[L][s];
+    const a = '    ' + pad(e[0] + ',', 20), b = pad(e[1] + ',', 40);
+    const cm = slotName(s) + (src[s].length ? (src[s].length === 1 && src[s][0] === 'C' + ((s >> 3) + 3) + ',' + (s & 7) ? '' : ' ← ' + src[s].map(posText).join('、')) : '  没有物理按键');
+    o += a + b + '// ' + cm + '\n';
+  }
+  o += '};\n\n#endif\n';
+  return o;
+}
+function rowGather(){
+  // 行线 R(i) 的电平搬到第 i 位：把引脚号和行号都连续的段合并成一次移位
+  const runs = [];
+  state.rows.forEach((p, r) => {
+    if (!(p >= 0)) return;
+    const last = runs[runs.length - 1];
+    if (last && last.r + last.n === r && last.p + last.n === p) last.n++;
+    else runs.push({r, p, n:1});
+  });
+  if (!runs.length) return '0u';
+  return '(' + runs.map(({r, p, n}) => {
+    const mask = hex2(((1 << n) - 1) << r) + 'u', sh = p - r;
+    return '(' + (sh > 0 ? '((d) >> ' + sh + ')' : sh < 0 ? '((d) << ' + (-sh) + ')' : '(d)') + ' & ' + mask + ')';
+  }).join(' | ') + ')';
+}
+function genCfg(){
+  const S = state, {direct, exNum, raw} = scanOrder(), src = slotSources();
+  const rowMask = S.rows.reduce((m, p) => p >= 0 ? m | (1 << p) : m, 0) >>> 0;
+  const dirMask = direct.reduce((m, c) => m | (1 << c.pin), 0) >>> 0;
+  let o = '/**\n * @file    matrix_cfg.h\n * @brief   键盘矩阵硬件、物理按键到键表的对应关系、按位置读取的特殊键\n *\n' +
+    ' * 由 tools/om62xx-keymap 矩阵表配置器生成，不要手改：改了用配置器重新生成。\n' +
+    ' * 本文件只放宏定义，periph/matrix_key.c 按这里的配置扫描：\n' +
+    ' *   1. 直连列：依次把 MATRIX_DIRECT_PINS 里的脚拉低，读一次行线，存进 matrix_raw[]\n' +
+    ' *   2. 扩展列：每翻转一次 KEY_EX（MATRIX_EX_PIN）换到下一列，共读 MATRIX_EX_NUM 次，接着存\n' +
+    ' *   3. 用 MATRIX_SLOT_MAP 把每个物理位置换成键表位置，写进 matrix_status[3..18] 给键表解码\n' +
+    ' * 键表位置 s 就是键表的第 s 项，对应 C(s/8+3) R(s%8)。\n */\n' +
+    '#ifndef __MATRIX_CFG_H\n#define __MATRIX_CFG_H\n\n';
+  o += '/* ---- 行线（按下读到低电平）---- */\n';
+  S.rows.forEach((p, r) => { o += '/* R' + r + ' = ' + (p >= 0 ? pinName(p) : '不用') + ' */\n'; });
+  o += '#define MATRIX_ROW_MASK         ' + hex8(rowMask) + '\n';
+  o += '/* 从 ~GPIO0->DATA 取出各行，第 n 位 = 第 n 行 */\n#define MATRIX_ROW_GATHER(d)    ' + rowGather() + '\n\n';
+  o += '/* ---- 直连列线（扫描时拉低）---- */\n#define MATRIX_DIRECT_NUM       ' + direct.length + '\n';
+  o += '#define MATRIX_DIRECT_PINS      ' + (direct.length ? '{' + direct.map(c => String(c.pin)).join(', ') + '}   /* ' + direct.map(c => c.name + ' ' + pinName(c.pin)).join(', ') + ' */' : '{0}     /* 没有直连列，占位 */') + '\n';
+  o += '#define MATRIX_DIRECT_MASK      ' + hex8(dirMask) + '\n\n';
+  o += '/* ---- 扩展列（由扩展芯片 PA5 控制，翻转 KEY_EX 换到下一列）---- */\n';
+  o += '#define MATRIX_EX_NUM           ' + exNum + '\n';
+  o += '#define MATRIX_EX_PIN           ' + (exNum && S.exPin >= 0 ? S.exPin + '       /* ' + pinName(S.exPin) + ' */' : '(-1)') + '\n';
+  if (exNum) o += '/* 翻转顺序：' + Array.from({length:exNum}, (_, i) => { const c = raw[direct.length + i]; return EXT_ORDER[i] + '=' + (c ? c.name : '空'); }).join(' ') + ' */\n';
+  o += '#define MATRIX_RAW_NUM          ' + raw.length + '       /* 直连列 + 扩展列 */\n\n';
+  o += '/* ---- 物理位置 -> 键表位置 ----\n * 下标 = 扫描顺序 i * 8 + 行号，值 = 键表位置，0xFF = 这个位置没有按键 */\n';
+  o += '#define MATRIX_SLOT_NONE        0xFF\n#define MATRIX_SLOT_MAP         { \\\n';
+  raw.forEach((c, i) => {
+    const vals = [];
+    for (let r = 0; r < 8; r++){ const s = c ? S.keys[c.name + ',' + r] : undefined; vals.push(s != null && s >= 0 && s < SLOT_NUM && S.rows[r] >= 0 ? hex2(s) : '0xFF'); }
+    const notes = [];
+    for (let r = 0; r < 8; r++){ const s = c ? S.keys[c.name + ',' + r] : undefined; if (s != null && s !== slotOf(+(c.name.replace(/^C/, '')), r)) notes.push('R' + r + '→' + slotName(s).replace(' ', '')); }
+    o += '    ' + vals.join(',') + (i < raw.length - 1 ? ',' : ' ') + ' /* ' + pad(String(i), 2) + (c ? pad(c.name, 4) + (c.pin != null ? pinName(c.pin) : EXT_ORDER[c.ext]) : '扩展列空步') + (notes.length ? '  ' + notes.join(' ') : '') + ' */ \\\n';
+  });
+  o += '}\n\n';
+  o += '/* ---- 按位置读取的特殊键（键表位置）----\n * 没有指定的设成 MATRIX_POS_NONE：对应 matrix_status[19]，永远不会按下 */\n';
+  o += '#define MATRIX_SLOT(c, r)       (((c) - 3) * 8 + (r))\n#define MATRIX_POS_NONE         128\n';
+  for (const R of ROLES){
+    const s = S.roles[R.id], ok = s != null && s >= 0;
+    const at = ok ? src[s].map(posText).join('、') : '';
+    o += pad('#define KEYPOS_' + R.id, 32) + pad(ok ? 'MATRIX_SLOT(' + ((s >> 3) + 3) + ', ' + (s & 7) + ')' : 'MATRIX_POS_NONE', 22) +
+      '/* ' + R.grp + '：' + R.name + (ok ? '，' + (at ? '物理 ' + at + '，' : '') + '现在是 ' + (keyLabel(S.win[s]) || '无') : '') + ' */\n';
+  }
+  o += '\n/* ---- 指示灯 ----\n * LED_x_ON / OFF：点亮 / 熄灭；熄灭时放开引脚（和列线复用时扫描要用）\n * 和列线复用的灯靠 LED 供电脚开关：扫描前关掉供电，扫完再点灯 */\n';
+  const drive = (p, hi) => '{OM_GPIO0->' + (hi ? 'DATAOUTSET' : 'DATAOUTCLR') + ' = (1u<<' + p + '); OM_GPIO0->OUTENSET = (1u<<' + p + ');}';
+  const release = (p, hi) => '{OM_GPIO0->' + (hi ? 'DATAOUTSET' : 'DATAOUTCLR') + ' = (1u<<' + p + '); OM_GPIO0->OUTENCLR = (1u<<' + p + ');}';
+  if (S.led.vdd >= 0){
+    o += '#define MATRIX_LED_VDD_EN           ' + drive(S.led.vdd, S.led.vddOn) + '   /* ' + pinName(S.led.vdd) + ' */\n';
+    o += '#define MATRIX_LED_VDD_DIS          ' + drive(S.led.vdd, !S.led.vddOn) + '\n';
+  } else o += '#define MATRIX_LED_VDD_EN           {}      /* 没有 LED 供电脚 */\n#define MATRIX_LED_VDD_DIS          {}\n';
+  for (const [id, nm] of [['num','NUM'],['caps','CAPS'],['low','LOW']]){
+    const L = S.led[id];
+    if (L.pin >= 0){
+      const col = S.cols.find(c => c.pin != null && c.pin === L.pin);
+      o += pad('#define MATRIX_LED_' + nm + '_ON', 36) + drive(L.pin, L.on) + '   /* ' + pinName(L.pin) + (col ? '，和列 ' + col.name + ' 复用' : '') + ' */\n';
+      o += pad('#define MATRIX_LED_' + nm + '_OFF', 36) + release(L.pin, !L.on) + '\n';
+    } else o += pad('#define MATRIX_LED_' + nm + '_ON', 36) + '{}      /* 没有这个灯 */\n' + pad('#define MATRIX_LED_' + nm + '_OFF', 36) + '{}\n';
+  }
+  o += '\n#endif /* __MATRIX_CFG_H */\n';
+  return o;
+}
+function highlight(code){
+  return esc(code).split('\n').map(line => {
+    const m = /^(.*?)(\/\/.*|\/\*.*|^\s*\*.*)$/.exec(line);
+    let body = m ? m[1] : line, cm = m ? m[2] : '';
+    body = body.replace(/^(\s*#\w+)/, '<span class="pp">$1</span>').replace(/\b(0x[0-9A-Fa-f]+u?|\d+u?)\b/g, '<span class="num">$1</span>')
+      .replace(/\b(unsigned|char|const)\b/g, '<span class="kw">$1</span>');
+    return body + (cm ? '<span class="cm">' + cm + '</span>' : '');
+  }).join('\n');
+}
+const FILES = {cfg:['matrix_cfg.h', genCfg], win:['matrix_key_tbl_win.h', () => genTable('win')], fn:['matrix_key_tbl_win_fn.h', () => genTable('fn')]};
+function renderCode(){
+  document.querySelectorAll('#fileBtns .btn').forEach(b => b.setAttribute('aria-pressed', b.dataset.file === ui.file));
+  $('codeOut').innerHTML = highlight(FILES[ui.file][1]());
+}
+
+function render(){
+  document.querySelectorAll('#segLayer button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === ui.layer));
+  document.querySelectorAll('#segView button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === ui.view));
+  $('pickHint').hidden = !ui.pick;
+  if (ui.pick){ const R = ROLES.find(x => x.id === ui.pick); $('pickText').textContent = '点选「' + R.grp + ' · ' + R.name + '」的位置：在键位图上点一个键'; }
+  renderKeymap(); renderInspector(); renderProblems(); renderHW(); renderRoles();
+  if (ui.tab === 'code') renderCode();
+}
+
+/* ============================================================================
+ * 交互
+ * ========================================================================== */
+function curSlot(){ const s = ui.sel; if (!s) return null; return s.slot != null ? s.slot : state.keys[s.c + ',' + s.r]; }
+function setTab(t){
+  ui.tab = t;
+  for (const id of ['keys','hw','roles','code']){ $('tab-' + id).setAttribute('aria-selected', id === t); $('pg-' + id).hidden = id !== t; }
+  if (t === 'code') renderCode();
+}
+document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => setTab(b.id.slice(4))));
+$('segLayer').addEventListener('click', e => { const b = e.target.closest('button'); if (b){ ui.layer = b.dataset.v; render(); } });
+$('segView').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return; ui.view = b.dataset.v;
+  const s = curSlot();
+  if (ui.view === 'slot') ui.sel = s != null ? {slot:s} : null;
+  else if (ui.sel && ui.sel.slot != null){ const p = physOfSlot(ui.sel.slot)[0]; ui.sel = p ? {c:p.split(',')[0], r:+p.split(',')[1]} : null; }
+  render();
+});
+function cellClick(el){
+  let s, sel;
+  if (el.dataset.slot != null){ s = +el.dataset.slot; sel = {slot:s}; }
+  else { sel = {c:el.dataset.c, r:+el.dataset.r}; s = state.keys[sel.c + ',' + sel.r]; }
+  if (ui.pick){
+    if (s == null) return toast('这个位置没有按键，先加一个按键再指定');
+    const id = ui.pick; ui.pick = null;
+    commit(() => { state.roles[id] = s; });
+    return toast('已指定到 ' + slotName(s));
+  }
+  ui.sel = sel; ui.capture = null; render();
+}
+$('kmWrap').addEventListener('click', e => { const el = e.target.closest('.kc'); if (el && !el.classList.contains('na')) cellClick(el); });
+$('kmWrap').addEventListener('keydown', e => {
+  const el = e.target.closest('.kc'); if (!el) return;
+  if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); cellClick(el); return; }
+  const dirs = {ArrowLeft:[-1,0], ArrowRight:[1,0], ArrowUp:[0,-1], ArrowDown:[0,1]};
+  if (!dirs[e.key] || ui.capture) return;
+  e.preventDefault();
+  const cells = [...$('kmWrap').querySelectorAll('tr')].slice(1).map(tr => [...tr.querySelectorAll('.kc')]);
+  let ri = cells.findIndex(row => row.includes(el)), ci = cells[ri].indexOf(el);
+  const [dx, dy] = dirs[e.key];
+  ri = Math.max(0, Math.min(cells.length - 1, ri + dy)); ci = Math.max(0, Math.min(cells[ri].length - 1, ci + dx));
+  const t = cells[ri][ci]; if (t && !t.classList.contains('na')){ cellClick(t); const n = $('kmWrap').querySelectorAll('tr')[ri + 1].querySelectorAll('.kc')[ci]; n && n.focus(); }
+});
+$('pickCancel').addEventListener('click', () => { ui.pick = null; render(); });
+
+function setKey(L, s, k){ commit(() => { state[L][s] = makeKey(k); }); }
+$('insp').addEventListener('change', e => {
+  const t = e.target, s = curSlot();
+  if (t.dataset.act === 'slot'){
+    const pos = ui.sel.c + ',' + ui.sel.r, ns = +t.value;
+    return commit(() => { state.keys[pos] = ns; });
+  }
+  const lay = t.closest('.layer'); if (!lay || s == null) return;
+  const L = lay.dataset.layer, k = parseKey(state[L][s]);
+  if (t.dataset.act === 'pick'){
+    const v = t.value, [kind, code] = v.includes(':') ? [v.slice(0, v.indexOf(':')), v.slice(v.indexOf(':') + 1)] : [v, ''];
+    const keepMods = (k.kind === 'std' || k.kind === 'mod') ? k.mods : [];
+    if (kind === 'none') setKey(L, s, {kind:'none'});
+    else if (kind === 'mod') setKey(L, s, {kind:'mod', code:'iSTD_NULL', mods: keepMods.length ? keepMods : ['iLEFT_CTRL']});
+    else if (kind === 'std') setKey(L, s, {kind:'std', code, mods:keepMods});
+    else if (kind === 'mmk') setKey(L, s, {kind:'mmk', name:code});
+    else if (kind === 'sp') setKey(L, s, {kind:'sp', code});
+    else if (kind === 'sys') setKey(L, s, {kind:'sys', code});
+  } else if (t.dataset.mod || t.dataset.act === 'side'){
+    const side = lay.querySelector('[data-act=side]').value;
+    const mods = [...lay.querySelectorAll('[data-mod]')].filter(x => x.checked).map(x => 'i' + side + '_' + x.dataset.mod);
+    const code = k.code || 'iSTD_NULL';
+    if (code === 'iSTD_NULL' && !mods.length) setKey(L, s, {kind:'none'});
+    else setKey(L, s, {kind: code === 'iSTD_NULL' ? 'mod' : 'std', code, mods});
+  }
+});
+$('insp').addEventListener('input', e => {
+  const t = e.target; if (t.dataset.act !== 'q') return;
+  const q = t.value.trim().toLowerCase(), sel = t.parentElement.querySelector('select');
+  let first = null;
+  sel.querySelectorAll('option').forEach(o => {
+    const hit = !q || o.textContent.toLowerCase().includes(q) || o.value.toLowerCase().includes(q);
+    o.hidden = !hit; if (hit && !first && q) first = o;
+  });
+  sel.querySelectorAll('optgroup').forEach(g => { g.hidden = ![...g.children].some(o => !o.hidden); });
+  if (first){ sel.size = 8; } else sel.size = 0;
+});
+$('insp').addEventListener('keydown', e => {
+  const t = e.target; if (t.dataset.act !== 'q' || e.key !== 'Enter') return;
+  const sel = t.parentElement.querySelector('select'), o = [...sel.options].find(x => !x.hidden && x.value !== 'none');
+  if (o){ sel.value = o.value; sel.size = 0; sel.dispatchEvent(new Event('change', {bubbles:true})); }
+});
+$('insp').addEventListener('click', e => {
+  const b = e.target.closest('[data-act],[data-goto]'); if (!b) return;
+  if (b.dataset.goto){ e.preventDefault(); const [c, r] = b.dataset.goto.split(','); ui.view = 'phys'; ui.sel = {c, r:+r}; return render(); }
+  const s = curSlot(), lay = b.closest('.layer');
+  switch (b.dataset.act){
+    case 'addkey': {
+      const pos = ui.sel.c + ',' + ui.sel.r, m = /^C(\d+)$/.exec(ui.sel.c);
+      const ns = freeSlot(m ? slotOf(+m[1], ui.sel.r) : null);
+      if (ns < 0) return toast('键表 124 个位置都用完了');
+      return commit(() => { state.keys[pos] = ns; state.win[ns] = makeKey({kind:'none'}); state.fn[ns] = makeKey({kind:'none'}); });
+    }
+    case 'delkey': {
+      const pos = ui.sel.c + ',' + ui.sel.r;
+      return commit(() => {
+        delete state.keys[pos];
+        if (!physOfSlot(s).length){ state.win[s] = makeKey({kind:'none'}); state.fn[s] = makeKey({kind:'none'}); }
+      });
+    }
+    case 'same': return commit(() => { state.fn[s] = state.win[s].slice(); });
+    case 'cap': { const L = lay.dataset.layer; ui.capture = ui.capture === L ? null : L; ui.capMod = null; return renderInspector(); }
+  }
+});
+// 按键录入：普通键带上当时按住的修饰键（左侧）；单独按一下修饰键 = 只有修饰键
+const CODE_MAP = {Enter:'RETURN',Escape:'ESCAPE',Backspace:'BACKSPACE',Tab:'TAB',Space:'SPACE',Minus:'SUBTRACT',Equal:'ADD',
+  BracketLeft:'SQUARE_BRACKET_LEFT',BracketRight:'SQUARE_BRACKET_RIGHT',Backslash:'BACKSLASH',Semicolon:'SEMICOLON',Quote:'QUOTATION_SIGN',
+  Backquote:'WAVE',Comma:'COMMA',Period:'FULLSTOP',Slash:'SLASH',CapsLock:'CAPITAL',PrintScreen:'SNAPSHOT',ScrollLock:'SCROLL',Pause:'PAUSE',
+  Insert:'INSERT',Home:'HOME',PageUp:'PAGEUP',Delete:'DELETE',End:'END',PageDown:'PAGEDOWN',ArrowRight:'RIGHT',ArrowLeft:'LEFT',ArrowDown:'DOWN',
+  ArrowUp:'UP',NumLock:'NUMLOCK',NumpadDivide:'NUMPAD_DIVIDE',NumpadMultiply:'NUMPAD_MULTIPLY',NumpadSubtract:'NUMPAD_SUBTRACT',NumpadAdd:'NUMPAD_ADD',
+  NumpadEnter:'NUMPAD_ENTER',NumpadDecimal:'NUMPAD_FULLSTOP',NumpadEqual:'NUMPAD_EQUAL_SIGN',ContextMenu:'APP',IntlBackslash:'QUROPE2',
+  IntlRo:'KEYBOARD_RO',IntlYen:'KEYBOARD_YEN',Lang1:'KEYBOARD_LANG1',Lang2:'KEYBOARD_LANG2'};
+const MOD_MAP = {ControlLeft:'iLEFT_CTRL',ShiftLeft:'iLEFT_SHIFT',AltLeft:'iLEFT_ALT',MetaLeft:'iLEFT_GUI',
+  ControlRight:'iRIGHT_CTRL',ShiftRight:'iRIGHT_SHIFT',AltRight:'iRIGHT_ALT',MetaRight:'iRIGHT_GUI'};
+function codeToStd(c){
+  let m;
+  if ((m = /^Key([A-Z])$/.exec(c))) return 'iSTD_' + m[1];
+  if ((m = /^Digit(\d)$/.exec(c))) return 'iSTD_' + m[1];
+  if ((m = /^F(\d+)$/.exec(c)) && +m[1] <= 24) return 'iSTD_F' + m[1];
+  if ((m = /^Numpad(\d)$/.exec(c))) return 'iSTD_NUMPAD' + m[1];
+  return CODE_MAP[c] ? 'iSTD_' + CODE_MAP[c] : null;
+}
+document.addEventListener('keydown', e => {
+  if (ui.capture){
+    e.preventDefault(); e.stopPropagation();
+    const s = curSlot(), L = ui.capture;
+    if (MOD_MAP[e.code]){ ui.capMod = e.code; return; }
+    const code = codeToStd(e.code);
+    if (!code){ toast('不认识这个键：' + e.code); return; }
+    const mods = [];
+    if (e.ctrlKey) mods.push('iLEFT_CTRL'); if (e.shiftKey) mods.push('iLEFT_SHIFT'); if (e.altKey) mods.push('iLEFT_ALT'); if (e.metaKey) mods.push('iLEFT_GUI');
+    ui.capture = null; ui.capMod = null;
+    return setKey(L, s, {kind:'std', code, mods});
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)){ e.preventDefault(); undo(); }
+  if (e.key === 'Escape' && ui.pick){ ui.pick = null; render(); }
+}, true);
+document.addEventListener('keyup', e => {
+  if (ui.capture && ui.capMod === e.code){
+    e.preventDefault();
+    const s = curSlot(), L = ui.capture; ui.capture = null; ui.capMod = null;
+    setKey(L, s, {kind:'mod', code:'iSTD_NULL', mods:[MOD_MAP[e.code]]});
+  }
+}, true);
+
+// 硬件页
+$('colTbl').addEventListener('change', e => {
+  const t = e.target, tr = t.closest('tr'); if (!tr) return;
+  const i = +tr.dataset.i, c = state.cols[i];
+  if (t.dataset.act === 'cname'){
+    const nn = t.value.trim();
+    if (!nn || state.cols.some((x, j) => j !== i && x.name === nn)){ toast('列名不能为空或重复'); return render(); }
+    commit(() => {
+      const old = c.name; c.name = nn;
+      for (const [pos, s] of Object.entries(state.keys)) if (pos.split(',')[0] === old){ delete state.keys[pos]; state.keys[nn + ',' + pos.split(',')[1]] = s; }
+      if (ui.sel && ui.sel.c === old) ui.sel.c = nn;
+    });
+  } else if (t.dataset.act === 'csrc'){
+    const v = t.value;
+    commit(() => {
+      delete c.pin; delete c.ext;
+      if (v[0] === 'p') c.pin = +v.slice(1);
+      else if (v[0] === 'e'){
+        const k = +v.slice(1), other = state.cols.find(x => x !== c && x.ext === k);
+        if (other) delete other.ext;                 // 一个扩展步只能接一列，原来那列变成「不用」
+        c.ext = k;
+      }
+    });
+  }
+});
+$('colTbl').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const i = +b.closest('tr').dataset.i;
+  if (b.dataset.act === 'cup') commit(() => { const [c] = state.cols.splice(i, 1); state.cols.splice(i - 1, 0, c); });
+  if (b.dataset.act === 'cdel'){
+    const c = state.cols[i], n = Object.keys(state.keys).filter(p => p.split(',')[0] === c.name).length;
+    if (n && !confirm('列 ' + c.name + ' 上有 ' + n + ' 个键，删除列会把这些键一起删掉，继续吗？')) return;
+    commit(() => {
+      for (const pos of Object.keys(state.keys)) if (pos.split(',')[0] === c.name) delete state.keys[pos];
+      state.cols.splice(i, 1);
+      if (ui.sel && ui.sel.c === c.name) ui.sel = null;
+    });
+  }
+});
+$('btnAddCol').addEventListener('click', () => {
+  let n = 0; while (state.cols.some(c => c.name === 'C' + n)) n++;
+  commit(() => { state.cols.push({name:'C' + n}); });
+  toast('已加一列 C' + n + '，在表格里选它接哪个脚');
+});
+$('exPin').addEventListener('change', e => commit(() => { state.exPin = +e.target.value; }));
+$('rowTbl').addEventListener('change', e => { const i = +e.target.dataset.row; commit(() => { state.rows[i] = +e.target.value; }); });
+$('ledTbl').addEventListener('change', e => {
+  const t = e.target, id = t.closest('tr').dataset.led;
+  commit(() => {
+    if (id === 'vdd'){ if (t.dataset.act === 'lpin') state.led.vdd = +t.value; else state.led.vddOn = +t.value; }
+    else { if (t.dataset.act === 'lpin') state.led[id].pin = +t.value; else state.led[id].on = +t.value; }
+  });
+});
+
+// 特殊位置页
+function autoRole(R){ return findCode(R.expect); }
+$('roleTbl').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const id = b.closest('tr').dataset.role, R = ROLES.find(x => x.id === id);
+  if (b.dataset.act === 'rpick'){ ui.pick = ui.pick === id ? null : id; if (ui.pick){ setTab('keys'); } render(); }
+  if (b.dataset.act === 'rauto'){
+    const s = autoRole(R);
+    if (s == null) return toast('键表里没有能按到的「' + keyLabelOf(R.expect[0]) + '」');
+    commit(() => { state.roles[id] = s; }); toast(R.name + ' → ' + slotName(s));
+  }
+  if (b.dataset.act === 'rclr') commit(() => { state.roles[id] = -1; });
+});
+$('btnRolesAuto').addEventListener('click', () => {
+  const miss = [];
+  commit(() => { for (const R of ROLES){ const s = autoRole(R); if (s == null) miss.push(R.name); else state.roles[R.id] = s; } });
+  toast(miss.length ? '这些找不到，保持原样：' + miss.join('、') : '全部已按键码定位');
+});
+function onProb(e){
+  const fix = e.target.closest('[data-fix]');
+  const li = e.target.closest('li[data-i]'); if (!li) return;
+  const p = renderProblems.list[+li.dataset.i];
+  if (fix){ e.stopPropagation(); return commit(() => { state.roles[p.fix.role] = p.fix.slot; }); }
+  if (!p || !p.sel) return;
+  if (p.sel.role){ setTab('roles'); return; }
+  setTab('keys');
+  if (p.sel.layer) ui.layer = p.sel.layer;
+  if (p.sel.pos){ const [c, r] = p.sel.pos.split(','); ui.view = 'phys'; ui.sel = {c, r:+r}; }
+  else if (p.sel.slot != null){
+    const ph = physOfSlot(p.sel.slot)[0];
+    if (ph && ui.view === 'phys'){ ui.sel = {c:ph.split(',')[0], r:+ph.split(',')[1]}; } else { ui.view = 'slot'; ui.sel = {slot:p.sel.slot}; }
+  }
+  render();
+}
+$('probs').addEventListener('click', onProb); $('probs2').addEventListener('click', onProb);
+
+// 代码页
+$('fileBtns').addEventListener('click', e => { const b = e.target.closest('[data-file]'); if (b){ ui.file = b.dataset.file; renderCode(); } });
+$('btnCopy').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText(FILES[ui.file][1]()); toast('已复制 ' + FILES[ui.file][0]); }
+  catch(e){ toast('浏览器不允许复制，请用「下载」'); }
+});
+function download(name, text, type){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], {type: type || 'text/plain;charset=utf-8'}));
+  a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+$('btnSave').addEventListener('click', () => download(FILES[ui.file][0], FILES[ui.file][1]()));
+
+// 导入导出
+let dlgMode = null;
+function openDlg(mode, title, note, text){
+  dlgMode = mode; $('dlgTitle').textContent = title; $('dlgNote').innerHTML = note; $('dlgText').value = text || '';
+  $('dlgOk').hidden = mode === 'export'; $('dlgFile').hidden = mode === 'export';
+  $('dlg').showModal();
+}
+$('dlgClose').addEventListener('click', () => $('dlg').close());
+$('dlgFile').addEventListener('click', () => $('dlgFileIn').click());
+$('dlgFileIn').addEventListener('change', e => { const f = e.target.files[0]; if (!f) return; f.text().then(t => { $('dlgText').value = t; }); e.target.value = ''; });
+$('btnExport').addEventListener('click', () => {
+  const t = JSON.stringify(state, null, 1);
+  openDlg('export', '导出配置', '保存成 .json，下次用「导入配置」接着改。', t);
+  download('keymap-config.json', t, 'application/json');
+});
+$('btnImport').addEventListener('click', () => openDlg('json', '导入配置', '粘贴「导出配置」得到的 JSON，或者从文件读取。'));
+$('btnImportH').addEventListener('click', () => openDlg('h', '导入键表 .h', '粘贴 <code>matrix_key_tbl_win.h</code> 或 <code>matrix_key_tbl_win_fn.h</code> 的内容（按数组名自动判断是哪一层）。只替换键码，物理按键和键表位置的对应关系不变。'));
+function parseTableH(text){
+  const t = text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+  const m = /(matrixkey_\w+)\s*\[\s*\]\s*=\s*\{([\s\S]*?)\}\s*;/.exec(t);
+  if (!m) throw new Error('没找到 matrixkey_xxx[] = { ... }; 数组');
+  const L = m[1] === 'matrixkey_win_tbl' ? 'win' : m[1] === 'matrixkey_win_fn_tbl' ? 'fn' : null;
+  if (!L) throw new Error('数组名 ' + m[1] + ' 不是 matrixkey_win_tbl / matrixkey_win_fn_tbl（Mac 键表固件没有用）');
+  const toks = m[2].split(',').map(s => s.trim()).filter(Boolean);
+  if (toks.length !== SLOT_NUM * 2) throw new Error('键表应该有 ' + SLOT_NUM * 2 + ' 个字节，这里有 ' + toks.length + ' 个');
+  const out = [];
+  for (let i = 0; i < SLOT_NUM; i++){
+    const a = toks[2 * i], b = toks[2 * i + 1].replace(/\s/g, '');
+    if (isNaN(evalExpr(a)) || isNaN(evalExpr(b))) throw new Error('第 ' + (i + 1) + ' 个键（' + slotName(i) + '）有不认识的宏：' + a + ', ' + b);
+    out.push([a, b]);
+  }
+  return {L, out};
+}
+$('dlgOk').addEventListener('click', () => {
+  const text = $('dlgText').value;
+  try {
+    if (dlgMode === 'json'){
+      const s = JSON.parse(text);
+      if (!validState(s)) throw new Error('不是这个配置器导出的配置');
+      commit(() => { state = s; }); toast('已导入配置');
+    } else {
+      const {L, out} = parseTableH(text);
+      commit(() => { state[L] = out; }); toast('已导入' + (L === 'win' ? '基础层' : 'Fn 层') + '键表');
+    }
+    $('dlg').close();
+  } catch(err){ alert('导入失败：' + err.message); }
+});
+$('btnPreset').addEventListener('click', () => { commit(() => { state = presetState(); }); toast('已载入 SE73K 默认配置'); });
+$('btnUndo').addEventListener('click', undo);
+
+load();
+render();
+</script>
+</body>
+</html>

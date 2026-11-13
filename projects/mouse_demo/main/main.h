@@ -95,88 +95,49 @@
 //----------------------------------------------
 // 矩阵IO
 //
-#define KEY_R0_PIN              P04
-#define KEY_R1_PIN              P05
-#define KEY_R2_PIN              P06
-#define KEY_R3_PIN              P07
-#define KEY_R4_PIN              P10
-#define KEY_R5_PIN              P11
-#define KEY_R6_PIN              P12
-#define KEY_R7_PIN              P13
-#define MATRIX_RAW              ((~(OM_GPIO0->DATA)>>4)&0xFF)
+// 行线、列线、扩展列、指示灯的引脚都在 config/matrix_cfg.h 里配置（由矩阵表配置器
+// tools/om62xx-keymap 生成），这里只是按配置展开成读写宏，换脚不用改这里。
+//
+#include "matrix_cfg.h"
+
+#define MATRIX_RAW              ((uint8_t)MATRIX_ROW_GATHER(~(OM_GPIO0->DATA)))   // 读行线，按下为 1
 
 #define mDELAY_R                delayus(40)
 #define mDELAY_EX               delayus(40)
-#define mR_OUT_H                //{OM_GPIO0->DATAOUTSET = 0x00000FF0;\
-                                 //OM_GPIO0->OUTENSET = 0x00000FF0;\
-                                 //OM_GPIO0->OUTENCLR = 0x00000FF0;}
 //----------------------------------------------
-// 扩展IO翻转顺序 PA7-PA6-PA4-PA3-PA2-PB0-PB1-PB2-PB3-PB4-PB5-PA0-PA1
+// 扩展列：由扩展芯片 PA5 控制，每翻转一次 KEY_EX 换到下一列（顺序见 matrix_cfg.h）
 //
-#define KEY_C1_PIN              P25
-#define KEY_C2_PIN              P26
-#define KEY_C3_PIN              P27
-#define KEY_C4_PIN              P30
-#define KEY_C5_PIN              P31
-
-#define KEY_C18_PIN             P24
-#define KEY_C19_PIN             P22
-
-#define KEY_EX_LOW              {OM_GPIO0->DATAOUTCLR = (1u<<P32);}
-#define KEY_EX_HIGH             {OM_GPIO0->DATAOUTSET = (1u<<P32);}
-#define KEY_EX_TOGGLE           {OM_GPIO0->DATAOUT   ^= (1u<<P32);}
-
-#define MATRX_C1_LOW            {OM_GPIO0->DATAOUTCLR = (1u<<KEY_C1_PIN); OM_GPIO0->OUTENSET = (1u<<KEY_C1_PIN);}
-#define MATRX_C2_LOW            {OM_GPIO0->DATAOUTCLR = (1u<<KEY_C2_PIN); OM_GPIO0->OUTENSET = (1u<<KEY_C2_PIN);}
-#define MATRX_C3_LOW            {OM_GPIO0->DATAOUTCLR = (1u<<KEY_C3_PIN); OM_GPIO0->OUTENSET = (1u<<KEY_C3_PIN);}
-#define MATRX_C4_LOW            {OM_GPIO0->DATAOUTCLR = (1u<<KEY_C4_PIN); OM_GPIO0->OUTENSET = (1u<<KEY_C4_PIN);}
-#define MATRX_C5_LOW            {OM_GPIO0->DATAOUTCLR = (1u<<KEY_C5_PIN); OM_GPIO0->OUTENSET = (1u<<KEY_C5_PIN);}
-
-#define MATRX_C18_LOW           {OM_GPIO0->DATAOUTCLR = (1u<<KEY_C18_PIN); OM_GPIO0->OUTENSET = (1u<<KEY_C18_PIN);}
-#define MATRX_C19_LOW           {OM_GPIO0->DATAOUTCLR = (1u<<KEY_C19_PIN); OM_GPIO0->OUTENSET = (1u<<KEY_C19_PIN);}
-
-#define MATRX_ALL_LOW           {OM_GPIO0->DATAOUTCLR = ((1u<<KEY_C19_PIN)|(1u<<KEY_C18_PIN)|(1u<<KEY_C5_PIN)|\
-                                                        (1u<<KEY_C1_PIN)|(1u<<KEY_C2_PIN)|(1u<<KEY_C3_PIN)|(1u<<KEY_C4_PIN));\
-                                 OM_GPIO0->OUTENSET = ((1u<<KEY_C19_PIN)|(1u<<KEY_C18_PIN)|(1u<<KEY_C5_PIN)|\
-                                                        (1u<<KEY_C1_PIN)|(1u<<KEY_C2_PIN)|(1u<<KEY_C3_PIN)|(1u<<KEY_C4_PIN));}
-
-#define MATRX_C1_HIGH           {OM_GPIO0->DATAOUTSET = (1u<<KEY_C1_PIN); OM_GPIO0->OUTENCLR = (1u<<KEY_C1_PIN);}
-#define MATRX_C2_HIGH           {OM_GPIO0->DATAOUTSET = (1u<<KEY_C2_PIN); OM_GPIO0->OUTENCLR = (1u<<KEY_C2_PIN);}
-#define MATRX_C3_HIGH           {OM_GPIO0->DATAOUTSET = (1u<<KEY_C3_PIN); OM_GPIO0->OUTENCLR = (1u<<KEY_C3_PIN);}
-#define MATRX_C4_HIGH           {OM_GPIO0->DATAOUTSET = (1u<<KEY_C4_PIN); OM_GPIO0->OUTENCLR = (1u<<KEY_C4_PIN);}
-#define MATRX_C5_HIGH           {OM_GPIO0->DATAOUTSET = (1u<<KEY_C5_PIN); OM_GPIO0->OUTENCLR = (1u<<KEY_C5_PIN);}
-
-#define MATRX_C18_HIGH          {OM_GPIO0->DATAOUTSET = (1u<<KEY_C18_PIN); OM_GPIO0->OUTENCLR = (1u<<KEY_C18_PIN);}
-#define MATRX_C19_HIGH          {OM_GPIO0->DATAOUTSET = (1u<<KEY_C19_PIN); OM_GPIO0->OUTENCLR = (1u<<KEY_C19_PIN);}
-
-#define MATRX_ALL_IN            {OM_GPIO0->OUTENCLR = 0x03F40000;}
-#define MATRX_ALL_OUT           {OM_GPIO0->OUTENSET = 0x03F40000;}
+#if (MATRIX_EX_NUM > 0)
+#define KEY_EX_LOW              {OM_GPIO0->DATAOUTCLR = (1u<<MATRIX_EX_PIN);}
+#define KEY_EX_HIGH             {OM_GPIO0->DATAOUTSET = (1u<<MATRIX_EX_PIN);}
+#define KEY_EX_TOGGLE           {OM_GPIO0->DATAOUT   ^= (1u<<MATRIX_EX_PIN);}
+#else
+#define KEY_EX_LOW              {}
+#define KEY_EX_HIGH             {}
+#define KEY_EX_TOGGLE           {}
+#endif
+//----------------------------------------------
+// 直连列线
+//
+#define MATRX_ALL_LOW           {OM_GPIO0->DATAOUTCLR = MATRIX_DIRECT_MASK; OM_GPIO0->OUTENSET = MATRIX_DIRECT_MASK;}
+#define MATRX_ALL_IN            {OM_GPIO0->OUTENCLR = MATRIX_DIRECT_MASK;}
+#define MATRX_ALL_OUT           {OM_GPIO0->OUTENSET = MATRIX_DIRECT_MASK;}
 //
 //----------------------------------------------
 // LED
 //
-#define LED_NUM_PIN             (2*8+4)
-#define LED_CAPS_PIN            (2*8+5)
-#define LED_LOW_PIN             (2*8+6)
-
-#define LED_BLE0_PIN            (2*8+2)
-#define LED_BLE1_PIN            (2*8+3)
-#define LED_24G_PIN             (2*8+4)
-
 #define ARGB_OUT_PIN            BOARD_ARGB_DATA_PIN     // 灯的引脚在 board_config.h 里改
 #define ARGB_OFF_PIN            BOARD_LIGHT_PWR_PIN
 
-#define VED_VDD_PIN             (2*8+3)
-
-#define mLED_VDD_DIS            {OM_GPIO0->DATAOUTCLR = (1u<<VED_VDD_PIN);OM_GPIO0->OUTENSET = (1u<<VED_VDD_PIN);}
-#define mLED_NUM_LOW            MATRX_C18_LOW
-#define mLED_CAPS_LOW           MATRX_C1_LOW
-#define mLED_LOW_LOW            MATRX_C2_LOW
-
-#define mLED_VDD_EN             {OM_GPIO0->DATAOUTSET = (1u<<VED_VDD_PIN);OM_GPIO0->OUTENSET = (1u<<VED_VDD_PIN);}
-#define mLED_NUM_HIGH           MATRX_C18_HIGH
-#define mLED_CAPS_HIGH          MATRX_C1_HIGH
-#define mLED_LOW_HIGH           MATRX_C2_HIGH
+// 指示灯：引脚和点亮电平在 matrix_cfg.h 里配置；LOW = 点亮，HIGH = 熄灭（沿用原来的名字）
+#define mLED_VDD_DIS            MATRIX_LED_VDD_DIS
+#define mLED_VDD_EN             MATRIX_LED_VDD_EN
+#define mLED_NUM_LOW            MATRIX_LED_NUM_ON
+#define mLED_NUM_HIGH           MATRIX_LED_NUM_OFF
+#define mLED_CAPS_LOW           MATRIX_LED_CAPS_ON
+#define mLED_CAPS_HIGH          MATRIX_LED_CAPS_OFF
+#define mLED_LOW_LOW            MATRIX_LED_LOW_ON
+#define mLED_LOW_HIGH           MATRIX_LED_LOW_OFF
 //
 //----------------------------------------------
 // 电源其他

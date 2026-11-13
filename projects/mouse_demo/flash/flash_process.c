@@ -136,6 +136,26 @@ unsigned char checksum_flash(unsigned char lenght, unsigned char *ptr)
 }
 
 /*******************************************************************************
+* 函数名称: win_mac_channel() / win_mac_load()
+* 功能描述: Win/Mac 按通道保存
+* 说    明: sys_mode 第 n 位 = 通道 n（BT0/BT1/BT2/2.4G/USB）用 Win，0 = Mac。
+*           保存和读取都按当前通道，这样蓝牙连 Mac、2.4G 连 Windows 可以各自记住。
+*           原来读取时固定看第 0 位，BT1/BT2/2.4G 下切换后一保存就被改回 BT0 的设置。
+*           上电时通道还没确定（device_type 为 ERR），先按 BT0 读，确定通道后 main() 再读一次。
+*******************************************************************************/
+static uint8_t win_mac_channel(void)
+{
+    return (device_type <= iDEVICE_TYPE_USB) ? (uint8_t)device_type : (uint8_t)iDEVICE_TYPE_BT0;
+}
+
+void win_mac_load(void)
+{
+    key_ctrl &= ~bwin_mac_sataus;
+    if(sys_mode & (1u<<win_mac_channel()))
+        key_ctrl |= bwin_mac_sataus;
+}
+
+/*******************************************************************************
 * 函数名称: laod_mouse_status()
 * 功能描述:
 * 输入参数:无
@@ -198,9 +218,7 @@ void laod_mouse_status(void)
             //report_dpi[2] = flash_fifo[i+3];
             sys_mode = flash_fifo[i+4];
 
-            key_ctrl &= ~bwin_mac_sataus;
-            if(sys_mode&(1<<(0&0x07)))
-                key_ctrl |= bwin_mac_sataus;
+            win_mac_load();                     // 按当前通道取 Win/Mac
 
             led_cur_mode = (flash_fifo[i+5]&0x1F);
             bled_bright_en = false;
@@ -297,6 +315,10 @@ extern unsigned char    const   matrixkey_mac_fn_tbl[];
 *******************************************************************************/
 void laod_key_cfg(void)
 {
+    // 键表数组定义在本文件包含的两个头文件里，sizeof 是实际大小；最后一个字节留给 0xA5 标记
+    typedef char key_tbl_size_check[(sizeof(matrixkey_win_tbl) <= 255 && sizeof(matrixkey_win_fn_tbl) <= 255) ? 1 : -1];
+    (void)sizeof(key_tbl_size_check);
+
 //----------------------------------------------------------------------------
 // WIN MODE
 //
@@ -304,7 +326,7 @@ void laod_key_cfg(void)
     if(0xA5 != flash_fifo[255])
     {
         memset(flash_fifo, 0xFF, 255);
-        memcpy(flash_fifo, matrixkey_win_tbl, 255);
+        memcpy(flash_fifo, matrixkey_win_tbl, sizeof(matrixkey_win_tbl));   // 键表 248 字节，后面保持 0xFF
         flash_fifo[255] = 0xA5;
 
         flash_erase(iKEY_MODE0_BANK);
@@ -317,10 +339,10 @@ void laod_key_cfg(void)
 // WIN FN MODE
 //
     flash_read(iKEY_MODE1_ADDR, 256);
-    if(0xA5 != flash_fifo[0])
+    if(0xA5 != flash_fifo[255])                 // 标记在最后一个字节，和基础层一样（原来误写成 [0]，每次开机都会擦写一遍）
     {
         memset(flash_fifo, 0xFF, 255);
-        memcpy(flash_fifo, matrixkey_win_fn_tbl, 255);
+        memcpy(flash_fifo, matrixkey_win_fn_tbl, sizeof(matrixkey_win_fn_tbl));   // 键表 248 字节，后面保持 0xFF
         flash_fifo[255] = 0xA5;
 
         flash_erase(iKEY_MODE1_BANK);
@@ -415,9 +437,9 @@ __attribute__((noinline)) void flash_save_status(void)
     dat_temp[2] = report_dpi[1];
     dat_temp[3] = report_dpi[2];
 
-    sys_mode &= ~(1<<(device_type&0x07));
+    sys_mode &= ~(1u<<win_mac_channel());
     if(key_ctrl&bwin_mac_sataus)
-        sys_mode |= (1<<(device_type&0x07));
+        sys_mode |= (1u<<win_mac_channel());
     dat_temp[4] = sys_mode;
 
     dat_temp[5] = (led_cur_mode&0x1F);
@@ -640,4 +662,23 @@ __attribute__((noinline)) void flash_save_ble_addr(void)
     flash_erase(iFLASH_BLE_ID_BANK_BAK);
     flash_write_ble_addr(0x100);
     flash_load_ble_addr();
+}
+
+/*******************************************************************************
+* 函数名称: flash_save_pending()
+* 功能描述: 把按键 / 配置工具改过、还没写进 Flash 的设置保存下来
+* 说    明: 由 ui_frame_process() 每帧调用（原来放在 logo_process() 开头）
+*******************************************************************************/
+void flash_save_pending(void)
+{
+    if(true==bsave_status)
+    {
+        bsave_status = false;
+        flash_save_status();
+    }
+    if(true==bsave_cfg_dpi)
+    {
+        bsave_cfg_dpi = false;
+        flash_save_cfg_dpi();
+    }
 }

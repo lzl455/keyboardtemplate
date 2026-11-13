@@ -11,8 +11,10 @@
 #include "om_driver.h"
 
 #include "main.h"
-#include "led.h"
-#include "led_logo_tbl.h"
+#include "light_fx.h"
+
+#if (BOARD_LIGHT != LIGHT_NONE)
+#include "light_tables.h"          /* 灯效表定义在头文件里，必须放在开关里面，否则关灯后还会编进去 */
 
 //-----------------------------------------------------------------------------;
 // 常量定义区
@@ -984,3 +986,5 @@ void led_mode_txtw(void)
         rgb_pwm0_w();
     }
 }
+
+#endif /* (BOARD_LIGHT != LIGHT_NONE) */

@@ -62,7 +62,6 @@ extern bool ll_conn_sleep_prologue(void);
 extern void RTC_IRQHandler_24G(void);
 
 bool   bperiph_int;
-extern void knob_isr(int8_t step);
 
 //----------------------------------------------------------------------------
 //表格定义区
@@ -189,32 +188,7 @@ void LEDC_IRQHandler(void)
     #endif /* RTE_LEDC */
 }
 
-void ENCODER_IRQHandler(void)
-{
-    if (OM_ENCODER->VALID & ENCODER_VALID_CNT_MASK) {
-        if(OM_ENCODER->CNT & 0x08) {
-            wheel_data = 0xf0|OM_ENCODER->CNT;
-        } else {
-            wheel_data = OM_ENCODER->CNT&0x0f;
-        }
-        #if (RTE_ENCODER)
-        knob_isr((int8_t)wheel_data);           // 交给编码器模块累计（periph/knob.c）
-        #endif
-
-        bperiph_int =1;
-        if(iDEVICE_TYPE_BT2 >= device_type)
-        {
-            if(ms_sleep_level == MS_SLEEP_LEVEL1) {
-                ms_sleep_level = MS_SLEEP_LEVEL0;
-                mouse_periph_wakeup_enable(WAKEUP_SLEEP_LEVEL0);
-
-                ex2_app_mouse_scan();
-                ll_conn_sleep_prologue();
-                ex2_ll_set_next_polling_time(0);
-            }
-        }
-    }
-}
+/* ENCODER_IRQHandler 在 modules/knob/knob.c 里（只有启用编码器时才编译），没启用时用启动文件里的默认处理 */
 
 #endif  /* (RTE_ISR) */
 

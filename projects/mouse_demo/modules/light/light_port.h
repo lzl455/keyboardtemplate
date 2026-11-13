@@ -2,7 +2,7 @@
  * @file    light_port.h
  * @brief   灯光输出层
  *
- * 灯效算法（logo_mode.c）只负责把每颗灯的颜色写进 pwm_rgb_tbl[BOARD_LED_NUM][3]，
+ * 灯效算法（light.c / light_modes.c）只负责把每颗灯的颜色写进 pwm_rgb_tbl[BOARD_LED_NUM][3]，
  * 这一层负责把它送到实际的灯上。按 board_config.h 的 BOARD_LIGHT 编进其中一个后端：
  *   LIGHT_ARGB  light_argb.c   LEDC 外设驱动 WS2812 类灯珠
  *   LIGHT_PWM   light_pwm.c    PWM 驱动单色背光（1 路）或一颗 RGB 灯（3 路）

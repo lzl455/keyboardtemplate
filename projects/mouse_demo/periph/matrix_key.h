@@ -10,6 +10,8 @@
 #ifndef MATRIX_KEY_H_
 #define MATRIX_KEY_H_
 
+#include "matrix_cfg.h"
+
 //=============================================================================;
 // 配置引用区                                                                  ;
 //=============================================================================;
@@ -21,42 +23,52 @@
 #define iMATRIX_ROW_NUM         8
 #define iMATRIX_NUM_MAX         iMATRIX_COL_NUM*iMATRIX_ROW_NUM
 
-#define iKEY_INDEX_FN           (8*9 + 7)
 #define iKEY_DELAY_COUNT        2
 
-#define iKEY_FN_C               8
-#define iKEY_FN_R               0x80
+//-----------------------------------------------------------------------------;
+// 固件按位置读取的键：位置在 config/matrix_cfg.h 里（KEYPOS_xxx，键表位置），
+// 用矩阵表配置器的「特殊键位置」页指定，这里换算成原来的写法。
+//   KEYPOS_COL(s) / KEYPOS_BIT(s)：matrix_status[] 的下标和位，给 rf_fcc.c 用
+//   KEYPOS_INDEX(s)              ：键表里的字节偏移，给 std_decode_callback() 用
+// 没指定的位置是 MATRIX_POS_NONE，对应 matrix_status[19] 第 0 位，永远读不到按下。
+//
+#define KEYPOS_COL(s)           (((s)>>3) + 3)
+#define KEYPOS_BIT(s)           (1u<<((s)&0x07))
+#define KEYPOS_INDEX(s)         (((s) >= MATRIX_POS_NONE) ? 0xFF : (s)*2)   // 0xFF 不会和任何键匹配
 
-#define iKEY_BT0_C              7
-#define iKEY_BT0_R              0x80
+#define iKEY_FN_C               KEYPOS_COL(KEYPOS_FCC_FN)
+#define iKEY_FN_R               KEYPOS_BIT(KEYPOS_FCC_FN)
 
-#define iKEY_24G_C              12
-#define iKEY_24G_R              0x80
+#define iKEY_BT0_C              KEYPOS_COL(KEYPOS_FCC_BT0)
+#define iKEY_BT0_R              KEYPOS_BIT(KEYPOS_FCC_BT0)
 
-#define iKEY_INDEX_W            ((iMATRIX_ROW_NUM*(10-3) + 0)*2)
-#define iKEY_INDEX_A            ((iMATRIX_ROW_NUM*(6-3) + 0)*2)
-#define iKEY_INDEX_S            ((iMATRIX_ROW_NUM*(8-3) + 0)*2)
-#define iKEY_INDEX_D            ((iMATRIX_ROW_NUM*(9-3) + 0)*2)
+#define iKEY_24G_C              KEYPOS_COL(KEYPOS_FCC_24G)
+#define iKEY_24G_R              KEYPOS_BIT(KEYPOS_FCC_24G)
 
-#define iKEY_INDEX_UP           ((iMATRIX_ROW_NUM*(18-3)+2)*2)
-#define iKEY_INDEX_LEFT         ((iMATRIX_ROW_NUM*(18-3)+3)*2)
-#define iKEY_INDEX_DOWN         ((iMATRIX_ROW_NUM*(6-3)+4)*2)
-#define iKEY_INDEX_RIGHT        ((iMATRIX_ROW_NUM*(16-3)+7)*2)
+#define iKEY_INDEX_W            KEYPOS_INDEX(KEYPOS_WASD_W)
+#define iKEY_INDEX_A            KEYPOS_INDEX(KEYPOS_WASD_A)
+#define iKEY_INDEX_S            KEYPOS_INDEX(KEYPOS_WASD_S)
+#define iKEY_INDEX_D            KEYPOS_INDEX(KEYPOS_WASD_D)
+
+#define iKEY_INDEX_UP           KEYPOS_INDEX(KEYPOS_WASD_UP)
+#define iKEY_INDEX_LEFT         KEYPOS_INDEX(KEYPOS_WASD_LEFT)
+#define iKEY_INDEX_DOWN         KEYPOS_INDEX(KEYPOS_WASD_DOWN)
+#define iKEY_INDEX_RIGHT        KEYPOS_INDEX(KEYPOS_WASD_RIGHT)
 
 //-----------------------------------------------------------------------------;
-//配置常量定义区
+// FCC 测试用的键（rf_fcc.c）
 //
-#define iKEY_FCC_TX_C           6               // 右 切换定频收发
-#define iKEY_FCC_TX_R           0x80
+#define iKEY_FCC_TX_C           KEYPOS_COL(KEYPOS_FCC_TX)       // 右 切换定频收发
+#define iKEY_FCC_TX_R           KEYPOS_BIT(KEYPOS_FCC_TX)
 
-#define iKEY_FCC_FREQ_C         6               // 左 进入跳频
-#define iKEY_FCC_FREQ_R         0x08
+#define iKEY_FCC_FREQ_C         KEYPOS_COL(KEYPOS_FCC_FREQ)     // 左 进入跳频
+#define iKEY_FCC_FREQ_R         KEYPOS_BIT(KEYPOS_FCC_FREQ)
 
-#define iKEY_FCC_WAVE_C         6               // 上 切换空载波
-#define iKEY_FCC_WAVE_R         0x04
+#define iKEY_FCC_WAVE_C         KEYPOS_COL(KEYPOS_FCC_WAVE)     // 上 切换空载波
+#define iKEY_FCC_WAVE_R         KEYPOS_BIT(KEYPOS_FCC_WAVE)
 
-#define iKEY_SWTICH_FREQ_C      6               // 下 切换频点
-#define iKEY_SWTICH_FREQ_R      0x10
+#define iKEY_SWTICH_FREQ_C      KEYPOS_COL(KEYPOS_FCC_SWITCH)   // 下 切换频点
+#define iKEY_SWTICH_FREQ_R      KEYPOS_BIT(KEYPOS_FCC_SWITCH)
 
 //-----------------------------------------------------------------------------;
 //配置区

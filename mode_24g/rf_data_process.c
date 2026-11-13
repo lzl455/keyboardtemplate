@@ -349,7 +349,7 @@ void rf_tx1_idle_callback(void)
     if(4==(lvd_scan_count&0x07))
         device_led_process();                     // 16ms
     if(0==(lvd_scan_count&0x01))
-        logo_process();
+        ui_frame_process();
 }
 
 void rf_tx1_irq_callback(void)
@@ -358,7 +358,7 @@ void rf_tx1_irq_callback(void)
     if(4==(lvd_scan_count&0x07))
         device_led_process();
     if(0==(lvd_scan_count&0x01))
-        logo_process();
+        ui_frame_process();
 }
 
 void rf_rx_begin_callback(void)

@@ -120,9 +120,7 @@ extern void bat_check(void);
 void mouse_periph_wakeup_enable(uint8_t mask)
 {
     OM_CRITICAL_BEGIN();
-    drv_gpio_set_trig(OM_GPIO0, (1<<KEY_R0_PIN)|(1<<KEY_R1_PIN)|(1<<KEY_R2_PIN)|(1<<KEY_R3_PIN)| \
-                                (1<<KEY_R4_PIN)|(1<<KEY_R5_PIN)|(1<<KEY_R6_PIN)|(1<<KEY_R7_PIN), \
-                                 GPIO_TRIG_NONE);
+    drv_gpio_set_trig(OM_GPIO0, MATRIX_ROW_MASK, GPIO_TRIG_NONE);   // 矩阵行线，见 matrix_cfg.h
     NVIC_ClearPendingIRQ(WAKEUP_GPIO0_IRQn);
     drv_pmu_clear_wakeup();
 
@@ -211,7 +209,6 @@ int main(void)
 
     bat_init();
 
-    bargb_valid = false;
     laod_flash_cfg();
     scan_mode_swtich(iMODE_CHECK_POWERUP);
 
@@ -287,19 +284,20 @@ soft_reset_process:
         kb_led_status = 0;
         device_led_on();
 
-        key_ctrl &= ~bwin_mac_sataus;
-        if(sys_mode&(1<<(0&0x07)))
-            key_ctrl |= bwin_mac_sataus;
+        win_mac_load();                     // 通道已确定，按当前通道取 Win/Mac（flash_process.c）
 
         periph_init_all();                  // 可选外设初始化（periph/periph.c）
 
+#if (BOARD_HAS_USB)
         if(iDEVICE_TYPE_USB == device_type)
         {
             DRV_RCC_CLOCK_ENABLE(RCC_CLK_RF, 1U);
             mouse_usb_init();
             main_usb();
         }
-        else if(iDEVICE_TYPE_24G == device_type)
+        else
+#endif
+        if(iDEVICE_TYPE_24G == device_type)
         {
             bencrypted_en = false;   //  true  false
 

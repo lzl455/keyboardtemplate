@@ -10,7 +10,10 @@
 *******************************************************************************/
 #include "main_usb.h"
 #include "main.h"
-#include "usb_descriptor.h"
+#include "board_config.h"
+
+#if (BOARD_HAS_USB)            /* USB 有线模式，关掉时整个文件编译为空 */
+#include "usb_descriptor.h"         /* USB 描述符定义在头文件里，必须放在开关里面 */
 
 //-----------------------------------------------------------------------------
 //配置定义
@@ -1207,3 +1210,4 @@ void usb_disconnect(void)
     drv_pmu_pin_mode_set(3, PMU_PIN_MODE_PD);
 }
 
+#endif /* (BOARD_HAS_USB) */

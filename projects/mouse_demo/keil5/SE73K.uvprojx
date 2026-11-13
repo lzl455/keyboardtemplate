@@ -339,7 +339,7 @@
               <MiscControls></MiscControls>
               <Define>CONFIG_OM6239=1,CONFIG_HARDWARE_VERSION=1,CONFIG_BOARD_OM6239_EVB=1,CONFIG_EVT=1,CONFIG_EXBLE2=1,CONFIG_PM=1,CONFIG_OM_PRINTF=0,CONFIG_OM_ASSERT=0,CONFIG_MOUSE_AUTO_CIRCLE=0,</Define>
               <Undefine></Undefine>
-              <IncludePath>../config;../config;../main;../periph;../../../common/includes;../../../hal/CMSIS/Core/Include;../../../hal/device/include;../../../hal/driver/include;../../../hal/driver/common;../../../components/evt;../../../components/exble2/includes;../../../components/exble2/port;../../../components/tinycrypt/include;../../../components/om_cfg;../../../components/pm;../../../bsp;..\..\..\mode_24g;..\..\..\mode_usb;..\flash;..\led</IncludePath>
+              <IncludePath>../config;../config;../main;../periph;../../../common/includes;../../../hal/CMSIS/Core/Include;../../../hal/device/include;../../../hal/driver/include;../../../hal/driver/common;../../../components/evt;../../../components/exble2/includes;../../../components/exble2/port;../../../components/tinycrypt/include;../../../components/om_cfg;../../../components/pm;../../../bsp;..\..\..\mode_24g;..\..\..\mode_usb;..\flash;..\led;..\modules\light;..\modules\knob</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -442,11 +442,6 @@
               <FileName>periph.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\periph\periph.c</FilePath>
-            </File>
-            <File>
-              <FileName>knob.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\periph\knob.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -666,25 +661,45 @@
               <FileType>1</FileType>
               <FilePath>..\led\led.c</FilePath>
             </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>module_light</GroupName>
+          <Files>
             <File>
-              <FileName>logo_mode.c</FileName>
+              <FileName>light.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\led\logo_mode.c</FilePath>
+              <FilePath>..\modules\light\light.c</FilePath>
+            </File>
+            <File>
+              <FileName>light_modes.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\modules\light\light_modes.c</FilePath>
             </File>
             <File>
               <FileName>light_port.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\led\light_port.c</FilePath>
+              <FilePath>..\modules\light\light_port.c</FilePath>
             </File>
             <File>
               <FileName>light_argb.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\led\light_argb.c</FilePath>
+              <FilePath>..\modules\light\light_argb.c</FilePath>
             </File>
             <File>
               <FileName>light_pwm.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\led\light_pwm.c</FilePath>
+              <FilePath>..\modules\light\light_pwm.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>module_knob</GroupName>
+          <Files>
+            <File>
+              <FileName>knob.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\modules\knob\knob.c</FilePath>
             </File>
           </Files>
         </Group>
