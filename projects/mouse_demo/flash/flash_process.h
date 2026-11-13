@@ -189,6 +189,7 @@ extern uint8_t                  sleep_time_ble;
 extern uint8_t                  report_usb;
 extern uint8_t                  report_24g;
 extern uint8_t                  sys_mode;
+extern void                     win_mac_load(void);     // 按当前通道从 sys_mode 取 Win/Mac
 
 extern uint8_t                  mouse_lod_set;
 extern uint8_t                  key_delay_set;

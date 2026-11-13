@@ -284,9 +284,7 @@ soft_reset_process:
         kb_led_status = 0;
         device_led_on();
 
-        key_ctrl &= ~bwin_mac_sataus;
-        if(sys_mode&(1<<(0&0x07)))
-            key_ctrl |= bwin_mac_sataus;
+        win_mac_load();                     // 通道已确定，按当前通道取 Win/Mac（flash_process.c）
 
         periph_init_all();                  // 可选外设初始化（periph/periph.c）
 
