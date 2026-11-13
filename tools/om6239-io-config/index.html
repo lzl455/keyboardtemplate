@@ -1096,7 +1096,7 @@ function genC(){
   L.push('    OM_PMU->PAD_DRV_CTRL_1 = ' + hex(r.drv1) + 'u;   /* ' + drvDesc(range(16,32)) + ' */');
   const mux = [];
   if (ps.uart >= 0) mux.push('    drv_pmu_uart_select(' + UART_G[ps.uart].en + ');   /* TX ' + pinName(UART_G[ps.uart].tx) + '，RX ' + pinName(UART_G[ps.uart].rx) + ' */');
-  if (ps.ledc >= 0) mux.push('    drv_pmu_ledc_sel(' + LEDC_G[ps.ledc].en + ');         /* ARGB 数据 ' + pinName(LEDC_G[ps.ledc].p) + ' */');
+  if (ps.ledc >= 0) mux.push('    /* ARGB 数据 ' + pinName(LEDC_G[ps.ledc].p) + '：LEDC 选脚在开灯时由 light_argb.c 按 BOARD_ARGB_LEDC_SEL 设置（io_board.h），这里不设 */');
   if (ps.enc >= 0) mux.push('    /* 滚轮编码器：drv_encoder.c 里的 pinmux_sel 设为 ' + ENC_G[ps.enc].en + ' */');
   if (ps.lvd >= 0) mux.push('    /* 电压检测：POFCON 的 LVD 引脚选 ' + LVD_G[ps.lvd].en + '（见 lvd.c） */');
   if (ps.swd === 0 && (P[18].sig !== 'RESET' || P[21].sig !== 'RESET')) mux.push('    OM_RCC->CLKGATE &= ~RCC_DEV_CLK_GATE_SWD_CLK_GATE_MASK;   /* 关闭 SWD，让出 P22/P25 */');

@@ -21,7 +21,7 @@ void io_config_init(void)
     OM_PMU->PAD_DRV_CTRL_1 = 0x55555555u;   /* 全部 24mA */
 
     /* 复用选择 */
-    drv_pmu_ledc_sel(PMU_LEDC_SEL_IO_01);         /* ARGB 数据 P01 */
+    /* ARGB 数据 P01：LEDC 选脚在开灯时由 light_argb.c 按 BOARD_ARGB_LEDC_SEL 设置（io_board.h），这里不设 */
     /* 电压检测：POFCON 的 LVD 引脚选 POF_LVD_PIN_P33（见 lvd.c） */
     OM_RCC->CLKGATE &= ~RCC_DEV_CLK_GATE_SWD_CLK_GATE_MASK;   /* 关闭 SWD，让出 P22/P25 */
 

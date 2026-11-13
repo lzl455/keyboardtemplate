@@ -317,7 +317,7 @@ void laod_key_cfg(void)
 // WIN FN MODE
 //
     flash_read(iKEY_MODE1_ADDR, 256);
-    if(0xA5 != flash_fifo[0])
+    if(0xA5 != flash_fifo[255])                 // 标记在最后一个字节，和基础层一样（原来误写成 [0]，每次开机都会擦写一遍）
     {
         memset(flash_fifo, 0xFF, 255);
         memcpy(flash_fifo, matrixkey_win_fn_tbl, 255);
