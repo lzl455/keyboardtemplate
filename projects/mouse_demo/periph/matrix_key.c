@@ -361,75 +361,96 @@ define_key_process:
     }
 }
 
-uint8_t const matrixkey_c_tbl[] = {
-    8, 10,  6,  7, 14, 13, 12, 11, 
-   15,  9,  0, 16, 17,  0,  0,  0,
-};
+//----------------------------------------------------------------------------;
+// 矩阵配置（config/matrix_cfg.h，由矩阵表配置器生成）
+//
+static const uint8_t matrix_direct_pin[] = MATRIX_DIRECT_PINS;
+static const uint8_t matrix_slot_map[MATRIX_RAW_NUM*8] = MATRIX_SLOT_MAP;   // 物理位置 -> 键表位置
+
+uint8_t                         matrix_raw[MATRIX_RAW_NUM];                 // 按扫描顺序存的原始行值
 
 #define  DELAY
 
+#if (MATRIX_EX_NUM > 0)
 __RAM_CODE void ctrl_54e_inpull(void)
 {
-    OM_GPIO0->OUTENSET = (1u<<P32);
+    OM_GPIO0->OUTENSET = (1u<<MATRIX_EX_PIN);
     OM_CRITICAL_BEGIN();
     KEY_EX_LOW;
     delayus(1);
     KEY_EX_HIGH;
     OM_CRITICAL_END();
 }
+#endif
 
+/******************************************************************************
+* 函数名称: scan_key
+* 功能描述: 扫一遍矩阵，结果按扫描顺序存进 matrix_raw[]
+* 说    明: 先扫直连列（逐个拉低），再扫扩展列（每翻转一次 KEY_EX 换一列）
+******************************************************************************/
 void scan_key(void)
 {
-    mLED_VDD_DIS;
+    uint8_t i;
+    uint32_t mask;
+
+    mLED_VDD_DIS;                               // 指示灯和列线复用：扫描时关掉供电
     MATRX_ALL_IN;
+#if (MATRIX_EX_NUM > 0)
     ctrl_54e_inpull();
+#endif
     delayus(20);
 
-    MATRX_C1_LOW;
-    mDELAY_R;
-    matrix_status[1] = MATRIX_RAW;
-    MATRX_C1_HIGH;
-
-    MATRX_C2_LOW;
-    mDELAY_R;
-    matrix_status[2] = MATRIX_RAW;
-    MATRX_C2_HIGH;
-
-    MATRX_C3_LOW;
-    mDELAY_R;
-    matrix_status[3] = MATRIX_RAW;
-    MATRX_C3_HIGH;
-
-    MATRX_C4_LOW;
-    mDELAY_R;
-    matrix_status[4] = MATRIX_RAW;
-    MATRX_C4_HIGH;
-
-    MATRX_C5_LOW;
-    mDELAY_R;
-    matrix_status[5] = MATRIX_RAW;
-    MATRX_C5_HIGH;
-
-    MATRX_C18_LOW;
-    mDELAY_R;
-    matrix_status[18] = MATRIX_RAW;
-    MATRX_C18_HIGH;
-
-    MATRX_C19_LOW;
-    mDELAY_R;
-    matrix_status[19] = MATRIX_RAW;
-    MATRX_C19_HIGH;
+    for(i=0; i<MATRIX_DIRECT_NUM; i++)
+    {
+        mask = (1u<<matrix_direct_pin[i]);
+        OM_GPIO0->DATAOUTCLR = mask;            // 拉低这一列
+        OM_GPIO0->OUTENSET = mask;
+        mDELAY_R;
+        matrix_raw[i] = MATRIX_RAW;
+        OM_GPIO0->DATAOUTSET = mask;            // 放开
+        OM_GPIO0->OUTENCLR = mask;
+    }
     mDELAY_R;
 
+#if (MATRIX_EX_NUM > 0)
     KEY_EX_TOGGLE;
     mDELAY_EX;
-    for(uint8_t i=0; i<13; i++)
+    for(i=0; i<MATRIX_EX_NUM; i++)
     {
         mDELAY_EX;
-        matrix_status[matrixkey_c_tbl[i]] = MATRIX_RAW;
+        matrix_raw[MATRIX_DIRECT_NUM + i] = MATRIX_RAW;
         KEY_EX_TOGGLE;
     }
     KEY_EX_HIGH;
+#endif
+}
+
+/******************************************************************************
+* 函数名称: matrix_pack
+* 功能描述: 按 MATRIX_SLOT_MAP 把 matrix_raw[] 换成键表顺序，写进 matrix_status[3..18]
+* 说    明: 原来 matrixkey_scan() 里手写的位搬移（C0/C1/C2/C19/C18 的键挪到 C3/C5/C6/C16/C17
+*           空出来的位置）现在由配置器生成的表完成；matrix_status[0..2] 和 [19] 保持为 0，
+*           MATRIX_POS_NONE 指向 [19]，所以没配置的特殊键永远读不到按下。
+******************************************************************************/
+__RAM_CODE static void matrix_pack(void)
+{
+    uint8_t i, r, v, s;
+    const uint8_t *map;
+
+    memset(matrix_status, 0x00, iMATRIX_COL_NUM);
+    for(i=0; i<MATRIX_RAW_NUM; i++)
+    {
+        v = matrix_raw[i];
+        map = &matrix_slot_map[i*8];
+        for(r=0; 0!=v; r++, v>>=1)
+        {
+            if(0 == (v&0x01))
+                continue;
+            s = map[r];
+            if(MATRIX_SLOT_NONE != s)
+                matrix_status[(s>>3) + 3] |= (uint8_t)(1u<<(s&0x07));
+        }
+    }
 }
 
 /******************************************************************************
@@ -441,7 +462,7 @@ void scan_key(void)
 ******************************************************************************/
 __RAM_CODE void matrixkey_scan(void)
 {
-    unsigned char i,j,k,m,key_temp[22];
+    unsigned char i,j,k,m,key_temp[MATRIX_RAW_NUM];
 
     device_key = 0;
     special_key = 0;
@@ -463,11 +484,11 @@ __RAM_CODE void matrixkey_scan(void)
     }
 
     k = 0;
-    for(i=0; i<iMATRIX_COL_NUM; i++)
+    for(i=0; i<MATRIX_RAW_NUM; i++)
     {
-        if(0 != matrix_status[i])
+        if(0 != matrix_raw[i])
         {
-            key_temp[k] = matrix_status[i];
+            key_temp[k] = matrix_raw[i];
             k++;
         }
     }
@@ -477,7 +498,7 @@ __RAM_CODE void matrixkey_scan(void)
         key_ctrl |= bkey_press_status;
     }
 
-    for(j=0; j<k; j++)
+    for(j=0; j<k; j++)                          // 鬼键检测，用物理位置判断
     {
         i = key_temp[j];
 
@@ -496,38 +517,7 @@ __RAM_CODE void matrixkey_scan(void)
         }
     }
 
-    matrix_status[3] &= 0x3F;
-    if(matrix_status[0]&(1<<1))
-        matrix_status[3] |= (1<<6);
-    if(matrix_status[0]&(1<<4))
-        matrix_status[3] |= (1<<7);
-
-    matrix_status[5] &= 0x0F;
-    if(matrix_status[1]&(1<<0))
-        matrix_status[5] |= (1<<4);
-    if(matrix_status[1]&(1<<1))
-        matrix_status[5] |= (1<<5);
-    if(matrix_status[1]&(1<<6))
-        matrix_status[5] |= (1<<6);
-    if(matrix_status[0]&(1<<0))
-        matrix_status[5] |= (1<<7);
-
-    matrix_status[17] &= 0x23;
-    if(matrix_status[2]&(1<<0))
-        matrix_status[17] |= (1<<2);
-    if(matrix_status[2]&(1<<1))
-        matrix_status[17] |= (1<<3);
-    if(matrix_status[2]&(1<<2))
-        matrix_status[17] |= (1<<4);
-
-    if(matrix_status[19]&(1<<0))
-        matrix_status[17] |= (1<<7);
-
-    if(matrix_status[18]&(1<<7))
-        matrix_status[16] |= (1<<7);
-    matrix_status[6] &= 0x8F;
-    matrix_status[6] |= (matrix_status[18]&0x70);
-    matrix_status[18] &= 0x0F;
+    matrix_pack();
 
     matrixkey_value();
     periph_scan_all();                  // 可选外设在这里注入按键（如编码器的音量键）

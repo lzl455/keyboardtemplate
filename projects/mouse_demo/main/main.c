@@ -120,9 +120,7 @@ extern void bat_check(void);
 void mouse_periph_wakeup_enable(uint8_t mask)
 {
     OM_CRITICAL_BEGIN();
-    drv_gpio_set_trig(OM_GPIO0, (1<<KEY_R0_PIN)|(1<<KEY_R1_PIN)|(1<<KEY_R2_PIN)|(1<<KEY_R3_PIN)| \
-                                (1<<KEY_R4_PIN)|(1<<KEY_R5_PIN)|(1<<KEY_R6_PIN)|(1<<KEY_R7_PIN), \
-                                 GPIO_TRIG_NONE);
+    drv_gpio_set_trig(OM_GPIO0, MATRIX_ROW_MASK, GPIO_TRIG_NONE);   // 矩阵行线，见 matrix_cfg.h
     NVIC_ClearPendingIRQ(WAKEUP_GPIO0_IRQn);
     drv_pmu_clear_wakeup();
 
