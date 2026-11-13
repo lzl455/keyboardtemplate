@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>OM6239 引脚配置器</title>
+<title>OM62xx 引脚配置器</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
 <style>
 [hidden]{display:none!important}
@@ -14,7 +14,7 @@ body{margin:0}
   --accent:#0d6e8a; --accent-ink:#ffffff; --chip:#28303a; --chip-ink:#c9d2dc; --pad:#a9b3be;
   --err:#c0392b; --err-bg:#fbe6e3; --warn:#a86400; --warn-bg:#fdf0d8; --info:#356bb3; --info-bg:#e4edf9;
   --c-none:#c5ccd4; --c-gpio:#3f9a52; --c-key:#2f6fd0; --c-usb:#d07a12; --c-uart:#8a4fc9; --c-ledc:#c93d8f;
-  --c-pwm:#b59a00; --c-enc:#0f9aa8; --c-lvd:#cf4430; --c-dbg:#6b7785; --c-sns:#8c6239;
+  --c-pwm:#b59a00; --c-enc:#0f9aa8; --c-lvd:#cf4430; --c-dbg:#6b7785; --c-sns:#8c6239; --c-flash:#6d7f2e;
   --code-bg:#f6f8fa; --code-cm:#5e7a5e; --code-kw:#8a3fb5; --code-num:#a14d00; --code-pp:#0d6e8a;
   --sans:"IBM Plex Sans","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",system-ui,sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
@@ -24,14 +24,14 @@ body{margin:0}
   --accent:#4cb8d6; --accent-ink:#0b1a20; --chip:#0c1014; --chip-ink:#aeb9c5; --pad:#6b7785;
   --err:#ff8a7a; --err-bg:#3d1f1b; --warn:#f2b552; --warn-bg:#3a2c12; --info:#8db6f2; --info-bg:#1b2a40;
   --c-none:#4a5563; --c-gpio:#5cc36f; --c-key:#5d97f0; --c-usb:#f0a043; --c-uart:#b384ec; --c-ledc:#ec74ba;
-  --c-pwm:#e0c437; --c-enc:#3cc9d6; --c-lvd:#f27662; --c-dbg:#9aa6b4; --c-sns:#c4925f;
+  --c-pwm:#e0c437; --c-enc:#3cc9d6; --c-lvd:#f27662; --c-dbg:#9aa6b4; --c-sns:#c4925f; --c-flash:#b3c56e;
   --code-bg:#141a20; --code-cm:#86a886; --code-kw:#c99bf0; --code-num:#f0a35e; --code-pp:#6cc8e2; color-scheme:dark } }
 :root[data-theme="dark"]{
   --bg:#12171d; --panel:#1a2129; --panel-2:#212a34; --ink:#e3e9ef; --muted:#97a3b1; --line:#334050;
   --accent:#4cb8d6; --accent-ink:#0b1a20; --chip:#0c1014; --chip-ink:#aeb9c5; --pad:#6b7785;
   --err:#ff8a7a; --err-bg:#3d1f1b; --warn:#f2b552; --warn-bg:#3a2c12; --info:#8db6f2; --info-bg:#1b2a40;
   --c-none:#4a5563; --c-gpio:#5cc36f; --c-key:#5d97f0; --c-usb:#f0a043; --c-uart:#b384ec; --c-ledc:#ec74ba;
-  --c-pwm:#e0c437; --c-enc:#3cc9d6; --c-lvd:#f27662; --c-dbg:#9aa6b4; --c-sns:#c4925f;
+  --c-pwm:#e0c437; --c-enc:#3cc9d6; --c-lvd:#f27662; --c-dbg:#9aa6b4; --c-sns:#c4925f; --c-flash:#b3c56e;
   --code-bg:#141a20; --code-cm:#86a886; --code-kw:#c99bf0; --code-num:#f0a35e; --code-pp:#6cc8e2; color-scheme:dark }
 *{box-sizing:border-box}
 html,body{background:var(--bg)}
@@ -44,7 +44,8 @@ header.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px}
 .brand{display:flex;align-items:baseline;gap:10px;min-width:0}
 .brand h1{font-size:19px;margin:0;font-weight:700;letter-spacing:.01em}
 .brand span{font-family:var(--mono);font-size:12px;color:var(--muted)}
-.proj{display:flex;align-items:center;gap:8px;flex:1 1 220px;min-width:0}
+.proj{display:flex;flex-wrap:wrap;align-items:center;gap:8px;flex:1 1 220px;min-width:0}
+.proj select{min-width:0;max-width:100%}
 .proj label{font-size:12.5px;color:var(--muted);white-space:nowrap}
 .proj input{flex:1;min-width:0;max-width:260px}
 .actions{display:flex;flex-wrap:wrap;gap:6px}
@@ -102,6 +103,9 @@ nav.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);overflow-x:aut
 .pin.sel .nm{fill:var(--accent)}
 .pin .num{font-size:9.5px;fill:var(--chip-ink)}
 .fixed .pad{fill:var(--pad)} .fixed .nm{font-size:12px;fill:var(--muted)} .fixed .num{font-size:9.5px;fill:var(--chip-ink)}
+.fixed.ext .pad{fill:none;stroke:var(--c-key);stroke-width:1.5;stroke-dasharray:3 2} .fixed .lb{font-size:11px;fill:var(--muted)}
+.dot.ext{border:1.5px dashed var(--c-key);background:none}
+.pin.rsv .pad{opacity:.75}
 .tray{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 12px 12px;font-size:12.5px}
 .tray .tp{border:1px dashed var(--line);border-radius:6px;padding:2px 8px;cursor:pointer;background:var(--panel-2);font-family:var(--mono);font-size:12px;display:inline-flex;align-items:center;gap:6px}
 .tray .tp.sel{border-color:var(--accent);border-style:solid}
@@ -169,8 +173,8 @@ tr.difrow{background:var(--err-bg)}
 <body>
 <div class="app">
   <header class="top">
-    <div class="brand"><h1>OM6239 引脚配置器</h1><span>QFN32 · 26 个 GPIO</span></div>
-    <div class="proj"><label for="projName">工程</label><input type="text" id="projName" spellcheck="false"></div>
+    <div class="brand"><h1>OM62xx 引脚配置器</h1><span id="pkgInfo"></span></div>
+    <div class="proj"><label for="projName">工程</label><input type="text" id="projName" spellcheck="false"><label for="pkgSel">封装</label><select id="pkgSel"></select></div>
     <div class="actions">
       <button class="btn" id="btnUndo" title="Ctrl+Z">撤销</button>
       <button class="btn" id="btnPreset">载入 SE73K 键盘工程</button>
@@ -293,21 +297,32 @@ tr.difrow{background:var(--err-bg)}
 /* ------------------------------------------------------------------ chip data */
 const N = 32;
 const pinName = i => 'P' + (i >> 3) + (i & 7);
-// QFN32 package: pin number -> GPIO index, or fixed name (datasheet Figure 1.1)
-const PKG = [null,
-  26,0,1,'VDD','VBUS',2,3,4,          // 1-8   left, top -> bottom
-  5,6,7,8,9,10,11,27,                 // 9-16  bottom, left -> right
-  28,'XTALP','XTALN','BOOT','RF',30,16,17, // 17-24 right, bottom -> top
-  18,19,20,21,22,23,24,25];           // 25-32 top, right -> left
-const QFN = Array(N).fill(null);
-PKG.forEach((v, n) => { if (typeof v === 'number') QFN[v] = n; });
-const NOT_BONDED = [12,13,14,15,29,31];
+// 封装：封装脚号 -> GPIO 序号，或固定脚名称
+const PACKAGES = {
+  qfn48: {chip:'OM6252', name:'QFN48', src:'SE73K 板子实际用的封装', perSide:12, ep:'GND', pins:[null,
+    'ANT','NC',29,30,16,17,18,19,20,21,22,23,                  // 1-12  左边，上 -> 下
+    24,25,'PA4','PA3','PA2','PB0','PB1','PB2','PB3','PA6','PA7','PB4', // 13-24 下边，左 -> 右
+    'PB5','PA0','PA1','VCC','PA5',26,0,1,'VDD','VBUS',2,3,    // 25-36 右边，下 -> 上
+    4,5,6,7,8,9,10,11,27,28,'XTP','XTN']},                    // 37-48 上边，右 -> 左
+  qfn32: {chip:'OM6239', name:'QFN32', src:'手册 V0.1 Figure 1.1', perSide:8, pins:[null,
+    26,0,1,'VDD','VBUS',2,3,4,
+    5,6,7,8,9,10,11,27,
+    28,'XTALP','XTALN',31,'RF',30,16,17,
+    18,19,20,21,22,23,24,25]}
+};
+const PKG_ORDER = ['qfn48','qfn32'];
+// PA/PB：键盘列扩展输出（main.h 注释的扫描顺序），不经 GPIO 寄存器配置
+const EXT_ORDER = ['PA7','PA6','PA4','PA3','PA2','PB0','PB1','PB2','PB3','PB4','PB5','PA0','PA1'];
+const FIXED_SUB = {PA4:'SCK', PA3:'SDO', PA2:'SDI', PB3:'SDO', PA5:'VPP'};
+// PWM 通道号，来自 OM6252 封装图；P06、P22 图上只标了 PWM，是 PWM4/PWM5 中的一个
+const PWM_CH = {0:'PWM0', 1:'PWM1', 4:'PWM2', 5:'PWM3', 22:'PWM6', 26:'PWM7', 6:'PWM4/5', 18:'PWM4/5'};
+const isExtPin = v => typeof v === 'string' && /^P[AB]\d$/.test(v);
 
 const CATS = {
   none:{name:'未使用',v:'--c-none'}, gpio:{name:'GPIO',v:'--c-gpio'}, key:{name:'键盘矩阵',v:'--c-key'},
   usb:{name:'USB',v:'--c-usb'}, uart:{name:'UART',v:'--c-uart'}, ledc:{name:'ARGB (LEDC)',v:'--c-ledc'},
   pwm:{name:'PWM',v:'--c-pwm'}, enc:{name:'滚轮编码器',v:'--c-enc'}, lvd:{name:'电压检测',v:'--c-lvd'},
-  dbg:{name:'SWD 调试',v:'--c-dbg'}, sns:{name:'传感器扫描',v:'--c-sns'}
+  dbg:{name:'SWD 调试',v:'--c-dbg'}, sns:{name:'传感器扫描',v:'--c-sns'}, flash:{name:'Flash / BOOT',v:'--c-flash'}
 };
 // signals: dir 'in' | 'out' | 'col' (input when idle, driven low while scanning) | 'ana'
 const SIG = {
@@ -330,10 +345,16 @@ const SIG = {
   SNS_CSN:{label:'传感器 CSN', cat:'sns', dir:'out', pins:[8]},
   SNS_SCK:{label:'传感器 SCK', cat:'sns', dir:'out', pins:[9]},
   SNS_MOSI:{label:'传感器 MOSI / SDIO', cat:'sns', dir:'out', pins:[10]},
-  SNS_MISO:{label:'传感器 MISO', cat:'sns', dir:'in', pins:[11]}
+  SNS_MISO:{label:'传感器 MISO', cat:'sns', dir:'in', pins:[11]},
+  FLASH_IO:{label:'Flash 引脚（内部）', cat:'flash', dir:'in', pins:[12,13,14,15]},
+  BOOT:{label:'BOOT 启动选择', cat:'flash', dir:'in', pins:[31]}
 };
 const GENERIC = ['RESET','GPIO_IN','GPIO_OUT','KEY_ROW','KEY_COL'];
-const sigsFor = i => GENERIC.concat(Object.keys(SIG).filter(k => SIG[k].pins && SIG[k].pins.includes(i)));
+// 保留脚：P14-P17 接芯片内部 Flash，P37 是 BOOT 启动脚。不能配置，
+// 生成代码时保持工程现有的值（无上下拉、驱动 24mA、输入缓冲按复位值）
+const RESERVED = {12:'FLASH_IO', 13:'FLASH_IO', 14:'FLASH_IO', 15:'FLASH_IO', 31:'BOOT'};
+const isReserved = i => RESERVED[i] != null;
+const sigsFor = i => isReserved(i) ? [RESERVED[i]] : GENERIC.concat(Object.keys(SIG).filter(k => SIG[k].pins && SIG[k].pins.includes(i)));
 const isOut = s => SIG[s].dir === 'out';
 const hasLevel = s => SIG[s].dir === 'out' || SIG[s].dir === 'col';
 
@@ -368,17 +389,19 @@ function sigDefaults(sig){
     case 'SNS_CSN': return {pull:'none', wake:'none', level:1, buf:true};
     case 'SNS_SCK': case 'SNS_MOSI': return {pull:'none', wake:'none', level:0, buf:true};
     case 'SNS_MISO': return {pull:'none', wake:'none', buf:true};
+    case 'FLASH_IO': case 'BOOT': return {pull:'none', wake:'none'};
   }
   return {};
 }
-function blankState(){ return {project:'新工程', pins:Array.from({length:N}, (_, i) => blankPin(i))}; }
+function reservedPin(i){ return Object.assign(blankPin(i), {sig:RESERVED[i], pull:'none', wake:'none'}); }
+function blankState(){ return {project:'新工程', pkg:'qfn48', pins:Array.from({length:N}, (_, i) => RESERVED[i] ? reservedPin(i) : blankPin(i))}; }
 
 // SE73K keyboard, reconstructed from projects/mouse_demo/main/main.h + main.c:199-207
 function presetState(){
   const s = blankState();
   s.project = 'SE73K 键盘';
   const set = (i, o) => { s.pins[i] = Object.assign(blankPin(i), sigDefaults(o.sig || 'RESET'), o); };
-  for (let i = 0; i < N; i++) set(i, {sig:'RESET', pull:'none'});
+  for (let i = 0; i < N; i++) if (!isReserved(i)) set(i, {sig:'RESET', pull:'none'});
   set(0, {sig:'GPIO_OUT', label:'ARGB_OFF', level:0});
   set(1, {sig:'LEDC_DO', label:'ARGB_OUT', level:1});
   set(2, {sig:'USB_DM', label:'USB_DN', pull:'pd'});
@@ -418,6 +441,7 @@ function validateState(o){
   if (!o || !Array.isArray(o.pins) || o.pins.length !== N) return null;
   const s = blankState();
   s.project = typeof o.project === 'string' ? o.project.slice(0, 60) : '新工程';
+  s.pkg = PACKAGES[o.pkg] ? o.pkg : 'qfn48';
   o.pins.forEach((p, i) => {
     const b = blankPin(i);
     if (p && SIG[p.sig] && sigsFor(i).includes(p.sig)) b.sig = p.sig;
@@ -427,7 +451,7 @@ function validateState(o){
     if (p && (p.level === 0 || p.level === 1)) b.level = p.level;
     if (p && WAKE[p.wake]) b.wake = p.wake;
     if (p && typeof p.buf === 'boolean') b.buf = p.buf;
-    s.pins[i] = b;
+    s.pins[i] = isReserved(i) ? reservedPin(i) : b;
   });
   return s;
 }
@@ -454,8 +478,24 @@ function defName(i){
 function shortLabel(i){
   const p = state.pins[i];
   if (p.sig === 'RESET') return '';
-  return p.label ? p.label : SIG[p.sig].label;
+  return p.label ? p.label : sigLabel(p.sig, i);
 }
+function sigLabel(sig, i){
+  return sig === 'PWM' && PWM_CH[i] ? 'PWM 输出 (' + PWM_CH[i] + ')' : SIG[sig].label;
+}
+function pkg(){ return PACKAGES[state.pkg] || PACKAGES.qfn48; }
+let pkgCache = {p:null, map:null};
+function pinNo(i){
+  const P = pkg();
+  if (pkgCache.p !== P){
+    const m = Array(N).fill(null);
+    P.pins.forEach((v, n) => { if (typeof v === 'number') m[v] = n; });
+    pkgCache = {p:P, map:m};
+  }
+  return pkgCache.map[i];
+}
+function notBonded(){ const a = []; for (let i = 0; i < N; i++) if (!pinNo(i)) a.push(i); return a; }
+function gpioCount(){ let c = 0; for (let i = 0; i < N; i++) if (pinNo(i) && !isReserved(i)) c++; return c; }
 let toastTimer = 0;
 function toast(msg){
   const t = $('toast'); t.textContent = msg; t.hidden = false;
@@ -544,7 +584,7 @@ function problems(){
   if (ps.snsBad) add('warn', P.findIndex(p => p.sig.startsWith('SNS_')), '传感器扫描要 P10-P13 四个脚一起用');
   P.forEach((p, i) => {
     const s = SIG[p.sig];
-    if (p.sig !== 'RESET' && NOT_BONDED.includes(i)) add('warn', i, pinName(i) + ' 在手册的 QFN32 封装上没有引出，请确认板子用的实际封装');
+    if (p.sig !== 'RESET' && !isReserved(i) && !pinNo(i)) add('warn', i, pinName(i) + ' 在 ' + pkg().chip + ' ' + pkg().name + ' 封装上没有引出');
     if ((i === 18 || i === 21) && p.sig !== 'RESET' && s.cat !== 'dbg') add('info', i, pinName(i) + ' 是 SWD ' + (i === 18 ? '时钟' : '数据') + '脚，被占用后要在启动后关闭 SWD 时钟（main.c:211 的做法），调试器只能在复位后的短窗口里连上');
     if (p.wake !== 'none' && (s.dir === 'out')) add('err', i, pinName(i) + ' 是输出脚，不能做唤醒源');
     if (p.wake === 'fall' && !(p.pull === 'pu1' || p.pull === 'pu2')) add('warn', i, pinName(i) + ' 下降沿唤醒但没开上拉，引脚悬空时可能误唤醒');
@@ -564,53 +604,69 @@ function problems(){
 /* ------------------------------------------------------------------ render: chip */
 const SVGNS = 'http://www.w3.org/2000/svg';
 function chipSVG(){
-  const W = 760, B0 = 190, B1 = 570, PITCH = 42, FIRST = B0 + 43; // body 380, pins 8 per side
-  let s = '<svg viewBox="0 0 ' + W + ' ' + W + '" role="group" aria-label="OM6239 QFN32 封装引脚图">';
-  s += '<rect x="' + B0 + '" y="' + B0 + '" width="' + (B1 - B0) + '" height="' + (B1 - B0) + '" rx="10" fill="var(--chip)"/>';
+  const P = pkg(), n = P.perSide;
+  const PITCH = n > 8 ? 34 : 42, Wd = n > 8 ? 16 : 18, L = 28, M = 22, LBL = 165;
+  const size = n * PITCH + 2 * M;
+  const W = size + 2 * (L + 8 + LBL), B0 = (W - size) / 2, B1 = B0 + size, C = W / 2;
+  const FIRST = B0 + M + PITCH / 2;
+  const mono = ' style="font-family:var(--mono)"';
+  let s = '<svg viewBox="0 0 ' + W + ' ' + W + '" role="group" aria-label="' + esc(P.chip + ' ' + P.name + ' 封装引脚图') + '">';
+  s += '<rect x="' + B0 + '" y="' + B0 + '" width="' + size + '" height="' + size + '" rx="10" fill="var(--chip)"/>';
   s += '<circle cx="' + (B0 + 26) + '" cy="' + (B0 + 26) + '" r="8" fill="none" stroke="var(--chip-ink)" stroke-width="1.5"/>';
-  s += '<text x="380" y="368" text-anchor="middle" font-size="30" font-weight="600" fill="var(--chip-ink)" style="font-family:var(--mono)">OM6239</text>';
-  s += '<text x="380" y="396" text-anchor="middle" font-size="13" fill="var(--chip-ink)" style="font-family:var(--mono)">QFN32 · 4×4 mm</text>';
-  s += '<text x="380" y="418" text-anchor="middle" font-size="11.5" fill="var(--chip-ink)" style="font-family:var(--sans)">' + esc(state.project) + '</text>';
-  for (let n = 1; n <= 32; n++){
-    const side = Math.floor((n - 1) / 8), k = (n - 1) % 8;
-    let cx, cy, pad, numXY, txt;
-    const L = 28, Wd = 18;
-    if (side === 0){ cy = FIRST + k * PITCH; cx = B0; pad = [B0 - L, cy - Wd/2, L, Wd]; numXY = [B0 + 14, cy + 3.5, 'middle']; txt = {x:B0 - L - 8, y:cy, anchor:'end', rot:0}; }
-    else if (side === 1){ cx = FIRST + k * PITCH; cy = B1; pad = [cx - Wd/2, B1, Wd, L]; numXY = [cx, B1 - 8, 'middle']; txt = {x:cx, y:B1 + L + 8, anchor:'end', rot:-90}; }
-    else if (side === 2){ cy = FIRST + (7 - k) * PITCH; cx = B1; pad = [B1, cy - Wd/2, L, Wd]; numXY = [B1 - 14, cy + 3.5, 'middle']; txt = {x:B1 + L + 8, y:cy, anchor:'start', rot:0}; }
-    else { cx = FIRST + (7 - k) * PITCH; cy = B0; pad = [cx - Wd/2, B0 - L, Wd, L]; numXY = [cx, B0 + 15, 'middle']; txt = {x:cx, y:B0 - L - 8, anchor:'start', rot:-90}; }
-    const v = PKG[n];
+  s += '<text x="' + C + '" y="' + (C - 12) + '" text-anchor="middle" font-size="30" font-weight="600" fill="var(--chip-ink)"' + mono + '>' + P.chip + '</text>';
+  s += '<text x="' + C + '" y="' + (C + 16) + '" text-anchor="middle" font-size="13" fill="var(--chip-ink)"' + mono + '>' + P.name + ' · ' + gpioCount() + ' 个 GPIO</text>';
+  s += '<text x="' + C + '" y="' + (C + 38) + '" text-anchor="middle" font-size="11.5" fill="var(--chip-ink)" style="font-family:var(--sans)">' + esc(state.project) + '</text>';
+  if (P.ep) s += '<text x="' + C + '" y="' + (C + 58) + '" text-anchor="middle" font-size="11" fill="var(--chip-ink)" style="font-family:var(--sans)">底部焊盘 ' + (4 * n + 1) + '：' + P.ep + '</text>';
+  for (let k = 1; k <= 4 * n; k++){
+    const side = Math.floor((k - 1) / n), j = (k - 1) % n;
+    let pad, numXY, txt;
+    if (side === 0){ const cy = FIRST + j * PITCH; pad = [B0 - L, cy - Wd/2, L, Wd]; numXY = [B0 + 14, cy + 3.5]; txt = {x:B0 - L - 8, y:cy, anchor:'end', rot:0}; }
+    else if (side === 1){ const cx = FIRST + j * PITCH; pad = [cx - Wd/2, B1, Wd, L]; numXY = [cx, B1 - 8]; txt = {x:cx, y:B1 + L + 8, anchor:'end', rot:-90}; }
+    else if (side === 2){ const cy = FIRST + (n - 1 - j) * PITCH; pad = [B1, cy - Wd/2, L, Wd]; numXY = [B1 - 14, cy + 3.5]; txt = {x:B1 + L + 8, y:cy, anchor:'start', rot:0}; }
+    else { const cx = FIRST + (n - 1 - j) * PITCH; pad = [cx - Wd/2, B0 - L, Wd, L]; numXY = [cx, B0 + 15]; txt = {x:cx, y:B0 - L - 8, anchor:'start', rot:-90}; }
+    const v = P.pins[k];
     const tf = txt.rot ? ' transform="rotate(-90 ' + txt.x + ' ' + txt.y + ')"' : '';
+    const padRect = '<rect class="pad" x="' + pad[0] + '" y="' + pad[1] + '" width="' + pad[2] + '" height="' + pad[3] + '" rx="3"';
+    const numText = '<text class="num" x="' + numXY[0] + '" y="' + numXY[1] + '" text-anchor="middle">' + k + '</text>';
+    // the pin name always sits next to the chip; the label runs outward
+    const lineOf = (name, lbl) => {
+      const cut = lbl && lbl.length > 16 ? lbl.slice(0, 15) + '…' : lbl;
+      const body = txt.anchor === 'start'
+        ? '<tspan class="nm">' + esc(name) + '</tspan>' + (cut ? '<tspan class="lb" dx="6">' + esc(cut) + '</tspan>' : '')
+        : (cut ? '<tspan class="lb">' + esc(cut) + '</tspan><tspan class="nm" dx="6">' : '<tspan class="nm">') + esc(name) + '</tspan>';
+      return '<text' + tf + ' x="' + txt.x + '" y="' + (txt.y + 4) + '" text-anchor="' + txt.anchor + '">' + body + '</text>';
+    };
     if (typeof v === 'number'){
       const p = state.pins[v], lbl = shortLabel(v);
-      const cut = lbl.length > 16 ? lbl.slice(0, 15) + '…' : lbl;
-      s += '<g class="pin' + (v === selected ? ' sel' : '') + '" data-idx="' + v + '" tabindex="0" role="button" aria-label="' + esc(pinName(v) + ' 封装第 ' + n + ' 脚，' + (lbl || '未使用')) + '">';
-      s += '<title>' + esc(pinName(v) + ' · 第 ' + n + ' 脚 · ' + SIG[p.sig].label + (p.label ? ' · ' + p.label : '')) + '</title>';
-      s += '<rect class="pad" x="' + pad[0] + '" y="' + pad[1] + '" width="' + pad[2] + '" height="' + pad[3] + '" rx="3" fill="' + catColor(p.sig) + '"/>';
-      s += '<text class="num" x="' + numXY[0] + '" y="' + numXY[1] + '" text-anchor="' + numXY[2] + '">' + n + '</text>';
-      // the pin name always sits next to the chip; the label runs outward
-      const nameFirst = txt.anchor === 'start';
-      const body = nameFirst
-        ? '<tspan class="nm">' + pinName(v) + '</tspan>' + (cut ? '<tspan class="lb" dx="6">' + esc(cut) + '</tspan>' : '')
-        : (cut ? '<tspan class="lb">' + esc(cut) + '</tspan><tspan class="nm" dx="6">' : '<tspan class="nm">') + pinName(v) + '</tspan>';
-      s += '<text' + tf + ' x="' + txt.x + '" y="' + (txt.y + 4) + '" text-anchor="' + txt.anchor + '">' + body + '</text>';
-      s += '</g>';
+      s += '<g class="pin' + (v === selected ? ' sel' : '') + (isReserved(v) ? ' rsv' : '') + '" data-idx="' + v + '" tabindex="0" role="button" aria-label="' + esc(pinName(v) + ' 封装第 ' + k + ' 脚，' + (lbl || '未使用')) + '">';
+      s += '<title>' + esc(pinName(v) + ' · 第 ' + k + ' 脚 · ' + sigLabel(p.sig, v) + (p.label ? ' · ' + p.label : '')) + '</title>';
+      s += padRect + ' fill="' + catColor(p.sig) + '"/>' + numText + lineOf(pinName(v), lbl) + '</g>';
+    } else if (isExtPin(v)){
+      const ord = EXT_ORDER.indexOf(v);
+      const tip = v + (FIXED_SUB[v] ? ' / ' + FIXED_SUB[v] : '') + ' · ' + (ord >= 0 ? '键盘列扩展输出，扫描顺序第 ' + (ord + 1) + ' 个（main.h 注释）' : '扩展芯片引脚');
+      s += '<g class="fixed ext"><title>' + esc(tip) + '</title>' + padRect + '/>' + numText + lineOf(v, FIXED_SUB[v] || (ord >= 0 ? '扩展列' : '')) + '</g>';
     } else {
-      s += '<g class="fixed"><rect class="pad" x="' + pad[0] + '" y="' + pad[1] + '" width="' + pad[2] + '" height="' + pad[3] + '" rx="3"/>';
-      s += '<text class="num" x="' + numXY[0] + '" y="' + numXY[1] + '" text-anchor="' + numXY[2] + '">' + n + '</text>';
-      s += '<text class="nm"' + tf + ' x="' + txt.x + '" y="' + (txt.y + 4) + '" text-anchor="' + txt.anchor + '">' + v + '</text></g>';
+      s += '<g class="fixed">' + padRect + '/>' + numText + lineOf(v, '') + '</g>';
     }
   }
   s += '</svg>';
   return s;
 }
 function renderChip(){
+  const P = pkg();
   $('chip').innerHTML = chipSVG();
-  $('legend').innerHTML = Object.keys(CATS).map(c => '<span><i class="dot" style="background:var(' + CATS[c].v + ')"></i>' + CATS[c].name + '</span>').join('');
-  $('tray').innerHTML = '<span class="small muted">封装上没有、寄存器里有的脚：</span>' + NOT_BONDED.map(i => {
+  $('legend').innerHTML = Object.keys(CATS).map(c => '<span><i class="dot" style="background:var(' + CATS[c].v + ')"></i>' + CATS[c].name + '</span>').join('') +
+    (P.pins.some(isExtPin) ? '<span><i class="dot ext"></i>键盘列扩展输出（PA/PB，不经 GPIO 寄存器）</span>' : '');
+  $('tray').innerHTML = '<span class="small muted">' + P.chip + ' ' + P.name + ' 没有引出的脚：</span>' + notBonded().map(i => {
     const p = state.pins[i];
-    return '<button class="tp' + (i === selected ? ' sel' : '') + '" data-idx="' + i + '"><i class="dot" style="background:' + catColor(p.sig) + '"></i>' + pinName(i) + (p.sig !== 'RESET' ? ' · ' + esc(shortLabel(i)) : '') + '</button>';
+    const txt = isReserved(i) ? ' · ' + SIG[RESERVED[i]].label.replace('（内部）', '') : (p.sig !== 'RESET' ? ' · ' + esc(shortLabel(i)) : '');
+    return '<button class="tp' + (i === selected ? ' sel' : '') + '" data-idx="' + i + '"><i class="dot" style="background:' + catColor(p.sig) + '"></i>' + pinName(i) + txt + '</button>';
   }).join('');
+  $('pkgInfo').textContent = P.chip + ' ' + P.name + ' · ' + gpioCount() + ' 个 GPIO';
+  const sel = $('pkgSel');
+  if (!sel.options.length) sel.innerHTML = PKG_ORDER.map(k => '<option value="' + k + '">' + PACKAGES[k].chip + ' ' + PACKAGES[k].name + (k === 'qfn48' ? '（SE73K）' : '（手册）') + '</option>').join('');
+  sel.value = state.pkg;
+  sel.title = PACKAGES[state.pkg].src;
 }
 
 /* ------------------------------------------------------------------ render: table */
@@ -622,8 +678,8 @@ function renderTable(){
     const s = SIG[p.sig];
     rows.push('<tr class="pinrow' + (i === selected ? ' sel' : '') + '" data-idx="' + i + '" tabindex="0">' +
       '<td class="mono"><b>' + pinName(i) + '</b></td>' +
-      '<td class="mono">' + (QFN[i] ? QFN[i] : '<span class="muted">未引出</span>') + '</td>' +
-      '<td><span class="fn"><i class="dot" style="background:' + catColor(p.sig) + '"></i>' + s.label + '</span></td>' +
+      '<td class="mono">' + (pinNo(i) ? pinNo(i) : '<span class="muted">未引出</span>') + '</td>' +
+      '<td><span class="fn"><i class="dot" style="background:' + catColor(p.sig) + '"></i>' + sigLabel(p.sig, i) + '</span></td>' +
       '<td class="mono">' + (p.sig === 'RESET' ? '' : esc(defName(i))) + '</td>' +
       '<td>' + PULL[p.pull] + '</td>' +
       '<td class="mono">' + DRV[p.drv] + '</td>' +
@@ -665,18 +721,28 @@ function segHTML(name, opts, cur, disabled){
 }
 function renderInspector(){
   const i = selected, p = state.pins[i], s = SIG[p.sig];
+  if (isReserved(i)){
+    const flash = RESERVED[i] === 'FLASH_IO';
+    $('inspector').innerHTML = '<div class="ph"><h2>引脚设置</h2><span class="small muted mono">GPIO 序号 ' + i + '</span></div><div class="pb">' +
+      '<div class="insp-h"><b>' + pinName(i) + '</b><span class="small muted">' + (pinNo(i) ? '封装第 ' + pinNo(i) + ' 脚' : pkg().chip + ' ' + pkg().name + ' 封装未引出') + '</span></div>' +
+      '<div class="callout">保留脚：' + (flash ? '接芯片内部 Flash（P14-P17），程序就从这里读出来，不能当 GPIO 用。'
+        : 'BOOT 启动脚，上电时的电平决定从 Flash 还是 SRAM 启动，不能当 GPIO 用。') + '</div>' +
+      '<div class="hint">生成代码时这个脚保持工程现有的值：无上下拉、驱动 ' + DRV[p.drv] + '、输入缓冲' + (p.buf ? '开' : '关') + '（复位值），不会被改动。</div>' +
+      '</div>';
+    return;
+  }
   const sigs = sigsFor(i);
   const gen = sigs.filter(k => GENERIC.includes(k)), spec = sigs.filter(k => !GENERIC.includes(k));
   const sh = (i & 15) * 2;
   const isInput = s.dir === 'in' || s.dir === 'col';
   let h = '<div class="ph"><h2>引脚设置</h2><span class="small muted mono">GPIO 序号 ' + i + '</span></div><div class="pb">';
-  h += '<div class="insp-h"><b>' + pinName(i) + '</b><span class="small muted">' + (QFN[i] ? '封装第 ' + QFN[i] + ' 脚' : '手册 QFN32 封装未引出') + '</span></div>';
+  h += '<div class="insp-h"><b>' + pinName(i) + '</b><span class="small muted">' + (pinNo(i) ? '封装第 ' + pinNo(i) + ' 脚' : pkg().chip + ' ' + pkg().name + ' 封装未引出') + '</span></div>';
   h += '<label class="field"><span>功能</span><select id="fSig">' +
-    '<optgroup label="通用">' + gen.map(k => '<option value="' + k + '"' + (k === p.sig ? ' selected' : '') + '>' + SIG[k].label + '</option>').join('') + '</optgroup>' +
-    (spec.length ? '<optgroup label="这个脚的外设功能">' + spec.map(k => '<option value="' + k + '"' + (k === p.sig ? ' selected' : '') + '>' + SIG[k].label + '</option>').join('') + '</optgroup>' : '') +
+    '<optgroup label="通用">' + gen.map(k => '<option value="' + k + '"' + (k === p.sig ? ' selected' : '') + '>' + sigLabel(k, i) + '</option>').join('') + '</optgroup>' +
+    (spec.length ? '<optgroup label="这个脚的外设功能">' + spec.map(k => '<option value="' + k + '"' + (k === p.sig ? ' selected' : '') + '>' + sigLabel(k, i) + '</option>').join('') + '</optgroup>' : '') +
     '</select></label>';
   if (spec.length){
-    h += '<div class="alts">' + spec.map(k => '<button type="button" data-sig="' + k + '" aria-current="' + (k === p.sig) + '"><i class="dot" style="background:' + catColor(k) + '"></i>' + SIG[k].label + '</button>').join('') + '</div>';
+    h += '<div class="alts">' + spec.map(k => '<button type="button" data-sig="' + k + '" aria-current="' + (k === p.sig) + '"><i class="dot" style="background:' + catColor(k) + '"></i>' + sigLabel(k, i) + '</button>').join('') + '</div>';
   }
   h += '<label class="field"><span>标签</span><input type="text" id="fLabel" value="' + esc(p.label) + '" placeholder="例如 KEY_R0" maxlength="32" spellcheck="false"' + (p.sig === 'RESET' ? ' disabled' : '') + '></label>';
   h += '<div class="hint mono">' + (p.sig === 'RESET' ? '未使用的脚不生成宏' : '生成 ' + esc(defName(i)) + '_PIN') + '</div>';
@@ -710,11 +776,11 @@ function groupBy(idxs, keyFn){
 const range = (a, b) => Array.from({length:b - a}, (_, k) => a + k);
 function genH(){
   const P = state.pins, r = regValues();
-  const used = range(0, N).filter(i => P[i].sig !== 'RESET');
+  const used = range(0, N).filter(i => P[i].sig !== 'RESET' && SIG[P[i].sig].cat !== 'flash');
   const L = [];
   L.push('/**');
   L.push(' * @file    io_config.h');
-  L.push(' * @brief   OM6239 引脚定义，由 OM6239 引脚配置器生成');
+  L.push(' * @brief   OM6239 引脚定义，由 OM62xx 引脚配置器生成');
   L.push(' * @note    工程：' + state.project);
   L.push(' *          引脚序号 = 端口 x 8 + 位号，和 OM_GPIO0 的位一一对应');
   L.push(' *          改引脚请回到配置器里改，再重新生成');
@@ -728,7 +794,7 @@ function genH(){
   L.push('/* ---- 引脚序号 ---------------------------------------------------------- */');
   used.forEach(i => {
     const n = defName(i) + '_PIN';
-    L.push('#define ' + n.padEnd(24) + ' ' + (i + 'u').padEnd(4) + '    /* ' + pinName(i) + (QFN[i] ? '  第' + String(QFN[i]).padStart(2) + '脚' : '  未引出') + '  ' + SIG[P[i].sig].label + ' */');
+    L.push('#define ' + n.padEnd(24) + ' ' + (i + 'u').padEnd(4) + '    /* ' + pinName(i) + (pinNo(i) ? '  第' + String(pinNo(i)).padStart(2) + '脚' : '  未引出') + '  ' + sigLabel(P[i].sig, i) + ' */');
   });
   const rowM = maskOf(p => p.sig === 'KEY_ROW'), colM = maskOf(p => p.sig === 'KEY_COL');
   const fallM = maskOf(p => p.wake === 'fall'), riseM = maskOf(p => p.wake === 'rise');
@@ -789,7 +855,7 @@ function genC(){
   const L = [];
   const puDesc = idxs => { const g = groupBy(idxs, i => P[i].pull === 'pu1' ? '30k' : P[i].pull === 'pu2' ? '150k' : null); const k = Object.keys(g); return k.length ? k.map(x => x + '：' + g[x].join(' ')).join('；') : '无上拉'; };
   const drvDesc = idxs => {
-    const bonded = idxs.filter(i => QFN[i]);
+    const bonded = idxs.filter(i => pinNo(i));
     const g = groupBy(bonded, i => DRV[P[i].drv]), keys = Object.keys(g);
     const major = keys.sort((a, b) => g[b].length - g[a].length)[0];
     const rest = keys.filter(k => k !== major).map(k => k + '：' + g[k].join(' '));
@@ -799,7 +865,7 @@ function genC(){
   const ps = perState();
   L.push('/**');
   L.push(' * @file    io_config.c');
-  L.push(' * @brief   OM6239 引脚初始化，由 OM6239 引脚配置器生成');
+  L.push(' * @brief   OM6239 引脚初始化，由 OM62xx 引脚配置器生成');
   L.push(' * @note    工程：' + state.project);
   L.push(' */');
   L.push('#include "io_config.h"');
@@ -934,7 +1000,7 @@ function renderDecode(){
     const a = (v >>> sh) & mask, b = (gen >>> sh) & mask, diff = a !== b;
     if (only && !diff) continue;
     const p = state.pins[i];
-    rows.push('<tr class="' + (diff ? 'difrow' : '') + '" data-idx="' + i + '"><td class="mono"><b>' + pinName(i) + '</b></td><td class="mono">' + (QFN[i] || '<span class="muted">未引出</span>') + '</td>' +
+    rows.push('<tr class="' + (diff ? 'difrow' : '') + '" data-idx="' + i + '"><td class="mono"><b>' + pinName(i) + '</b></td><td class="mono">' + (pinNo(i) || '<span class="muted">未引出</span>') + '</td>' +
       '<td><span class="fn"><i class="dot" style="background:' + catColor(p.sig) + '"></i>' + (p.sig === 'RESET' ? '未使用' : esc(defName(i))) + '</span></td>' +
       '<td>' + reg.dec(a) + '</td><td>' + reg.dec(b) + '</td><td class="diff">' + (diff ? '≠' : '') + '</td></tr>');
   }
@@ -1013,6 +1079,7 @@ document.addEventListener('change', e => {
   else if (t.id === 'fBuf') commit(() => { state.pins[selected].buf = t.checked; });
   else if (t.dataset && t.dataset.per){ const per = PERS.find(p => p.id === t.dataset.per); const k = +t.value; if (k >= 0) applyPer(per, k); }
   else if (t.id === 'showAll'){ showAll = t.checked; renderTable(); }
+  else if (t.id === 'pkgSel'){ if (PACKAGES[t.value] && t.value !== state.pkg) commit(() => { state.pkg = t.value; }, '已切换到 ' + PACKAGES[t.value].chip + ' ' + PACKAGES[t.value].name); }
   else if (t.id === 'decReg' || t.id === 'decOnlyDiff') renderDecode();
   else if (t.id === 'fLabel'){
     const v = t.value.trim().slice(0, 32);
@@ -1067,7 +1134,7 @@ const closeDlg = () => { $('dlg').hidden = true; };
 $('dlg').addEventListener('click', e => { if (e.target.id === 'dlg') closeDlg(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('dlg').hidden) closeDlg(); });
 $('btnExport').addEventListener('click', () => {
-  const txt = JSON.stringify({tool:'om6239-io-config', version:1, project:state.project, pins:state.pins}, null, 1);
+  const txt = JSON.stringify({tool:'om6239-io-config', version:1, project:state.project, pkg:state.pkg, pins:state.pins}, null, 1);
   openDlg('导出配置', '复制下面的 JSON 存成文件或发给同事，下次用「导入配置」粘贴回来。', txt,
     [{t:'关闭', fn:closeDlg}, {t:'复制', primary:true, fn:() => copyText(txt, '配置 JSON 已复制')}]);
 });
