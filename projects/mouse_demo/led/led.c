@@ -30,7 +30,6 @@
 bool                            bdevice_led_status;
 bool                            bled_bright_en;
 bool                            bback_led_status;
-bool                            bargb_valid;
 
 uint8_t                         gtemp_i;
 uint8_t                         gtemp_j;
@@ -84,24 +83,6 @@ extern bool                     b24g_nromal;
 //=============================================================================;
 // 代码区                                                                       ;
 //=============================================================================;
-
-/*******************************************************************************
-* 函数名称: ledc_init()
-* 功能描述:
-* 输入参数： 无
-* 输出参数： 无
-* 说    明:
-*******************************************************************************/
-void ledc_init(void)
-{
-    ledc_config_t config = {
-        .reset_cycles         = 100,
-        .long_pulse_cycles    = 28,
-        .short_pulse_cycles   = 14,
-    };
-    drv_ledc_init(OM_LEDC, &config);
-    bargb_valid = true;
-}
 
 /******************************************************************************
 * 函数名称: led_status_hint
@@ -221,11 +202,7 @@ void device_led_off(void)
 
 void logo_off(void)
 {
-    bargb_valid = false;
-
-    DRV_RCC_CLOCK_ENABLE(RCC_CLK_LEDC, 0U);
-    OM_GPIO0->DATAOUTSET = (1<<ARGB_OUT_PIN);
-    OM_GPIO0->DATAOUTCLR = (1<<ARGB_OFF_PIN);
+    light_port_off();               // 具体怎么关灯由 light_argb.c / light_pwm.c 决定
 }
 
 void clr_rgb(void)
@@ -507,11 +484,7 @@ void logo_process(void)
     }
 
     if(false==bargb_valid)
-    {
-        OM_GPIO0->DATAOUTCLR = (1<<ARGB_OUT_PIN);
-        OM_GPIO0->DATAOUTSET = (1<<ARGB_OFF_PIN);
-        ledc_init();
-    }
+        light_port_init();          // 具体怎么开灯由 light_argb.c / light_pwm.c 决定
 
     if(led_pre_mode != led_cur_mode)
     {

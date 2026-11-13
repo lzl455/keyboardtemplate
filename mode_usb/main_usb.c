@@ -73,7 +73,7 @@ int main_usb(void)
             {
                 logo_scan_time = drv_rtc_read(OM_RTC);
                 logo_process();
-                drv_ledc_write();
+                light_port_flush();
             }
 
             sys_ctrl &= ~bscan_flag;

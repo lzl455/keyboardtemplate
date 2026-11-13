@@ -17,6 +17,7 @@
 #include "usb_cfg_info.h"
 #include "flash_process.h"
 #include "key_code_define.h"
+#include "periph.h"
 
 //----------------------------------------------------------------------------;
 //常量定义
@@ -529,6 +530,7 @@ __RAM_CODE void matrixkey_scan(void)
     matrix_status[18] &= 0x0F;
 
     matrixkey_value();
+    periph_task_all();                  // 可选外设在这里注入按键（如编码器的音量键）
     key_process();
 }
 

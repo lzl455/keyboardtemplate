@@ -433,6 +433,16 @@
               <FileType>1</FileType>
               <FilePath>..\periph\userdefined_key_callback.c</FilePath>
             </File>
+            <File>
+              <FileName>periph.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\periph\periph.c</FilePath>
+            </File>
+            <File>
+              <FileName>knob.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\periph\knob.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -512,6 +522,16 @@
               <FileName>drv_ledc.c</FileName>
               <FileType>1</FileType>
               <FilePath>../../../hal/driver/om6239/drv_ledc.c</FilePath>
+            </File>
+            <File>
+              <FileName>drv_pwm.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../../../hal/driver/common/drv_pwm.c</FilePath>
+            </File>
+            <File>
+              <FileName>drv_encoder.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../../../hal/driver/om6239/drv_encoder.c</FilePath>
             </File>
             <File>
               <FileName>drv_rcc.c</FileName>
@@ -645,6 +665,21 @@
               <FileName>logo_mode.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\led\logo_mode.c</FilePath>
+            </File>
+            <File>
+              <FileName>light_port.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\led\light_port.c</FilePath>
+            </File>
+            <File>
+              <FileName>light_argb.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\led\light_argb.c</FilePath>
+            </File>
+            <File>
+              <FileName>light_pwm.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\led\light_pwm.c</FilePath>
             </File>
           </Files>
         </Group>

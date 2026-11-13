@@ -47,8 +47,6 @@
 #if (RTE_LEDC)
 #include <stddef.h>
 #include "drv_ledc.h"
-#include "led.h"
-#include "main.h"
 
 /*******************************************************************************
  * TYPEDEFS
@@ -91,47 +89,6 @@ om_error_t drv_ledc_init(OM_LEDC_Type *om_ledc, ledc_config_t *config)
 
     return OM_ERROR_OK;
 }
-extern void uart_tx(unsigned char data);
-extern bool bargb_valid;
-
-__RAM_CODE om_error_t drv_ledc_write()
-{
-    __ALIGNED(4) static uint8_t pwm_temp[iLED_MAX*3];
-
-    if(false == bargb_valid)
-        return OM_ERROR_OK;
-OM_CRITICAL_BEGIN();
-    memcpy(pwm_temp, pwm_rgb_tbl, iLED_MAX*3);
-
-    if(iLED_LEV_2 == led_light_lev)
-    {
-        for(uint8_t i=0; i<iLED_MAX*3; i++)
-        {
-            if(iPWM_MAX <= pwm_temp[i])
-                pwm_temp[i] = 0xFF;
-            else
-                pwm_temp[i] <<= 2;
-        }
-    }
-    else if(iLED_LEV_1 == led_light_lev)
-    {
-        for(uint8_t i=0; i<iLED_MAX*3; i++)
-            pwm_temp[i] <<= 1;
-    }
-    else if(iLED_LEV_0 == led_light_lev)
-    {
-        for(uint8_t i=0; i<iLED_MAX*3; i++)
-            pwm_temp[i] >>= 1;
-    }
-
-    OM_LEDC->DMA_CTL = ((uint32_t)pwm_temp << LEDC_DMA_CTL_DMA_ADDR_POS) | (LEDC_DMA_CTL_DMA_LEN_MASK & (iLED_MAX*3));
-    // enable ledc
-    OM_LEDC->CR |= LEDC_CR_ENABLE_MASK;
-OM_CRITICAL_END();
-
-    return OM_ERROR_OK;
-}
-
 om_error_t drv_ledc_write_int(OM_LEDC_Type    *om_ledc,
                               uint8_t         *data,
                               uint16_t         data_len)

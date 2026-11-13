@@ -10,6 +10,9 @@
 #ifndef _LED_H_
 #define _LED_H_
 
+#include "board_config.h"
+#include "light_port.h"
+
 //=============================================================================;
 // 配置引用区                                                                  ;
 //=============================================================================;
@@ -50,7 +53,7 @@
 // 配置区
 //
 #define iLED_NUM_MAX         	(8)
-#define iLED_MAX         	    (8)
+#define iLED_MAX         	    (BOARD_LED_NUM)   // 灯珠数量在 board_config.h 里改
 #define iLED_HALF        	    (4)
 
 enum led_level
@@ -118,7 +121,6 @@ typedef enum {
 extern bool                     blogo_status;
 extern bool                     bled_bright_en;
 extern bool                     bback_led_status;
-extern bool                     bargb_valid;
 
 extern uint8_t                  gtemp_i;
 extern uint8_t                  gtemp_j;
@@ -175,7 +177,6 @@ extern unsigned char    const   sbzl_ctrl_tbl[];
 //-----------------------------------------------------------------------------;
 // 函数引用
 //
-extern void ledc_init(void);
 extern void led_status_hint(void);
 
 extern void logo_off(void);

@@ -164,7 +164,7 @@ __RAM_CODE void RTC_IRQHandler_24G(void)
                 sys_ctrl |= bscan_flag;
             }
             if(0 == (sys_tick_count&0x01))
-                drv_ledc_write();
+                light_port_flush();
 
             break;
         case iMCU_MODE_SLEEP:

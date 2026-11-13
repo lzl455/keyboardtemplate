@@ -168,7 +168,7 @@ __RAM_CODE uint8_t ex2_app_mouse_scan(void)
     {
         matrixkey_scan();
         logo_process();
-        drv_ledc_write();
+        light_port_flush();
 
         lvd_scan_count++;
         if(0==(lvd_scan_count&0x01))
