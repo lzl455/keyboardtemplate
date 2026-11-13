@@ -785,7 +785,7 @@ function genH(){
   const L = [];
   L.push('/**');
   L.push(' * @file    io_config.h');
-  L.push(' * @brief   OM6239 引脚定义，由 OM62xx 引脚配置器生成');
+  L.push(' * @brief   ' + pkg().chip + ' ' + pkg().name + ' 引脚定义，由 OM62xx 引脚配置器生成');
   L.push(' * @note    工程：' + state.project);
   L.push(' *          引脚序号 = 端口 x 8 + 位号，和 OM_GPIO0 的位一一对应');
   L.push(' *          改引脚请回到配置器里改，再重新生成');
@@ -870,7 +870,7 @@ function genC(){
   const ps = perState();
   L.push('/**');
   L.push(' * @file    io_config.c');
-  L.push(' * @brief   OM6239 引脚初始化，由 OM62xx 引脚配置器生成');
+  L.push(' * @brief   ' + pkg().chip + ' ' + pkg().name + ' 引脚初始化，由 OM62xx 引脚配置器生成');
   L.push(' * @note    工程：' + state.project);
   L.push(' */');
   L.push('#include "io_config.h"');
