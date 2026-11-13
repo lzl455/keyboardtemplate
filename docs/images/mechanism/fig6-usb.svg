@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="320" viewBox="0 0 1040 320" role="img" aria-label="USB 模式流程：接入总线、枚举、工作，主机挂起后进入浅睡，由主机恢复或按键远程唤醒">
+<title>USB 模式流程：接入总线、枚举、工作，主机挂起后进入浅睡，由主机恢复或按键远程唤醒</title>
+<style>
+svg{--bg:#f2f4f8; --panel:#ffffff; --ink:#18212f; --muted:#566275; --line:#c3ccd9; --code-bg:#e7ebf2;
+  --ble:#2257c5; --ble-bg:#e3ebfb; --g24:#0a7a67; --g24-bg:#def2ed; --usb:#a25a00; --usb-bg:#fbeedb;
+  --slp:#5f45b5; --slp-bg:#ebe6fa; --slp2-bg:#d9d0f5; --rst:#b23030; --rst-bg:#fbe5e5;
+  --sans:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC","WenQuanYi Zen Hei",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;}
+svg text{font-family:var(--sans);fill:var(--ink)}
+.tt{font-size:13px;font-weight:700}
+.ts{font-size:11.5px;fill:var(--muted)}
+.tm{font-size:10.5px;font-family:var(--mono);fill:var(--muted)}
+.td{font-size:12.5px;font-weight:700}
+.ch{font-size:12px;font-weight:700;fill:var(--muted)}
+.rl{font-size:14px;font-weight:700}
+.lb,.rl{paint-order:stroke;stroke:var(--panel);stroke-width:4px;stroke-linejoin:round}
+.lb{font-size:11.5px}
+.lt{font-size:11.5px;font-weight:700}
+.lb.ble,.rl.ble,.lt.ble{fill:var(--ble)} .lb.g24,.rl.g24{fill:var(--g24)} .lb.usb,.rl.usb{fill:var(--usb)}
+.lb.slp{fill:var(--slp)} .lb.rst,.rl.rst{fill:var(--rst)}
+.nd{stroke-width:1.4}
+.nd.n{fill:var(--panel);stroke:var(--ink)}
+.nd.note{fill:var(--bg);stroke:var(--line);stroke-dasharray:5 4}
+.nd.off{fill:var(--bg);stroke:var(--usb);stroke-dasharray:5 4}
+.nd.ble{fill:var(--ble-bg);stroke:var(--ble)} .nd.g24{fill:var(--g24-bg);stroke:var(--g24)}
+.nd.usb{fill:var(--usb-bg);stroke:var(--usb)} .nd.slp{fill:var(--slp-bg);stroke:var(--slp)}
+.nd.slp2{fill:var(--slp2-bg);stroke:var(--slp);stroke-width:2.2} .nd.rst{fill:var(--rst-bg);stroke:var(--rst)}
+.lane{fill:none;stroke-width:1.2;stroke-dasharray:6 4;stroke:var(--line)}
+.lane.ble{stroke:var(--ble)}
+.e{fill:none;stroke-width:1.5;stroke:var(--ink)}
+.e.dash{stroke-dasharray:5 4}
+.e.ble{stroke:var(--ble)} .e.g24{stroke:var(--g24)} .e.usb{stroke:var(--usb)} .e.slp{stroke:var(--slp)} .e.rst{stroke:var(--rst)}
+.mk{fill:var(--ink)} .mk.ble{fill:var(--ble)} .mk.g24{fill:var(--g24)} .mk.usb{fill:var(--usb)} .mk.slp{fill:var(--slp)} .mk.rst{fill:var(--rst)}
+</style>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<defs>
+<marker id="m6-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path class="mk ink" d="M0,0.8 L10,5 L0,9.2 z"/>
+</marker>
+<marker id="m6-ble" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path class="mk ble" d="M0,0.8 L10,5 L0,9.2 z"/>
+</marker>
+<marker id="m6-g24" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path class="mk g24" d="M0,0.8 L10,5 L0,9.2 z"/>
+</marker>
+<marker id="m6-usb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path class="mk usb" d="M0,0.8 L10,5 L0,9.2 z"/>
+</marker>
+<marker id="m6-slp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path class="mk slp" d="M0,0.8 L10,5 L0,9.2 z"/>
+</marker>
+<marker id="m6-rst" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path class="mk rst" d="M0,0.8 L10,5 L0,9.2 z"/>
+</marker>
+</defs>
+<text class="lb rst" x="30" y="58" text-anchor="start">当前模板：这条入口被注释掉，下面是代码里写好的流程</text>
+<rect class="nd usb" x="30" y="80" width="150" height="90" rx="7"/>
+<text class="tt" x="105.0" y="105.6" text-anchor="middle">接入总线</text>
+<text class="ts" x="105.0" y="122.3" text-anchor="middle">开 48 MHz PLL</text>
+<text class="ts" x="105.0" y="138.3" text-anchor="middle">D+ 上拉</text>
+<text class="tm" x="105.0" y="154.3" text-anchor="middle">hi5_usb_init()</text>
+<rect class="nd usb" x="260" y="80" width="150" height="90" rx="7"/>
+<text class="tt" x="335.0" y="113.6" text-anchor="middle">枚举</text>
+<text class="ts" x="335.0" y="130.3" text-anchor="middle">读描述符、选配置</text>
+<text class="tm" x="335.0" y="146.3" text-anchor="middle">USB_IRQHandler()</text>
+<rect class="nd usb" x="490" y="80" width="220" height="90" rx="7"/>
+<text class="tt" x="600.0" y="105.6" text-anchor="middle">工作</text>
+<text class="ts" x="600.0" y="122.3" text-anchor="middle">SOF 计拍，每 4 ms 扫键上报</text>
+<text class="ts" x="600.0" y="138.3" text-anchor="middle">同时处理驱动软件的配置命令</text>
+<text class="tm" x="600.0" y="154.3" text-anchor="middle">main_usb()</text>
+<rect class="nd slp" x="810" y="80" width="200" height="90" rx="7"/>
+<text class="tt" x="910.0" y="113.6" text-anchor="middle">浅睡 STOP1</text>
+<text class="ts" x="910.0" y="130.3" text-anchor="middle">灯全关，等总线动静</text>
+<text class="tm" x="910.0" y="146.3" text-anchor="middle">usb_sleep()</text>
+<polyline class="e usb" points="180,125 260,125" marker-end="url(#m6-usb)"/>
+<text class="lb usb" x="220" y="118" text-anchor="middle">总线复位</text>
+<polyline class="e usb" points="410,125 490,125" marker-end="url(#m6-usb)"/>
+<text class="lb usb" x="450" y="118" text-anchor="middle">配置完成</text>
+<polyline class="e slp" points="710,108 810,108" marker-end="url(#m6-slp)"/>
+<text class="lb slp" x="760" y="101" text-anchor="middle">挂起约 6 s</text>
+<polyline class="e usb" points="810,142 710,142" marker-end="url(#m6-usb)"/>
+<text class="lb usb" x="760" y="157" text-anchor="middle">主机恢复</text>
+<polyline class="e usb" points="910,170 910,212 670,212 670,170" marker-end="url(#m6-usb)"/>
+<text class="lb usb" x="790" y="229" text-anchor="middle">按任意键：向总线发 10 ms RESUME 把电脑叫醒（需主机允许）</text>
+<polyline class="e rst" points="540,170 540,252" marker-end="url(#m6-rst)"/>
+<text class="lb rst" x="532" y="215" text-anchor="end">升级命令</text>
+<rect class="nd rst" x="430" y="252" width="220" height="52" rx="7"/>
+<text class="tt" x="540.0" y="274.6" text-anchor="middle">跳到 Bootloader</text>
+<text class="tm" x="540.0" y="291.3" text-anchor="middle">jump_to_boot()</text>
+</svg>
