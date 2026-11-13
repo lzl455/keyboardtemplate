@@ -9,9 +9,10 @@
   - OM6239 QFN32：手册 V0.1 Figure 1.1，26 个 GPIO。
 
   点引脚设置功能、标签、上下拉、驱动能力、初始电平、深睡唤醒、输入缓冲，并显示该脚占用的寄存器位。
-- **外设**：USB、UART、ARGB（LEDC）、滚轮编码器、LVD、SWD、传感器扫描，选了自动占脚；每个脚只列出它支持的功能。
+- **外设**：USB、UART、ARGB（LEDC）、旋转编码器、LVD、SWD、传感器扫描，选了自动占脚；每个脚只列出它支持的功能。
+- **编码器设置**：选了编码器引脚后，可以设用途（音量旋钮 / 鼠标滚轮）、方向反转、去抖时间（0–1ms，16 档），生成到 `io_board.h`。
 - **检查**：UART TX/RX 不同组、编码器 A/B 不成对、唤醒脚没上下拉、矩阵行列没上拉、用了封装上没引出的脚等。
-- **生成代码**：`io_config.h`（引脚序号、分组掩码、读写宏）和 `io_config.c`（`io_config_init()`、`io_config_wakeup()`）。
+- **生成代码**：`io_config.h`（引脚序号、分组掩码、读写宏）、`io_config.c`（`io_config_init()`、`io_config_wakeup()`），以及 `io_board.h`（编码器等外设开关，`board_config.h` 会包含它）。
 - **寄存器解码**：粘贴寄存器值，逐脚列出含义并和配置器生成值对比。内置了 `main.c`、`drv_pmu.c` 里的初始化值作为示例。
 - **其他**：撤销（Ctrl+Z）、JSON 导入导出。配置保存在浏览器本地存储里，换电脑请用导出 / 导入。
 
@@ -19,7 +20,11 @@
 
 ## 把生成的代码接进工程
 
-1. **保存文件**：在「生成代码」页分别复制 `io_config.h` 和 `io_config.c`，存到 `projects/mouse_demo/periph/`，用 UTF-8 编码保存（工程源码都是 UTF-8）。这个目录已经在 Keil 的头文件路径里。
+1. **保存文件**：在「生成代码」页分别复制三个文件，用 UTF-8 编码保存（工程源码都是 UTF-8），覆盖原文件：
+   - `io_config.h`、`io_config.c` → `projects/mouse_demo/periph/`
+   - `io_board.h` → `projects/mouse_demo/config/`（`board_config.h` 会自动包含它，不用改别的代码）
+
+   SE73K 工程已经接好了这三个文件，以后改引脚或编码器设置，只需重新生成并覆盖。新工程按下面的步骤接入。
 2. **加进 Keil 工程**：在 Project 窗口的 `periph` 组上右键 → Add Existing Files to Group，选 `io_config.c`。
 3. **上电初始化**：`main.c` 里加 `#include "io_config.h"`，再把 `main()` 开头直接写寄存器的这几行换成一行 `io_config_init();`（下面是模板原来的写法）：
 

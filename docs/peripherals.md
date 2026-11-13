@@ -20,7 +20,7 @@
             └─ knob.c  旋转编码器（音量 / 滚轮），也是新增外设的样板
 ```
 
-所有开关和参数都在 `projects/mouse_demo/config/board_config.h`。驱动开关 `RTE_LEDC`、`RTE_PWM`、`RTE_ENCODER` 由它自动推出，不用再去改 `RTE_om6239.h`。
+所有开关和参数都在 `projects/mouse_demo/config/board_config.h`，其中编码器部分可以由配置器生成到同目录的 `io_board.h`，优先级：Keil Define > `io_board.h` > `board_config.h` 默认值。驱动开关 `RTE_LEDC`、`RTE_PWM`、`RTE_ENCODER` 由它自动推出，不用再去改 `RTE_om6239.h`。
 
 ## 把 ARGB 换成 PWM 灯
 
@@ -39,6 +39,14 @@
 
 ## 加旋转编码器
 
+推荐用引脚配置器（`tools/om6239-io-config`）：
+
+1. 在「外设」栏的「旋转编码器」里选一组引脚，下面会出现编码器设置：用途（音量旋钮 / 鼠标滚轮）、方向反转、去抖时间。
+2. 到「生成代码」页，重新复制三个文件：`io_board.h` 覆盖 `projects/mouse_demo/config/io_board.h`，`io_config.h`、`io_config.c` 覆盖 `projects/mouse_demo/periph/` 里的同名文件（编码器脚的上拉在这里）。
+3. 重新编译。
+
+也可以不用配置器，直接改 `board_config.h`（`io_board.h` 里没设的项才会用这里的默认值）：
+
 1. 在 `board_config.h` 里设置：
    ```c
    #define BOARD_HAS_KNOB     1
@@ -46,7 +54,7 @@
    #define BOARD_KNOB_ACTION  KNOB_ACTION_VOLUME            // 或 KNOB_ACTION_WHEEL
    ```
 2. 编码器两根脚需要上拉，在引脚配置器里设置。
-3. 方向反了就把 `BOARD_KNOB_INVERT` 改成 1。
+3. 方向反了就把 `BOARD_KNOB_INVERT` 改成 1；计数抖动就把 `BOARD_KNOB_DEBOUNCE` 调大（最大 `ENCODER_DEBOUNCE_TIME_1MS`）。
 
 按现在的引脚分配，四组可选脚里只有 P20/P21 是空的：P00/P01 被 ARGB 占用，P05/P06 是矩阵行，P24/P25 是矩阵列。
 

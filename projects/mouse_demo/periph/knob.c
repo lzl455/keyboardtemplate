@@ -6,7 +6,8 @@
  *   KNOB_ACTION_VOLUME  每格发一次音量加 / 减（按下、松开各一帧），走多媒体键通路，
  *                       USB、2.4G、蓝牙三种模式都直接支持
  *   KNOB_ACTION_WHEEL   转动量写进鼠标滚轮，走鼠标报文通路
- * 引脚和动作在 board_config.h 里配置，编码器脚需要上拉（可在引脚配置器里设置）。
+ * 引脚、动作、方向、去抖在引脚配置器里设置（生成 config/io_board.h），也可以直接改 board_config.h。
+ * 编码器脚需要上拉，同样在配置器里设置。
  */
 #include "om_driver.h"
 #include "main.h"
@@ -54,7 +55,8 @@ static void knob_hw_run(bool wakeup)
 
 static void knob_init(void)
 {
-    drv_encoder_init();                 /* 时钟、中断、去抖 */
+    drv_encoder_init();                 /* 时钟、中断 */
+    OM_ENCODER->SAM = BOARD_KNOB_DEBOUNCE;  /* 去抖时间，board_config.h / io_board.h 设置 */
     knob_hw_run(false);                 /* 按 board_config.h 选脚并开始计数 */
 
     knob_delta    = 0;
