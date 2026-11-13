@@ -424,6 +424,11 @@
               <FilePath>..\periph\matrix_key.c</FilePath>
             </File>
             <File>
+              <FileName>io_config.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\periph\io_config.c</FilePath>
+            </File>
+            <File>
               <FileName>userdefined_key.o</FileName>
               <FileType>3</FileType>
               <FilePath>..\periph\userdefined_key.o</FilePath>
