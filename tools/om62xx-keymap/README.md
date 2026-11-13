@@ -18,6 +18,11 @@
   - 「锁 Win 键」只在 Win 模式下起作用。
   - 斜体 = 两种模式发的修饰键不一样；橙色框 = 在当前模式下效果不对（比如 Mac 下的 Alt+Tab、锁 Win、Menu 键，Win 下的 Cmd+Tab、显示桌面）。右边每个键都会同时写出 Win 和 Mac 模式下发的是什么。
   - 在 Mac 预览下改修饰键、按键录入都按 Mac 键名来（勾 ⌘ Command、按 Cmd+C），存进键表时自动换算成固件要的位。
+- **Mac 独立键表（可选，默认关）**：勾上键位页顶部的「Mac 独立键表」，Mac 模式就用单独的一套键表（基础层 + Fn 层），想让 Mac 下某些键和 Win 不一样时用。
+  - 打开时从当前 Win 键表换算一份：Alt / Win 已经对调好，所以不改的话 Mac 下的效果和原来完全一样。之后「系统」切到「Mac 键表」就是在改这套表，修饰键直接按 Mac 写（⌘ Command、⌥ Option），不再换算。
+  - 固件里 Mac 模式不再对调 Alt / Win，切换 Win / Mac 时换表。Mac 键表存在 Flash 第 8、12 页（原来就预留了），恢复出厂也会擦。
+  - 检查会提示 Mac 键表里有没有切回 Win 的键（Win 模式 / Win/Mac 切换），没有的话切到 Mac 就回不去了。
+  - 改了 Mac 键表还想重来，点提示条里的「从 Win 键表重新复制」（可以撤销）。关掉开关后 Mac 键表还保留，再打开还在。
 - **矩阵硬件**：
   - 列线：每一列选 GPIO 直连，或者扩展列的第几步（PA7、PA6、PA4…，由 PA5 控制，翻转 KEY_EX 换列），也可以设成不用、删掉或加新列。
   - 行线：8 根，每根可以换脚或不用，引脚不连续也行。
@@ -36,6 +41,7 @@
 - **生成代码**：
   - `matrix_cfg.h`：引脚、物理位置到键表的映射、特殊键位置、指示灯读写宏。
   - `matrix_key_tbl_win.h`、`matrix_key_tbl_win_fn.h`：键表，格式和原来一样，每行注释标出是哪个物理键。
+  - 打开 Mac 独立键表时还有 `matrix_key_tbl_mac.h`、`matrix_key_tbl_mac_fn.h`。
 - **其他**：
   - 导入已有的键表 `.h`，按数组名自动判断是哪一层。
   - JSON 导入导出，撤销（Ctrl+Z）。
@@ -43,7 +49,7 @@
 
 ## 接进工程
 
-1. `matrix_cfg.h` → `projects/mouse_demo/config/`；两个键表 → `projects/mouse_demo/periph/`。用 UTF-8 保存，覆盖原文件，重新编译。
+1. `matrix_cfg.h` → `projects/mouse_demo/config/`；键表（两个，打开 Mac 独立键表时四个）→ `projects/mouse_demo/periph/`。用 UTF-8 保存，覆盖原文件，重新编译。Mac 独立键表的开关是 `matrix_cfg.h` 里的 `MATRIX_MAC_KEYMAP`，不用改别的代码。
 2. **键表存在 Flash 里**：固件只在 Flash 里没有键表时才从代码复制，所以烧录后要长按 **Fn + Esc** 2 秒恢复出厂，新键表才生效。
 3. 改了行列或指示灯的引脚，还要到引脚配置器（`tools/om6239-io-config`）里同步改上拉、唤醒和初始电平，重新生成 `io_config.c`。休眠时 `mouse_periph_wakeup_enable()` 里写的 `PAD_PU_CTRL_1` 也要跟着改。
 
@@ -63,6 +69,12 @@
 `periph/matrix_key.h` 用 `KEYPOS_xxx` 换算出原来的 `iKEY_FN_C`、`iKEY_INDEX_W` 等宏，`rf_fcc.c` 和 `userdefined_key_callback.c` 不用改。没指定的位置是 `MATRIX_POS_NONE`，永远读不到按下。
 
 `main/main.h` 里的 `MATRX_ALL_*`、`KEY_EX_*`、`mLED_*` 也都从 `matrix_cfg.h` 展开，换脚不用改代码。
+
+Win / Mac（`MATRIX_MAC_KEYMAP`）：
+
+- 0（默认）：两种模式共用 `matrix_key_tbl_win*.h`，`key_process()` 在 Mac 模式下把 Alt 和 Win 对调。Mac 键表不编进固件。
+- 1：`flash/flash_process.c` 的 `laod_key_cfg()` 在 Mac 模式下加载 `matrix_key_tbl_mac*.h`（Flash 第 8、12 页），`key_process()` 不再对调。按键切换 Win / Mac、或者开机按通道读到的模式和原来不同时（`win_mac_load()`），都会重新加载键表。
+- 两种设置下，默认配置的 Mac 模式发出的键完全一样（主机上逐项核对过）。
 
 ## 验证
 

@@ -101,7 +101,7 @@ uint8_t const desk_mac[] = {
 ******************************************************************************/
 void __attribute__((noinline)) key_process(void)
 {
-    uint8_t i, temp_bit;
+    uint8_t i;
 
     if(0 != (key_ctrl&bkey_lock_status))
     {
@@ -111,9 +111,10 @@ void __attribute__((noinline)) key_process(void)
         key_ctrl_ex &= ~bcom_ctrl_en;
     }
 
+#if (!MATRIX_MAC_KEYMAP)                        // Win / Mac 共用键表时，Mac 模式下把 Alt 和 Win 对调；有 Mac 独立键表就不对调
     if(0==(key_ctrl&bwin_mac_sataus))
     {                                           // mac系统，按键交换
-        temp_bit = modifier_key_tmp;
+        uint8_t temp_bit = modifier_key_tmp;
         modifier_key_tmp &= 0x33;
         if(temp_bit&(1<<7))
             modifier_key_tmp |= 0x40;
@@ -124,6 +125,7 @@ void __attribute__((noinline)) key_process(void)
         if(temp_bit&(1<<3))
             modifier_key_tmp |= 0x04;
     }
+#endif
     if(key_ctrl_ex&bcom_ctrl_en)
 	{
 	    if(10 > com_ctrl_index)

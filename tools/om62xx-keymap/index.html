@@ -192,10 +192,11 @@ dialog .pb textarea{width:100%;min-height:300px;font-family:var(--mono);font-siz
               <div class="seg" id="segView"><button data-v="phys" aria-pressed="true">物理矩阵</button><button data-v="slot" aria-pressed="false">键表位置</button></div>
               <span class="lbl">系统</span>
               <div class="seg" id="segOS" title="预览键盘在 Win / Mac 模式下实际发出的键"><button data-v="win" aria-pressed="true">Win</button><button data-v="mac" aria-pressed="false">Mac 预览</button></div>
+              <label class="small" style="display:inline-flex;align-items:center;gap:5px" title="Mac 模式用单独的一套键表（matrix_key_tbl_mac*.h），不再对调 Alt / Win"><input type="checkbox" id="macSep">Mac 独立键表</label>
             </div>
             <span class="small muted" id="kmStat"></span>
           </div>
-          <div class="osbar" id="osBar" hidden>Mac 预览：显示 Mac 模式下实际发出的键。固件在 Mac 模式下会把键表里的 Alt 和 Win 对调（<code>key_process()</code>），所以键表里的 Alt 键在 Mac 上是 ⌘ Command，Win 键是 ⌥ Option；Alt+Tab、Cmd+Tab 这类组合功能键不对调。橙色框 = 这个键在 Mac 下效果不对。在这个视图下改修饰键按 Mac 键名来，存进键表时自动换算。</div>
+          <div class="osbar" id="osBar" hidden></div>
           <div class="pickhint" id="pickHint" hidden><span id="pickText"></span><button class="btn sm" id="pickCancel">取消</button></div>
           <div class="kwrap" id="kmWrap"></div>
           <div class="legend" id="legend"></div>
@@ -264,6 +265,8 @@ dialog .pb textarea{width:100%;min-height:300px;font-family:var(--mono);font-siz
               <button class="btn" data-file="cfg" aria-pressed="true">matrix_cfg.h</button>
               <button class="btn" data-file="win" aria-pressed="false">matrix_key_tbl_win.h</button>
               <button class="btn" data-file="fn" aria-pressed="false">matrix_key_tbl_win_fn.h</button>
+              <button class="btn" data-file="mac" aria-pressed="false">matrix_key_tbl_mac.h</button>
+              <button class="btn" data-file="macfn" aria-pressed="false">matrix_key_tbl_mac_fn.h</button>
             </div>
             <div class="bar"><button class="btn sm" id="btnCopy">复制</button><button class="btn sm primary" id="btnSave">下载</button></div>
           </div>
@@ -276,7 +279,7 @@ dialog .pb textarea{width:100%;min-height:300px;font-family:var(--mono);font-siz
           <div class="pb">
             <ol class="steps">
               <li><code>matrix_cfg.h</code> → <code>projects/mouse_demo/config/</code></li>
-              <li><code>matrix_key_tbl_win.h</code>、<code>matrix_key_tbl_win_fn.h</code> → <code>projects/mouse_demo/periph/</code></li>
+              <li><code>matrix_key_tbl_win.h</code>、<code>matrix_key_tbl_win_fn.h</code> → <code>projects/mouse_demo/periph/</code>；打开了 Mac 独立键表的话，<code>matrix_key_tbl_mac.h</code>、<code>matrix_key_tbl_mac_fn.h</code> 也放这里</li>
               <li>用 UTF-8 保存，覆盖原文件后重新编译。工程已经接好，不用改别的代码。</li>
               <li><b>键表存在 Flash 里</b>：烧录后要长按 <b>Fn + Esc</b> 2 秒恢复出厂，新键表才会生效（固件只在 Flash 里没有键表时才从代码复制）。</li>
               <li>改了行列引脚或指示灯脚，还要到<b>引脚配置器</b>里同步改上拉、唤醒和初始电平，重新生成 <code>io_config.c</code>。</li>
@@ -352,6 +355,20 @@ const SPECIAL = [
 const SP = Object.fromEntries(SPECIAL.map(x => [x[0], {label:x[1], grp:x[2], impl:!!x[3]}]));
 const SYS = [['iSYS_POWER','系统电源'],['iSYS_SLEEP','系统睡眠'],['iSYS_WAKEUP','系统唤醒']];
 const MODS = [['CTRL','Ctrl'],['SHIFT','Shift'],['ALT','Alt'],['GUI','Win']];
+// Win / Mac 共用键表时，固件在 Mac 模式下把 Alt 和 GUI 对调（左右各自对调）
+const MAC_SWAP = {iLEFT_ALT:'iLEFT_GUI', iLEFT_GUI:'iLEFT_ALT', iRIGHT_ALT:'iRIGHT_GUI', iRIGHT_GUI:'iRIGHT_ALT'};
+const swapMods = mods => mods.map(m => MAC_SWAP[m] || m);
+// 把 Win 键表换算成 Mac 独立键表：Alt / GUI 对调后，Mac 下的效果和共用键表时完全一样
+function swapTable(t){
+  return t.map(e => { const k = parseKey(e); return (k.kind === 'std' || k.kind === 'mod') && k.mods.some(m => MAC_SWAP[m]) ? makeKey(Object.assign({}, k, {mods: swapMods(k.mods)})) : e.slice(); });
+}
+// 四张键表：基础层 / Fn 层，各分 Win（共用时也是 Mac 用的）和 Mac 独立
+const TBL_NAME = {win:'基础层', fn:'Fn 层', mac:'Mac 基础层', macfn:'Mac Fn 层'};
+const TBL_FILE = {
+  win:  ['matrix_key_tbl_win.h',    'matrixkey_win_tbl',    '_MATRIX_KEY_WIN_TBL_',    '基础层'],
+  fn:   ['matrix_key_tbl_win_fn.h', 'matrixkey_win_fn_tbl', '_MATRIX_KEY_WIN_FN_TBL_', 'Fn 层（按住 Fn 时）'],
+  mac:  ['matrix_key_tbl_mac.h',    'matrixkey_mac_tbl',    '_MATRIX_KEY_MAC_TBL_',    'Mac 模式基础层'],
+  macfn:['matrix_key_tbl_mac_fn.h', 'matrixkey_mac_fn_tbl', '_MATRIX_KEY_MAC_FN_TBL_', 'Mac 模式 Fn 层（按住 Fn 时）']};
 const T_STD = 'iKEY_TYPE_STD|iKEY_PRESS', T_INV = 'iKEY_TYPE_INVALID';
 
 // 固件按位置读取的键。expect = 这个位置应该放的键码（用于检查和自动定位）
@@ -401,10 +418,13 @@ function presetState(){
     v:1, cols, rows:[4,5,6,7,8,9,10,11], exPin:26,
     led:{vdd:19, vddOn:1, num:{pin:20,on:0}, caps:{pin:21,on:0}, low:{pin:22,on:0}},
     keys, roles,
-    win: DATA.win.map(e => e.slice()), fn: DATA.fn.map(e => e.slice())
+    win: DATA.win.map(e => e.slice()), fn: DATA.fn.map(e => e.slice()),
+    // Mac 独立键表（可选，默认关）：从 Win 键表换算，打开后 Mac 下的效果和原来一样
+    macKeymap:false, macTouched:false, mac: swapTable(DATA.win), macfn: swapTable(DATA.fn)
   };
 }
-const ORIG = {win: DATA.win.map(e => e.join('|').replace(/\s/g,'')), fn: DATA.fn.map(e => e.join('|').replace(/\s/g,''))};
+const ORIG_TBL = {win: DATA.win, fn: DATA.fn, mac: swapTable(DATA.win), macfn: swapTable(DATA.fn)};
+const ORIG = Object.fromEntries(Object.entries(ORIG_TBL).map(([k, t]) => [k, t.map(e => e.join('|').replace(/\s/g,''))]));
 
 /* ============================================================================
  * 状态、撤销、本地保存
@@ -422,7 +442,13 @@ function commit(fn){
 function undo(){ if (!undoStack.length) return toast('没有可以撤销的操作'); state = JSON.parse(undoStack.pop()); save(); render(); }
 function save(){ try { localStorage.setItem('om62xx-keymap', JSON.stringify(state)); } catch(e){} }
 function load(){
-  try { const s = JSON.parse(localStorage.getItem('om62xx-keymap') || 'null'); if (s && s.v === 1 && validState(s)) state = s; } catch(e){}
+  try { const s = JSON.parse(localStorage.getItem('om62xx-keymap') || 'null'); if (s && s.v === 1 && validState(s)) state = migrate(s); } catch(e){}
+}
+function migrate(s){              // 旧版配置没有 Mac 键表：从 Win 键表换算一份
+  if (!(Array.isArray(s.mac) && s.mac.length === SLOT_NUM)) s.mac = swapTable(s.win);
+  if (!(Array.isArray(s.macfn) && s.macfn.length === SLOT_NUM)) s.macfn = swapTable(s.fn);
+  s.macKeymap = !!s.macKeymap; s.macTouched = !!s.macTouched;
+  return s;
 }
 function validState(s){
   return s && Array.isArray(s.cols) && Array.isArray(s.rows) && s.keys && s.roles && s.led &&
@@ -486,8 +512,6 @@ function keyClass(e){
  * Mac 模式：key_process() 把修饰键字节里的 Alt 和 GUI 对调（左右各自对调），Ctrl / Shift 不变。
  * 组合功能键（Alt+Tab 等）和显示桌面是在对调之后才加上的，两种模式发的一样。
  * Win 模式下「锁 Win 键」打开后屏蔽左右 GUI 和 Menu 键；Mac 模式下锁 Win 不起作用。 */
-const MAC_SWAP = {iLEFT_ALT:'iLEFT_GUI', iLEFT_GUI:'iLEFT_ALT', iRIGHT_ALT:'iRIGHT_GUI', iRIGHT_GUI:'iRIGHT_ALT'};
-const swapMods = mods => mods.map(m => MAC_SWAP[m] || m);
 const MAC_SYM = {CTRL:'⌃', SHIFT:'⇧', ALT:'⌥', GUI:'⌘'};
 const modShortMac = m => { const [, side, k] = /^i(LEFT|RIGHT)_(\w+)$/.exec(m); return (side === 'RIGHT' ? 'R' : '') + MAC_SYM[k]; };
 const modNameMac = {CTRL:'⌃ Control', SHIFT:'⇧ Shift', ALT:'⌥ Option', GUI:'⌘ Command'};
@@ -499,12 +523,23 @@ const SP_OS = {   // [Win 模式下, Mac 模式下, Win 注意, Mac 注意]
   iKEY_DESK_MAC:  ['显示桌面(Mac)', '显示桌面', '依次发 Win、Win+Alt+H、Win+Alt+H+M，Windows 上没有对应功能', ''],
   iKEY_WIN_LOCK:  ['锁 Win 键', '锁Win(无效)', '', 'Mac 模式下不起作用'],
 };
+const macSep = () => !!state.macKeymap;
+const tbl = (L, os) => (os === 'mac' && macSep()) ? (L === 'fn' ? 'macfn' : 'mac') : L;   // L = 'win' / 'fn'（界面上的层）
+const doSwap = os => os === 'mac' && !macSep();     // 共用键表时 Mac 模式才对调
+const isFnTbl = T => T === 'fn' || T === 'macfn';
+// 实际发出的内容（修饰键按 HID 位），用来判断 Win / Mac 模式下发的是否一样
+function sent(e, os){
+  const k = parseKey(e);
+  if (k.kind === 'std' || k.kind === 'mod') return k.code + '|' + (doSwap(os) ? swapMods(k.mods) : k.mods).slice().sort().join('+');
+  return k.kind === 'none' ? '' : e.join('|').replace(/\s/g, '');
+}
+const osDiffAt = (L, s) => sent(state[tbl(L, 'win')][s], 'win') !== sent(state[tbl(L, 'mac')][s], 'mac');
 function keyLabelOS(e, os){
   if (os !== 'mac'){ const k = parseKey(e); return k.kind === 'sp' && SP_OS[k.code] ? SP_OS[k.code][0] : keyLabel(e); }
   const k = parseKey(e);
-  if (k.kind === 'std'){ const m = swapMods(k.mods); return (m.length ? m.map(modShortMac).join('') + '+' : '') + stdShort(k.code); }
+  if (k.kind === 'std'){ const m = doSwap('mac') ? swapMods(k.mods) : k.mods; return (m.length ? m.map(modShortMac).join('') + '+' : '') + stdShort(k.code); }
   if (k.kind === 'mod'){
-    const m = swapMods(k.mods);
+    const m = doSwap('mac') ? swapMods(k.mods) : k.mods;
     if (m.length === 1){ const [, side, key] = /^i(LEFT|RIGHT)_(\w+)$/.exec(m[0]); return (side === 'RIGHT' ? 'R' : '') + MAC_SYM[key] + ' ' + {CTRL:'Ctrl', SHIFT:'Shift', ALT:'Opt', GUI:'Cmd'}[key]; }
     return m.map(modShortMac).join('');
   }
@@ -517,8 +552,6 @@ function osNote(e, os){
   if (os === 'mac' && k.kind === 'std' && k.code === 'iSTD_APP') return 'Mac 上没有对应的菜单键，一般没反应';
   return '';
 }
-// Win 和 Mac 模式下发出的修饰键不同：只有带 Alt / GUI 的普通键和修饰键（组合功能键两种模式发的一样）
-const osDiff = e => { const k = parseKey(e); return (k.kind === 'std' || k.kind === 'mod') && k.mods.some(m => /_(ALT|GUI)$/.test(m)); };
 const keyCode = e => { const k = parseKey(e); return k.kind === 'mmk' ? 'iMMK_' + k.name + '_L' : (k.kind === 'none' ? null : k.code); };
 
 /* ============================================================================
@@ -554,6 +587,7 @@ function freeSlot(pref){
  * ========================================================================== */
 function problems(){
   const P = [], add = (lvl, msg, sel, fix) => P.push({lvl, msg, sel, fix});
+  const TL = macSep() ? ['win','fn','mac','macfn'] : ['win','fn'];
   const S = state, src = slotSources(), {raw, exNum} = scanOrder();
   // 引脚
   const use = {};
@@ -601,19 +635,19 @@ function problems(){
   for (const [cn, l] of Object.entries(deadCol)) add('warn', '列 ' + cn + ' 没有接引脚，上面的 ' + l.length + ' 个键扫不到', {pos:l[0]});
   for (const [r, l] of Object.entries(deadRow)) add('warn', '行 R' + r + ' 没有接引脚，' + l.map(posText).join('、') + ' 共 ' + l.length + ' 个键扫不到', {pos:l[0]});
   for (let s = 0; s < SLOT_NUM; s++){
-    const w = S.win[s], f = S.fn[s], has = parseKey(w).kind !== 'none' || parseKey(f).kind !== 'none';
+    const w = S.win[s], f = S.fn[s], has = TL.some(T => parseKey(S[T][s]).kind !== 'none');
     if (!src[s].length && has) add('info', '键表 ' + slotName(s) + ' 有键码（' + (keyLabel(w) || '—') + ' / ' + (keyLabel(f) || '—') + '），但没有物理按键接到这里，按不到', {slot:s});
     if (src[s].length > 1) add('info', src[s].map(posText).join(' 和 ') + ' 共用键表 ' + slotName(s) + '，两个键效果一样', {slot:s});
   }
-  let lightUsed = 0;
-  for (const L of ['win','fn']) for (let s = 0; s < SLOT_NUM; s++){
-    const k = parseKey(S[L][s]); const lname = L === 'win' ? '基础层' : 'Fn 层';
+  const lightUsed = new Set();      // 按「层 + 位置」去重，Win / Mac 两套表同一个键只算一次
+  for (const L of TL) for (let s = 0; s < SLOT_NUM; s++){
+    const k = parseKey(S[L][s]); const lname = TBL_NAME[L];
     if (k.kind === 'sp'){
       const sp = SP[k.code];
       if (!sp) add('warn', lname + ' ' + slotName(s) + ' 的特殊键 ' + k.code + ' 不认识', {slot:s, layer:L});
       else {
         if (!sp.impl) add('warn', lname + ' ' + slotName(s) + ' 的「' + sp.label + '」固件里没有实现，按了没反应', {slot:s, layer:L});
-        if (sp.grp === 'light' && src[s].length) lightUsed++;
+        if (sp.grp === 'light' && src[s].length) lightUsed.add((isFnTbl(L) ? 'f' : 'b') + s);
       }
     }
     if (k.kind === 'raw') add('warn', lname + ' ' + slotName(s) + ' 的键码类型无法识别：' + k.type, {slot:s, layer:L});
@@ -624,14 +658,21 @@ function problems(){
   }
   for (const os of ['mac', 'win']){
     const bad = [];
-    for (const L of ['win','fn']) for (let s = 0; s < SLOT_NUM; s++) if (src[s].length && osNote(S[L][s], os)) bad.push((L === 'fn' ? 'Fn+' : '') + slotName(s) + ' ' + keyLabelOS(S[L][s], os));
-    if (bad.length) add('info', (os === 'mac' ? 'Mac' : 'Win') + ' 模式下效果不对的键：' + bad.join('、') + '（切到「' + (os === 'mac' ? 'Mac 预览' : 'Win') + '」看原因）');
+    for (const L of ['win','fn']){ const T = tbl(L, os); for (let s = 0; s < SLOT_NUM; s++) if (src[s].length && osNote(S[T][s], os)) bad.push((L === 'fn' ? 'Fn+' : '') + slotName(s) + ' ' + keyLabelOS(S[T][s], os)); }
+    if (bad.length) add('info', (os === 'mac' ? 'Mac' : 'Win') + ' 模式下效果不对的键：' + bad.join('、') + '（切到「' + (os === 'mac' ? (macSep() ? 'Mac 键表' : 'Mac 预览') : 'Win') + '」看原因）');
   }
-  if (lightUsed) add('info', '键表里用了 ' + lightUsed + ' 个灯光键，需要固件打开 BOARD_LIGHT_KEYS（有灯时默认打开）');
-  const fnSlots = [];
-  for (let s = 0; s < SLOT_NUM; s++) if (keyCode(S.win[s]) === 'iMODE_KEY_FN' && src[s].length) fnSlots.push(s);
-  if (!fnSlots.length) add('warn', '基础层没有能按到的 Fn 键，Fn 层用不了');
-  fnSlots.forEach(s => { if (keyCode(S.fn[s]) !== 'iMODE_KEY_FN') add('warn', 'Fn 键 ' + slotName(s) + ' 在 Fn 层不是 Fn，按住 Fn 时这个键会变成别的键', {slot:s, layer:'fn'}); });
+  if (lightUsed.size) add('info', '键表里用了 ' + lightUsed.size + ' 个灯光键，需要固件打开 BOARD_LIGHT_KEYS（有灯时默认打开）');
+  const reach = (Ts, codes) => Ts.some(T => { for (let s = 0; s < SLOT_NUM; s++) if (src[s].length && codes.includes(keyCode(S[T][s]))) return true; return false; });
+  for (const [B, F] of macSep() ? [['win','fn'],['mac','macfn']] : [['win','fn']]){
+    const fnSlots = [];
+    for (let s = 0; s < SLOT_NUM; s++) if (keyCode(S[B][s]) === 'iMODE_KEY_FN' && src[s].length) fnSlots.push(s);
+    if (!fnSlots.length) add('warn', TBL_NAME[B] + '没有能按到的 Fn 键，' + TBL_NAME[F] + '用不了');
+    fnSlots.forEach(s => { if (keyCode(S[F][s]) !== 'iMODE_KEY_FN') add('warn', 'Fn 键 ' + slotName(s) + ' 在' + TBL_NAME[F] + '不是 Fn，按住 Fn 时这个键会变成别的键', {slot:s, layer:F}); });
+  }
+  if (macSep()){
+    if (!reach(['mac','macfn'], ['iKEY_WIN','iKEY_WIN_MAC'])) add('warn', 'Mac 键表里没有切回 Win 的键（Win 模式 / Win/Mac 切换），切到 Mac 模式后就回不去了');
+    if (!reach(['win','fn'], ['iKEY_MAC','iKEY_WIN_MAC'])) add('info', 'Win 键表里没有切到 Mac 的键（Mac 模式 / Win/Mac 切换），Mac 键表用不上');
+  }
   // 特殊位置
   for (const R of ROLES){
     const s = S.roles[R.id];
@@ -667,13 +708,13 @@ function toast(msg){ const t = $('toast'); t.textContent = msg; t.classList.add(
 
 function rolesAt(s){ return ROLES.filter(R => state.roles[R.id] === s); }
 function cellHTML(s, extra, title){
-  const L = ui.layer, e = state[L][s], lbl = keyLabelOS(e, ui.os), cls = keyClass(e);
-  const note = osNote(e, ui.os);
+  const T = tbl(ui.layer, ui.os), e = state[T][s], lbl = keyLabelOS(e, ui.os), cls = keyClass(e);
+  const note = osNote(e, ui.os), od = ui.os === 'mac' && osDiffAt(ui.layer, s);
   if (note) title += '\n' + (ui.os === 'mac' ? 'Mac' : 'Win') + ' 模式：' + note;
-  if (ui.os === 'mac' && osDiff(e)) title += '\nWin 模式下是：' + (keyLabelOS(e, 'win') || '无');
+  if (od) title += '\nWin 模式下是：' + (keyLabelOS(state[tbl(ui.layer, 'win')][s], 'win') || '无');
   const tags = rolesAt(s).map(R => ROLE_TAG[R.id]).join(' ');
-  const diff = (state[L][s].join('|').replace(/\s/g,'') !== ORIG[L][s]);
-  return '<div class="kc ' + cls + (diff ? ' diff' : '') + (note ? ' osw' : '') + (ui.os === 'mac' && osDiff(e) ? ' osd' : '') + extra + '" tabindex="0" role="button" title="' + esc(title) + '"' + '>' +
+  const diff = (e.join('|').replace(/\s/g,'') !== ORIG[T][s]);
+  return '<div class="kc ' + cls + (diff ? ' diff' : '') + (note ? ' osw' : '') + (od ? ' osd' : '') + extra + '" tabindex="0" role="button" title="' + esc(title) + '"' + '>' +
     (tags ? '<span class="tag">' + esc(tags) + '</span>' : '') + esc(lbl || '—') + '</div>';
 }
 function renderKeymap(){
@@ -748,26 +789,27 @@ function pickerOptions(cur){
   return h;
 }
 function layerEditor(L, s){
-  const e = state[L][s], k = parseKey(e), name = L === 'win' ? '基础层' : 'Fn 层';
+  const T = tbl(L, ui.os), e = state[T][s], k = parseKey(e), name = TBL_NAME[T];
   const mac = ui.os === 'mac';
   const raw = (k.kind === 'std' || k.kind === 'mod') ? k.mods : [];
-  const mods = mac ? swapMods(raw) : raw;      // Mac 预览下按 Mac 实际收到的修饰键显示
+  const mods = doSwap(ui.os) ? swapMods(raw) : raw;   // 按 Mac 实际收到的修饰键显示（Mac 独立键表本来就是 Mac 键名）
   const side = mods.some(m => m.startsWith('iRIGHT')) ? 'RIGHT' : 'LEFT';
   const showMods = k.kind === 'std' || k.kind === 'mod';
-  const orig = ORIG[L][s], now = e.join('|').replace(/\s/g,'');
+  const orig = ORIG[T][s], now = e.join('|').replace(/\s/g,'');
   return '<div class="layer" data-layer="' + L + '">' +
-    '<h3><span>' + name + '：' + esc(keyLabel(e) || '无') + '</span>' +
-    '<span class="row2">' + (L === 'fn' ? '<button class="btn sm" data-act="same">同基础层</button>' : '') +
+    '<h3><span>' + name + '：' + esc(keyLabelOS(e, ui.os) || '无') + '</span>' +
+    '<span class="row2">' + (L === 'fn' ? '<button class="btn sm" data-act="same">同' + (T === 'macfn' ? ' Mac ' : '') + '基础层</button>' : '') +
     '<button class="btn sm' + (ui.capture === L ? ' on capture' : '') + '" data-act="cap" title="点一下后在键盘上按键；Esc 或点别处取消（Esc 键请在下拉里选）">' + (ui.capture === L ? '请按键…（Esc 取消）' : '按键录入') + '</button></span></h3>' +
     '<div class="row2"><input type="search" placeholder="搜索键名" data-act="q" aria-label="搜索' + name + '键码"><select data-act="pick" aria-label="' + name + '键码">' + pickerOptions(e) + '</select></div>' +
     (showMods ? '<div class="mods"><span class="small muted">修饰键' + (mac ? '（Mac）' : '') + '</span>' + MODS.map(([m, t]) => '<label><input type="checkbox" data-mod="' + m + '"' + (mods.some(x => x.endsWith('_' + m)) ? ' checked' : '') + '>' + (mac ? modNameMac[m] : t) + '</label>').join('') +
       '<select data-act="side" aria-label="修饰键左右"><option value="LEFT"' + (side === 'LEFT' ? ' selected' : '') + '>左侧</option><option value="RIGHT"' + (side === 'RIGHT' ? ' selected' : '') + '>右侧</option></select></div>' : '') +
-    '<div class="cur">' + esc(e[0] + ', ' + e[1]) + (now !== orig ? '<br>原来：' + esc(DATA[L][s].join(', ')) : '') + '</div>' + osLines(e) + '</div>';
+    '<div class="cur">' + esc(e[0] + ', ' + e[1]) + (now !== orig ? '<br>原来：' + esc(ORIG_TBL[T][s].join(', ')) : '') + '</div>' + osLines(L, s) + '</div>';
 }
-function osLines(e){
-  if (parseKey(e).kind === 'none') return '';
-  const line = os => { const n = osNote(e, os); return '<span' + (n ? ' class="w"' : '') + '><b>' + (os === 'mac' ? 'Mac' : 'Win') + ' 模式：</b>' + esc(keyLabelOS(e, os) || '无') + (n ? '（' + esc(n) + '）' : '') + '</span>'; };
-  return '<div class="os">' + line('win') + line('mac') + '</div>';
+function osLines(L, s){
+  const eW = state[tbl(L, 'win')][s], eM = state[tbl(L, 'mac')][s];
+  if (parseKey(eW).kind === 'none' && parseKey(eM).kind === 'none') return '';
+  const line = (os, e) => { const n = osNote(e, os); return '<span' + (n ? ' class="w"' : '') + '><b>' + (os === 'mac' ? 'Mac' : 'Win') + ' 模式' + (macSep() ? (os === 'mac' ? '（Mac 键表）' : '（Win 键表）') : '') + '：</b>' + esc(keyLabelOS(e, os) || '无') + (n ? '（' + esc(n) + '）' : '') + '</span>'; };
+  return '<div class="os">' + line('win', eW) + line('mac', eM) + '</div>';
 }
 function renderInspector(){
   const el = $('insp'), sel = ui.sel;
@@ -884,13 +926,15 @@ const hex2 = v => '0x' + v.toString(16).toUpperCase().padStart(2, '0');
 const hex8 = v => '0x' + (v >>> 0).toString(16).toUpperCase().padStart(8, '0') + 'u';
 const pad = (s, n) => s + ' '.repeat(Math.max(1, n - s.length));
 function genTable(L){
-  const name = L === 'win' ? 'matrixkey_win_tbl' : 'matrixkey_win_fn_tbl';
-  const guard = L === 'win' ? '_MATRIX_KEY_WIN_TBL_' : '_MATRIX_KEY_WIN_FN_TBL_';
+  const [file, name, guard, desc] = TBL_FILE[L];
+  const isMac = L === 'mac' || L === 'macfn';
   const src = slotSources();
   let o = '/*******************************************************************************\n' +
-    '* 文件名称: matrix_key_tbl_win' + (L === 'fn' ? '_fn' : '') + '.h\n' +
-    '* 文件描述: ' + (L === 'win' ? '基础层' : 'Fn 层（按住 Fn 时）') + '键表，由 tools/om62xx-keymap 矩阵表配置器生成\n' +
+    '* 文件名称: ' + file + '\n' +
+    '* 文件描述: ' + desc + '键表，由 tools/om62xx-keymap 矩阵表配置器生成\n' +
     '*\n' +
+    (isMac ? '* 只在 matrix_cfg.h 里 MATRIX_MAC_KEYMAP 为 1 时编进固件，Mac 模式下用这张表，不再对调 Alt / Win：\n' +
+             '* 修饰键按 Mac 写，iLEFT_GUI = ⌘ Command，iLEFT_ALT = ⌥ Option。\n*\n' : '') +
     '* 每个键 2 字节：键码, 类型。顺序 C3..C18 × R0..R7（C18 只有 R0-R3），共 124 个，\n' +
     '* 第 n 个键对应 matrix_status[n/8+3] 的第 n%8 位。物理按键和键表位置的对应关系见 matrix_cfg.h。\n' +
     '* 注意：键表存在 Flash 里，烧录后长按 Fn+Esc 2 秒恢复出厂，新键表才生效。\n' +
@@ -980,6 +1024,10 @@ function genCfg(){
       o += pad('#define MATRIX_LED_' + nm + '_OFF', 36) + release(L.pin, !L.on) + '\n';
     } else o += pad('#define MATRIX_LED_' + nm + '_ON', 36) + '{}      /* 没有这个灯 */\n' + pad('#define MATRIX_LED_' + nm + '_OFF', 36) + '{}\n';
   }
+  o += '\n/* ---- Mac 独立键表 ----\n' +
+    ' * 0：Win / Mac 共用 matrix_key_tbl_win*.h，Mac 模式下 key_process() 把 Alt 和 Win 对调\n' +
+    ' * 1：Mac 模式用 matrix_key_tbl_mac*.h（存在 Flash 第 8、12 页），不再对调；切换 Win / Mac 时换表 */\n' +
+    '#define MATRIX_MAC_KEYMAP       ' + (S.macKeymap ? 1 : 0) + '\n';
   o += '\n#endif /* __MATRIX_CFG_H */\n';
   return o;
 }
@@ -992,9 +1040,11 @@ function highlight(code){
     return body + (cm ? '<span class="cm">' + cm + '</span>' : '');
   }).join('\n');
 }
-const FILES = {cfg:['matrix_cfg.h', genCfg], win:['matrix_key_tbl_win.h', () => genTable('win')], fn:['matrix_key_tbl_win_fn.h', () => genTable('fn')]};
+const FILES = {cfg:['matrix_cfg.h', genCfg], win:['matrix_key_tbl_win.h', () => genTable('win')], fn:['matrix_key_tbl_win_fn.h', () => genTable('fn')],
+  mac:['matrix_key_tbl_mac.h', () => genTable('mac')], macfn:['matrix_key_tbl_mac_fn.h', () => genTable('macfn')]};
 function renderCode(){
-  document.querySelectorAll('#fileBtns .btn').forEach(b => b.setAttribute('aria-pressed', b.dataset.file === ui.file));
+  if (!macSep() && (ui.file === 'mac' || ui.file === 'macfn')) ui.file = 'cfg';
+  document.querySelectorAll('#fileBtns .btn').forEach(b => { b.setAttribute('aria-pressed', b.dataset.file === ui.file); b.hidden = !macSep() && /^mac/.test(b.dataset.file); });
   $('codeOut').innerHTML = highlight(FILES[ui.file][1]());
 }
 
@@ -1003,6 +1053,11 @@ function render(){
   document.querySelectorAll('#segView button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === ui.view));
   document.querySelectorAll('#segOS button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === ui.os));
   $('osBar').hidden = ui.os !== 'mac';
+  $('macSep').checked = macSep();
+  document.querySelector('#segOS button[data-v=mac]').textContent = macSep() ? 'Mac 键表' : 'Mac 预览';
+  $('osBar').innerHTML = macSep()
+    ? '正在编辑 <b>Mac 独立键表</b>：Mac 模式下固件直接用这套表（基础层 / Fn 层），不再对调 Alt 和 Win，修饰键按 Mac 键名写（⌘ Command、⌥ Option）。Win 模式用「Win」那套表。斜体 = 和 Win 键表发的不一样；橙色框 = 在 Mac 下效果不对。 <button class="btn sm" id="macCopy">从 Win 键表重新复制</button>'
+    : 'Mac 预览：显示 Mac 模式下实际发出的键。现在 Win / Mac 共用一套键表，固件在 Mac 模式下会把键表里的 Alt 和 Win 对调（<code>key_process()</code>），所以键表里的 Alt 键在 Mac 上是 ⌘ Command，Win 键是 ⌥ Option；Alt+Tab、Cmd+Tab 这类组合功能键不对调。橙色框 = 这个键在 Mac 下效果不对。在这个视图下改修饰键按 Mac 键名来，存进键表时自动换算。想让 Mac 用不一样的键，勾上「Mac 独立键表」。';
   $('pickHint').hidden = !ui.pick;
   if (ui.pick){ const R = ROLES.find(x => x.id === ui.pick); $('pickText').textContent = '点选「' + R.grp + ' · ' + R.name + '」的位置：在键位图上点一个键'; }
   renderKeymap(); renderInspector(); renderProblems(); renderHW(); renderRoles();
@@ -1053,11 +1108,29 @@ $('kmWrap').addEventListener('keydown', e => {
   const t = cells[ri][ci]; if (t && !t.classList.contains('na')){ cellClick(t); const n = $('kmWrap').querySelectorAll('tr')[ri + 1].querySelectorAll('.kc')[ci]; n && n.focus(); }
 });
 $('pickCancel').addEventListener('click', () => { ui.pick = null; render(); });
+$('macSep').addEventListener('change', e => {
+  const on = e.target.checked;
+  commit(() => {
+    state.macKeymap = on;
+    if (on && !state.macTouched){ state.mac = swapTable(state.win); state.macfn = swapTable(state.fn); }   // 没改过就按当前 Win 键表重新换算
+    if (on) ui.os = 'mac';
+  });
+  toast(on ? '已打开 Mac 独立键表：从 Win 键表换算（Alt / Win 已对调），Mac 下的效果和原来一样，可以接着改' : '已关闭 Mac 独立键表，Win / Mac 共用一套键表（Mac 键表保留，再打开还在）');
+});
+$('osBar').addEventListener('click', e => {
+  if (e.target.id !== 'macCopy') return;
+  commit(() => { state.mac = swapTable(state.win); state.macfn = swapTable(state.fn); state.macTouched = false; });
+  toast('已从 Win 键表重新复制到 Mac 键表（可以撤销）');
+});
 $('segOS').addEventListener('click', e => { const b = e.target.closest('button'); if (b){ ui.os = b.dataset.v; try { localStorage.setItem('om62xx-keymap-os', ui.os); } catch(err){} render(); } });
 
-function setKey(L, s, k){
-  commit(() => { state[L][s] = makeKey(k); ui.layer = L; });   // 键位图切到改的那一层，图上能马上看到
-  toast((L === 'win' ? '基础层 ' : 'Fn 层 ') + slotName(s) + ' → ' + (keyLabelOS(state[L][s], ui.os) || '无') + (ui.os === 'mac' ? '（Mac）' : ''));
+function setKey(T, s, k){        // T = 键表：win / fn / mac / macfn
+  commit(() => {
+    state[T][s] = makeKey(k);
+    ui.layer = isFnTbl(T) ? 'fn' : 'win';         // 键位图切到改的那一层，图上能马上看到
+    if (T === 'mac' || T === 'macfn') state.macTouched = true;
+  });
+  toast(TBL_NAME[T] + ' ' + slotName(s) + ' → ' + (keyLabelOS(state[T][s], ui.os) || '无') + (ui.os === 'mac' && !macSep() ? '（Mac 预览）' : ''));
 }
 $('insp').addEventListener('change', e => {
   const t = e.target, s = curSlot();
@@ -1066,7 +1139,7 @@ $('insp').addEventListener('change', e => {
     return commit(() => { state.keys[pos] = ns; });
   }
   const lay = t.closest('.layer'); if (!lay || s == null) return;
-  const L = lay.dataset.layer, k = parseKey(state[L][s]);
+  const L = tbl(lay.dataset.layer, ui.os), k = parseKey(state[L][s]);
   if (t.dataset.act === 'pick'){
     const v = t.value, [kind, code] = v.includes(':') ? [v.slice(0, v.indexOf(':')), v.slice(v.indexOf(':') + 1)] : [v, ''];
     const keepMods = (k.kind === 'std' || k.kind === 'mod') ? k.mods : [];
@@ -1079,7 +1152,7 @@ $('insp').addEventListener('change', e => {
   } else if (t.dataset.mod || t.dataset.act === 'side'){
     const side = lay.querySelector('[data-act=side]').value;
     let mods = [...lay.querySelectorAll('[data-mod]')].filter(x => x.checked).map(x => 'i' + side + '_' + x.dataset.mod);
-    if (ui.os === 'mac') mods = swapMods(mods);  // Mac 实际收到的 -> 键表里存的（对调是对称的）
+    if (doSwap(ui.os)) mods = swapMods(mods);   // Mac 实际收到的 -> 共用键表里存的（对调是对称的）
     const code = k.code || 'iSTD_NULL';
     if (code === 'iSTD_NULL' && !mods.length) setKey(L, s, {kind:'none'});
     else setKey(L, s, {kind: code === 'iSTD_NULL' ? 'mod' : 'std', code, mods});
@@ -1110,16 +1183,16 @@ $('insp').addEventListener('click', e => {
       const pos = ui.sel.c + ',' + ui.sel.r, m = /^C(\d+)$/.exec(ui.sel.c);
       const ns = freeSlot(m ? slotOf(+m[1], ui.sel.r) : null);
       if (ns < 0) return toast('键表 124 个位置都用完了');
-      return commit(() => { state.keys[pos] = ns; state.win[ns] = makeKey({kind:'none'}); state.fn[ns] = makeKey({kind:'none'}); });
+      return commit(() => { state.keys[pos] = ns; for (const T of ['win','fn','mac','macfn']) state[T][ns] = makeKey({kind:'none'}); });
     }
     case 'delkey': {
       const pos = ui.sel.c + ',' + ui.sel.r;
       return commit(() => {
         delete state.keys[pos];
-        if (!physOfSlot(s).length){ state.win[s] = makeKey({kind:'none'}); state.fn[s] = makeKey({kind:'none'}); }
+        if (!physOfSlot(s).length) for (const T of ['win','fn','mac','macfn']) state[T][s] = makeKey({kind:'none'});
       });
     }
-    case 'same': return commit(() => { state.fn[s] = state.win[s].slice(); });
+    case 'same': return commit(() => { state[tbl('fn', ui.os)][s] = state[tbl('win', ui.os)][s].slice(); });
     case 'cap': { const L = lay.dataset.layer; ui.capture = ui.capture === L ? null : L; ui.capMod = null; return renderInspector(); }
   }
 });
@@ -1161,7 +1234,7 @@ document.addEventListener('keydown', e => {
     const mods = [];
     if (e.ctrlKey) mods.push('iLEFT_CTRL'); if (e.shiftKey) mods.push('iLEFT_SHIFT'); if (e.altKey) mods.push('iLEFT_ALT'); if (e.metaKey) mods.push('iLEFT_GUI');
     ui.capture = null; ui.capMod = null;
-    return setKey(L, s, {kind:'std', code, mods: ui.os === 'mac' ? swapMods(mods) : mods});
+    return setKey(tbl(L, ui.os), s, {kind:'std', code, mods: doSwap(ui.os) ? swapMods(mods) : mods});
   }
   if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)){ e.preventDefault(); undo(); }
   if (e.key === 'Escape' && ui.pick){ ui.pick = null; render(); }
@@ -1171,7 +1244,7 @@ document.addEventListener('keyup', e => {
     e.preventDefault();
     const s = curSlot(), L = ui.capture; ui.capture = null; ui.capMod = null;
     const m = [MOD_MAP[e.code]];
-    setKey(L, s, {kind:'mod', code:'iSTD_NULL', mods: ui.os === 'mac' ? swapMods(m) : m});
+    setKey(tbl(L, ui.os), s, {kind:'mod', code:'iSTD_NULL', mods: doSwap(ui.os) ? swapMods(m) : m});
   }
 }, true);
 
@@ -1255,7 +1328,10 @@ function onProb(e){
   if (!p || !p.sel) return;
   if (p.sel.role){ setTab('roles'); return; }
   setTab('keys');
-  if (p.sel.layer) ui.layer = p.sel.layer;
+  if (p.sel.layer){
+    const T = p.sel.layer; ui.layer = isFnTbl(T) ? 'fn' : 'win';
+    if (T === 'mac' || T === 'macfn') ui.os = 'mac'; else if (macSep()) ui.os = 'win';
+  }
   if (p.sel.pos){ const [c, r] = p.sel.pos.split(','); ui.view = 'phys'; ui.sel = {c, r:+r}; }
   else if (p.sel.slot != null){
     const ph = physOfSlot(p.sel.slot)[0];
@@ -1294,13 +1370,13 @@ $('btnExport').addEventListener('click', () => {
   download('keymap-config.json', t, 'application/json');
 });
 $('btnImport').addEventListener('click', () => openDlg('json', '导入配置', '粘贴「导出配置」得到的 JSON，或者从文件读取。'));
-$('btnImportH').addEventListener('click', () => openDlg('h', '导入键表 .h', '粘贴 <code>matrix_key_tbl_win.h</code> 或 <code>matrix_key_tbl_win_fn.h</code> 的内容（按数组名自动判断是哪一层）。只替换键码，物理按键和键表位置的对应关系不变。'));
+$('btnImportH').addEventListener('click', () => openDlg('h', '导入键表 .h', '粘贴 <code>matrix_key_tbl_win.h</code>、<code>matrix_key_tbl_win_fn.h</code>、<code>matrix_key_tbl_mac.h</code> 或 <code>matrix_key_tbl_mac_fn.h</code> 的内容（按数组名自动判断是哪一张）。只替换键码，物理按键和键表位置的对应关系不变。'));
 function parseTableH(text){
   const t = text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
   const m = /(matrixkey_\w+)\s*\[\s*\]\s*=\s*\{([\s\S]*?)\}\s*;/.exec(t);
   if (!m) throw new Error('没找到 matrixkey_xxx[] = { ... }; 数组');
-  const L = m[1] === 'matrixkey_win_tbl' ? 'win' : m[1] === 'matrixkey_win_fn_tbl' ? 'fn' : null;
-  if (!L) throw new Error('数组名 ' + m[1] + ' 不是 matrixkey_win_tbl / matrixkey_win_fn_tbl（Mac 键表固件没有用）');
+  const L = Object.keys(TBL_FILE).find(T => TBL_FILE[T][1] === m[1]);
+  if (!L) throw new Error('数组名 ' + m[1] + ' 不是 matrixkey_win_tbl / matrixkey_win_fn_tbl / matrixkey_mac_tbl / matrixkey_mac_fn_tbl');
   const toks = m[2].split(',').map(s => s.trim()).filter(Boolean);
   if (toks.length !== SLOT_NUM * 2) throw new Error('键表应该有 ' + SLOT_NUM * 2 + ' 个字节，这里有 ' + toks.length + ' 个');
   const out = [];
@@ -1317,10 +1393,11 @@ $('dlgOk').addEventListener('click', () => {
     if (dlgMode === 'json'){
       const s = JSON.parse(text);
       if (!validState(s)) throw new Error('不是这个配置器导出的配置');
-      commit(() => { state = s; }); toast('已导入配置');
+      commit(() => { state = migrate(s); }); toast('已导入配置');
     } else {
       const {L, out} = parseTableH(text);
-      commit(() => { state[L] = out; }); toast('已导入' + (L === 'win' ? '基础层' : 'Fn 层') + '键表');
+      commit(() => { state[L] = out; if (L === 'mac' || L === 'macfn'){ state.macKeymap = true; state.macTouched = true; ui.os = 'mac'; } });
+      toast('已导入' + TBL_NAME[L] + '键表' + (L === 'mac' || L === 'macfn' ? '，并打开了 Mac 独立键表' : ''));
     }
     $('dlg').close();
   } catch(err){ alert('导入失败：' + err.message); }
