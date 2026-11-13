@@ -92,18 +92,6 @@ typedef struct {
  */
 extern om_error_t drv_ledc_init(OM_LEDC_Type *om_ledc, ledc_config_t *config);
 
-/**
- *******************************************************************************
- * @brief  ledc write by polling
- *
- * @param om_ledc   The LEDC device address
- * @param data      The data pointer of the data to be write to dma
- * @param data_len  The date length in bytes, and data_len < 512
- *
- * @return status, see@ref om_error_t
- *******************************************************************************
- */
-extern om_error_t drv_ledc_write();
 
 /**
  *******************************************************************************

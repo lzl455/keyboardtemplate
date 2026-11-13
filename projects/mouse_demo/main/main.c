@@ -49,6 +49,7 @@
 #include "main_usb.h"
 #include "main_24g.h"
 #include "ex2_hal.h"
+#include "periph.h"
 
 //-----------------------------------------------------------------------------;
 //常量定义区
@@ -142,6 +143,8 @@ void mouse_periph_wakeup_enable(uint8_t mask)
 
         led_status_hint();
     }
+
+    periph_sleep_all(mask);             // 可选外设跟着切换休眠级别（periph/periph.c）
 
     OM_CRITICAL_END();
 }
@@ -287,6 +290,8 @@ soft_reset_process:
         key_ctrl &= ~bwin_mac_sataus;
         if(sys_mode&(1<<(0&0x07)))
             key_ctrl |= bwin_mac_sataus;
+
+        periph_init_all();                  // 可选外设初始化（periph/periph.c）
 
         if(iDEVICE_TYPE_USB == device_type)
         {

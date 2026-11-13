@@ -12,6 +12,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "board_config.h"
 
 //=============================================================================;
 // 配置引用区                                                                  ;
@@ -162,8 +163,8 @@
 #define LED_BLE1_PIN            (2*8+3)
 #define LED_24G_PIN             (2*8+4)
 
-#define ARGB_OUT_PIN            (0*8+1)
-#define ARGB_OFF_PIN            (0*8+0)
+#define ARGB_OUT_PIN            BOARD_ARGB_DATA_PIN     // 灯的引脚在 board_config.h 里改
+#define ARGB_OFF_PIN            BOARD_LIGHT_PWR_PIN
 
 #define VED_VDD_PIN             (2*8+3)
 

@@ -62,7 +62,7 @@ extern bool ll_conn_sleep_prologue(void);
 extern void RTC_IRQHandler_24G(void);
 
 bool   bperiph_int;
-extern bool bargb_valid;
+extern void knob_isr(int8_t step);
 
 //----------------------------------------------------------------------------
 //表格定义区
@@ -197,6 +197,9 @@ void ENCODER_IRQHandler(void)
         } else {
             wheel_data = OM_ENCODER->CNT&0x0f;
         }
+        #if (RTE_ENCODER)
+        knob_isr((int8_t)wheel_data);           // 交给编码器模块累计（periph/knob.c）
+        #endif
 
         bperiph_int =1;
         if(iDEVICE_TYPE_BT2 >= device_type)

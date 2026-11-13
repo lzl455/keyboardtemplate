@@ -48,6 +48,9 @@
 #ifndef __RTE_OM6239_H
 #define __RTE_OM6239_H
 
+/* 可选外设（灯、编码器）的开关在 board_config.h 里改，这里的 RTE_LEDC / RTE_PWM / RTE_ENCODER 跟着它走 */
+#include "board_config.h"
+
 // <o.0> RTE_CORTEX_SYSTICK
 #define RTE_CORTEX_SYSTICK                             0
 // <o.0> RTE_SYSTICK_REGISTER_CALLBACK
@@ -123,7 +126,7 @@
 #define RTE_RTC_IRQ_PRIORITY                           2
 
 // <o.0> RTE_PWM
-#define RTE_PWM                                        0
+#define RTE_PWM                                        BOARD_RTE_PWM
 
 // <o.0> RTE_FLASH
 #define RTE_FLASH                                      1
@@ -164,7 +167,7 @@
 #define RTE_SENSCAN_IRQ_PRIORITY                       2
 
 // <o.0> RTE_ENCODER
-#define RTE_ENCODER                                    0
+#define RTE_ENCODER                                    BOARD_RTE_ENCODER
 // <o.0> RTE_ENCODER_REGISTER_CALLBACK
 #define RTE_ENCODER_REGISTER_CALLBACK                  0
 //   <o.0..1> RTE_ENCODER_IRQ_PRIORITY
@@ -172,7 +175,7 @@
 #define RTE_ENCODER_IRQ_PRIORITY                       2
 
 // <o.0> RTE_LEDC
-#define RTE_LEDC                                       1
+#define RTE_LEDC                                       BOARD_RTE_LEDC
 // <o.0> RTE_LEDC_REGISTER_CALLBACK
 #define RTE_LEDC_REGISTER_CALLBACK                     1
 //   <o.0..1> RTE_LEDC_IRQ_PRIORITY
