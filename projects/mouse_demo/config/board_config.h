@@ -3,7 +3,7 @@
  * @brief   板级配置：可选外设的开关和参数都集中在这里
  *
  * 换灯、加外设时只改这个文件，不用去改 USB / 2.4G / 蓝牙的主循环。
- * 本文件只能放宏定义，不能 include 其他头文件（RTE_om6239.h 会包含它）。
+ * 本文件只能放宏定义（RTE_om6239.h 会包含它），唯一例外是同样只有宏定义的 io_board.h。
  * 带 #ifndef 的几个开关也可以在 Keil 的 C/C++ Define 里覆盖，方便一套代码出多个型号，
  * 例如 BOARD_LIGHT=LIGHT_PWM,BOARD_HAS_KNOB=1。
  *
@@ -11,6 +11,10 @@
  */
 #ifndef __BOARD_CONFIG_H
 #define __BOARD_CONFIG_H
+
+/* 引脚配置器（tools/om6239-io-config）生成的板级开关，目前包含编码器设置。
+ * 它先于下面的默认值生效：优先级 Keil Define > io_board.h > 本文件默认值 */
+#include "io_board.h"
 
 /* =============================================================================
  * 灯光
@@ -69,14 +73,23 @@
  * ENCODER_PINMUX_SEL_IO_05_06  A=P06 B=P05
  * ENCODER_PINMUX_SEL_IO_20_21  A=P21 B=P20   ← 本工程目前唯一空闲的一组
  * ENCODER_PINMUX_SEL_IO_24_25  A=P25 B=P24 */
+#ifndef BOARD_KNOB_PINS
 #define BOARD_KNOB_PINS         ENCODER_PINMUX_SEL_IO_20_21
+#endif
 
 #define KNOB_ACTION_VOLUME      0       /* 旋转 = 音量加减（多媒体键） */
 #define KNOB_ACTION_WHEEL       1       /* 旋转 = 鼠标滚轮 */
 #ifndef BOARD_KNOB_ACTION
 #define BOARD_KNOB_ACTION       KNOB_ACTION_VOLUME
 #endif
+#ifndef BOARD_KNOB_INVERT
 #define BOARD_KNOB_INVERT       0       /* 方向反了就改成 1 */
+#endif
+
+/* 去抖时间：ENCODER_DEBOUNCE_TIME_0 ~ ENCODER_DEBOUNCE_TIME_1MS，共 16 档（drv_encoder.h） */
+#ifndef BOARD_KNOB_DEBOUNCE
+#define BOARD_KNOB_DEBOUNCE     ENCODER_DEBOUNCE_TIME_250US
+#endif
 
 /* =============================================================================
  * 由上面的开关推出驱动开关，RTE_om6239.h 使用，不要手改
