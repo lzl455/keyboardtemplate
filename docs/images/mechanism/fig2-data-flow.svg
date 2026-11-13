@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="400" viewBox="0 0 1000 400" role="img" aria-label="按键从矩阵扫描、解码、生成报文，再经 USB、蓝牙或 2.4G 三条通道之一送到主机">
+<title>按键从矩阵扫描、解码、生成报文，再经 USB、蓝牙或 2.4G 三条通道之一送到主机</title>
+<style>
+svg{--bg:#f2f4f8; --panel:#ffffff; --ink:#18212f; --muted:#566275; --line:#c3ccd9; --code-bg:#e7ebf2;
+  --ble:#2257c5; --ble-bg:#e3ebfb; --g24:#0a7a67; --g24-bg:#def2ed; --usb:#a25a00; --usb-bg:#fbeedb;
+  --slp:#5f45b5; --slp-bg:#ebe6fa; --slp2-bg:#d9d0f5; --rst:#b23030; --rst-bg:#fbe5e5;
+  --sans:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC","WenQuanYi Zen Hei",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;}
+svg text{font-family:var(--sans);fill:var(--ink)}
+.tt{font-size:13px;font-weight:700}
+.ts{font-size:11.5px;fill:var(--muted)}
+.tm{font-size:10.5px;font-family:var(--mono);fill:var(--muted)}
+.td{font-size:12.5px;font-weight:700}
+.ch{font-size:12px;font-weight:700;fill:var(--muted)}
+.rl{font-size:14px;font-weight:700}
+.lb,.rl{paint-order:stroke;stroke:var(--panel);stroke-width:4px;stroke-linejoin:round}
+.lb{font-size:11.5px}
+.lt{font-size:11.5px;font-weight:700}
+.lb.ble,.rl.ble,.lt.ble{fill:var(--ble)} .lb.g24,.rl.g24{fill:var(--g24)} .lb.usb,.rl.usb{fill:var(--usb)}
+.lb.slp{fill:var(--slp)} .lb.rst,.rl.rst{fill:var(--rst)}
+.nd{stroke-width:1.4}
+.nd.n{fill:var(--panel);stroke:var(--ink)}
+.nd.note{fill:var(--bg);stroke:var(--line);stroke-dasharray:5 4}
+.nd.off{fill:var(--bg);stroke:var(--usb);stroke-dasharray:5 4}
+.nd.ble{fill:var(--ble-bg);stroke:var(--ble)} .nd.g24{fill:var(--g24-bg);stroke:var(--g24)}
+.nd.usb{fill:var(--usb-bg);stroke:var(--usb)} .nd.slp{fill:var(--slp-bg);stroke:var(--slp)}
+.nd.slp2{fill:var(--slp2-bg);stroke:var(--slp);stroke-width:2.2} .nd.rst{fill:var(--rst-bg);stroke:var(--rst)}
+.lane{fill:none;stroke-width:1.2;stroke-dasharray:6 4;stroke:var(--line)}
+.lane.ble{stroke:var(--ble)}
+.e{fill:none;stroke-width:1.5;stroke:var(--ink)}
+.e.dash{stroke-dasharray:5 4}
+.e.ble{stroke:var(--ble)} .e.g24{stroke:var(--g24)} .e.usb{stroke:var(--usb)} .e.slp{stroke:var(--slp)} .e.rst{stroke:var(--rst)}
+.mk{fill:var(--ink)} .mk.ble{fill:var(--ble)} .mk.g24{fill:var(--g24)} .mk.usb{fill:var(--usb)} .mk.slp{fill:var(--slp)} .mk.rst{fill:var(--rst)}
+</style>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<defs>
+<marker id="m2-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path class="mk ink" d="M0,0.8 L10,5 L0,9.2 z"/>
+</marker>
+<marker id="m2-ble" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path class="mk ble" d="M0,0.8 L10,5 L0,9.2 z"/>
+</marker>
+<marker id="m2-g24" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path class="mk g24" d="M0,0.8 L10,5 L0,9.2 z"/>
+</marker>
+<marker id="m2-usb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path class="mk usb" d="M0,0.8 L10,5 L0,9.2 z"/>
+</marker>
+<marker id="m2-slp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path class="mk slp" d="M0,0.8 L10,5 L0,9.2 z"/>
+</marker>
+<marker id="m2-rst" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path class="mk rst" d="M0,0.8 L10,5 L0,9.2 z"/>
+</marker>
+</defs>
+<rect class="nd n" x="20" y="152" width="150" height="96" rx="7"/>
+<text class="tt" x="95.0" y="188.6" text-anchor="middle">按键矩阵</text>
+<text class="ts" x="95.0" y="205.3" text-anchor="middle">8 行 × 20 列</text>
+<text class="tm" x="95.0" y="221.3" text-anchor="middle">scan_key()</text>
+<rect class="nd n" x="220" y="152" width="180" height="96" rx="7"/>
+<text class="tt" x="310.0" y="188.6" text-anchor="middle">扫描与解码</text>
+<text class="ts" x="310.0" y="205.3" text-anchor="middle">鬼键过滤 · Fn 层 · 改键表</text>
+<text class="tm" x="310.0" y="221.3" text-anchor="middle">matrixkey_scan()</text>
+<rect class="nd n" x="450" y="152" width="190" height="96" rx="7"/>
+<text class="tt" x="545.0" y="188.6" text-anchor="middle">生成 HID 报文</text>
+<text class="ts" x="545.0" y="205.3" text-anchor="middle">6 键 · 全键位图 · 多媒体</text>
+<text class="tm" x="545.0" y="221.3" text-anchor="middle">key_process()</text>
+<polyline class="e ink" points="170,200 220,200" marker-end="url(#m2-ink)"/>
+<polyline class="e ink" points="400,200 450,200" marker-end="url(#m2-ink)"/>
+<rect class="nd usb" x="720" y="20" width="262" height="86" rx="7"/>
+<text class="tt" x="851.0" y="51.6" text-anchor="middle">USB</text>
+<text class="ts" x="851.0" y="68.3" text-anchor="middle">节拍：USB SOF，每 4 ms 扫一次</text>
+<text class="ts" x="851.0" y="84.3" text-anchor="middle">端点 1 标准键盘 · 端点 3 全键/多媒体</text>
+<rect class="nd ble" x="720" y="157" width="262" height="86" rx="7"/>
+<text class="tt" x="851.0" y="188.6" text-anchor="middle">蓝牙 BLE</text>
+<text class="ts" x="851.0" y="205.3" text-anchor="middle">节拍：连接事件，每 7.5 ms 扫一次</text>
+<text class="ts" x="851.0" y="221.3" text-anchor="middle">HID over GATT，用 Notify 上报</text>
+<rect class="nd g24" x="720" y="294" width="262" height="86" rx="7"/>
+<text class="tt" x="851.0" y="325.6" text-anchor="middle">2.4G</text>
+<text class="ts" x="851.0" y="342.3" text-anchor="middle">节拍：RTC 闹钟，每 4 ms 扫一次</text>
+<text class="ts" x="851.0" y="358.3" text-anchor="middle">16 频点跳频，发包后等接收器应答</text>
+<polyline class="e ink" points="640,200 680,200"/>
+<polyline class="e usb dash" points="680,200 680,63 720,63" marker-end="url(#m2-usb)"/>
+<polyline class="e ble" points="680,200 720,200" marker-end="url(#m2-ble)"/>
+<polyline class="e g24" points="680,200 680,337 720,337" marker-end="url(#m2-g24)"/>
+<text class="lb usb" x="672" y="130" text-anchor="end">入口被注释</text>
+<text class="lb ink" x="672" y="276" text-anchor="end">同一时刻只走一条</text>
+<rect class="nd note" x="20" y="300" width="620" height="70" rx="7"/>
+<text class="tt" x="330.0" y="323.6" text-anchor="middle">三种模式共用的部分</text>
+<text class="ts" x="330.0" y="340.3" text-anchor="middle">按键扫描、改键、灯效、电量检测、Flash 存取是同一份代码，</text>
+<text class="ts" x="330.0" y="356.3" text-anchor="middle">换模式只是换右边的收发通道和它的主循环</text>
+</svg>

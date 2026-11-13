@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="400" viewBox="0 0 1000 400" role="img" aria-label="2.4G 模式状态机：同步、正常收发、找不到接收器、对码、浅睡、深睡之间的转换">
+<title>2.4G 模式状态机：同步、正常收发、找不到接收器、对码、浅睡、深睡之间的转换</title>
+<style>
+svg{--bg:#f2f4f8; --panel:#ffffff; --ink:#18212f; --muted:#566275; --line:#c3ccd9; --code-bg:#e7ebf2;
+  --ble:#2257c5; --ble-bg:#e3ebfb; --g24:#0a7a67; --g24-bg:#def2ed; --usb:#a25a00; --usb-bg:#fbeedb;
+  --slp:#5f45b5; --slp-bg:#ebe6fa; --slp2-bg:#d9d0f5; --rst:#b23030; --rst-bg:#fbe5e5;
+  --sans:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC","WenQuanYi Zen Hei",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;}
+svg text{font-family:var(--sans);fill:var(--ink)}
+.tt{font-size:13px;font-weight:700}
+.ts{font-size:11.5px;fill:var(--muted)}
+.tm{font-size:10.5px;font-family:var(--mono);fill:var(--muted)}
+.td{font-size:12.5px;font-weight:700}
+.ch{font-size:12px;font-weight:700;fill:var(--muted)}
+.rl{font-size:14px;font-weight:700}
+.lb,.rl{paint-order:stroke;stroke:var(--panel);stroke-width:4px;stroke-linejoin:round}
+.lb{font-size:11.5px}
+.lt{font-size:11.5px;font-weight:700}
+.lb.ble,.rl.ble,.lt.ble{fill:var(--ble)} .lb.g24,.rl.g24{fill:var(--g24)} .lb.usb,.rl.usb{fill:var(--usb)}
+.lb.slp{fill:var(--slp)} .lb.rst,.rl.rst{fill:var(--rst)}
+.nd{stroke-width:1.4}
+.nd.n{fill:var(--panel);stroke:var(--ink)}
+.nd.note{fill:var(--bg);stroke:var(--line);stroke-dasharray:5 4}
+.nd.off{fill:var(--bg);stroke:var(--usb);stroke-dasharray:5 4}
+.nd.ble{fill:var(--ble-bg);stroke:var(--ble)} .nd.g24{fill:var(--g24-bg);stroke:var(--g24)}
+.nd.usb{fill:var(--usb-bg);stroke:var(--usb)} .nd.slp{fill:var(--slp-bg);stroke:var(--slp)}
+.nd.slp2{fill:var(--slp2-bg);stroke:var(--slp);stroke-width:2.2} .nd.rst{fill:var(--rst-bg);stroke:var(--rst)}
+.lane{fill:none;stroke-width:1.2;stroke-dasharray:6 4;stroke:var(--line)}
+.lane.ble{stroke:var(--ble)}
+.e{fill:none;stroke-width:1.5;stroke:var(--ink)}
+.e.dash{stroke-dasharray:5 4}
+.e.ble{stroke:var(--ble)} .e.g24{stroke:var(--g24)} .e.usb{stroke:var(--usb)} .e.slp{stroke:var(--slp)} .e.rst{stroke:var(--rst)}
+.mk{fill:var(--ink)} .mk.ble{fill:var(--ble)} .mk.g24{fill:var(--g24)} .mk.usb{fill:var(--usb)} .mk.slp{fill:var(--slp)} .mk.rst{fill:var(--rst)}
+</style>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<defs>
+<marker id="m4-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path class="mk ink" d="M0,0.8 L10,5 L0,9.2 z"/>
+</marker>
+<marker id="m4-ble" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path class="mk ble" d="M0,0.8 L10,5 L0,9.2 z"/>
+</marker>
+<marker id="m4-g24" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path class="mk g24" d="M0,0.8 L10,5 L0,9.2 z"/>
+</marker>
+<marker id="m4-usb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path class="mk usb" d="M0,0.8 L10,5 L0,9.2 z"/>
+</marker>
+<marker id="m4-slp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path class="mk slp" d="M0,0.8 L10,5 L0,9.2 z"/>
+</marker>
+<marker id="m4-rst" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path class="mk rst" d="M0,0.8 L10,5 L0,9.2 z"/>
+</marker>
+</defs>
+<rect class="nd g24" x="80" y="80" width="220" height="80" rx="7"/>
+<text class="tt" x="190.0" y="108.6" text-anchor="middle">同步 SYNC</text>
+<text class="ts" x="190.0" y="125.3" text-anchor="middle">用同步字找接收器，对齐跳频</text>
+<text class="tm" x="190.0" y="141.3" text-anchor="middle">rf_sync_process()</text>
+<rect class="nd g24" x="390" y="80" width="220" height="80" rx="7"/>
+<text class="tt" x="500.0" y="108.6" text-anchor="middle">正常收发 NORMAL</text>
+<text class="ts" x="500.0" y="125.3" text-anchor="middle">4 ms 一拍：扫键、发包、收应答</text>
+<text class="tm" x="500.0" y="141.3" text-anchor="middle">rf_nromal_process()</text>
+<rect class="nd slp" x="700" y="80" width="220" height="80" rx="7"/>
+<text class="tt" x="810.0" y="108.6" text-anchor="middle">浅睡 STOP1</text>
+<text class="ts" x="810.0" y="125.3" text-anchor="middle">灯全关，射频待机，按键中断开着</text>
+<text class="ts" x="810.0" y="141.3" text-anchor="middle">充电时停在这里亮充电灯</text>
+<rect class="nd g24" x="80" y="250" width="220" height="80" rx="7"/>
+<text class="tt" x="190.0" y="278.6" text-anchor="middle">找不到接收器</text>
+<text class="ts" x="190.0" y="295.3" text-anchor="middle">模式灯慢闪，间歇 STOP1</text>
+<text class="tm" x="190.0" y="311.3" text-anchor="middle">iMCU_MODE_NO_DONGLE</text>
+<rect class="nd g24" x="390" y="250" width="220" height="80" rx="7"/>
+<text class="tt" x="500.0" y="278.6" text-anchor="middle">对码 CONNECT</text>
+<text class="ts" x="500.0" y="295.3" text-anchor="middle">用公共对码字和接收器交换地址</text>
+<text class="tm" x="500.0" y="311.3" text-anchor="middle">rf_connect_process()</text>
+<rect class="nd slp2" x="700" y="250" width="220" height="80" rx="7"/>
+<text class="tt" x="810.0" y="286.6" text-anchor="middle">深睡 DEEP_SLEEP</text>
+<text class="ts" x="810.0" y="303.3" text-anchor="middle">时钟全关，只留按键唤醒</text>
+<polyline class="e rst" points="920,290 960,290 960,22 40,22 40,120 80,120" marker-end="url(#m4-rst)"/>
+<text class="lb rst" x="500" y="16" text-anchor="middle">深睡被按键唤醒 = 芯片复位，从 main() 热启动（上电也从这里进）</text>
+<polyline class="e slp" points="810,80 810,52 190,52 190,80" marker-end="url(#m4-slp)"/>
+<text class="lb slp" x="500" y="46" text-anchor="middle">按键唤醒，重新同步（不复位）</text>
+<polyline class="e g24" points="300,105 390,105" marker-end="url(#m4-g24)"/>
+<text class="lb g24" x="345" y="98" text-anchor="middle">同步成功</text>
+<polyline class="e g24 dash" points="390,138 300,138" marker-end="url(#m4-g24)"/>
+<text class="lb g24" x="345" y="153" text-anchor="middle">连续丢包</text>
+<polyline class="e slp" points="610,120 700,120" marker-end="url(#m4-slp)"/>
+<text class="lb slp" x="655" y="113" text-anchor="middle">空闲 5 min</text>
+<polyline class="e slp" points="810,160 810,250" marker-end="url(#m4-slp)"/>
+<text class="lb slp" x="818" y="209" text-anchor="start">没在充电：马上进</text>
+<polyline class="e g24" points="120,160 120,250" marker-end="url(#m4-g24)"/>
+<text class="lb g24" x="112" y="209" text-anchor="end">同步失败</text>
+<polyline class="e g24" points="180,250 180,160" marker-end="url(#m4-g24)"/>
+<text class="lb g24" x="188" y="222" text-anchor="start">850 ms 重试</text>
+<polyline class="e g24" points="300,290 390,290" marker-end="url(#m4-g24)"/>
+<text class="lb g24" x="345" y="283" text-anchor="middle">长按 3 s</text>
+<polyline class="e g24" points="500,250 500,200 280,200 280,160" marker-end="url(#m4-g24)"/>
+<text class="lb g24" x="400" y="193" text-anchor="middle">对码成功 / 15 s 超时</text>
+<polyline class="e slp" points="190,330 190,368 810,368 810,330" marker-end="url(#m4-slp)"/>
+<text class="lb slp" x="500" y="361" text-anchor="middle">重试 10 轮仍找不到接收器，且没在充电</text>
+</svg>

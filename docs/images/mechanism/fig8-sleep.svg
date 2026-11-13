@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="500" viewBox="0 0 1000 500" role="img" aria-label="休眠阶梯：2.4G、蓝牙、USB 各自从工作到浅睡到深睡的条件，以及唤醒路径；外加低电锁定">
+<title>休眠阶梯：2.4G、蓝牙、USB 各自从工作到浅睡到深睡的条件，以及唤醒路径；外加低电锁定</title>
+<style>
+svg{--bg:#f2f4f8; --panel:#ffffff; --ink:#18212f; --muted:#566275; --line:#c3ccd9; --code-bg:#e7ebf2;
+  --ble:#2257c5; --ble-bg:#e3ebfb; --g24:#0a7a67; --g24-bg:#def2ed; --usb:#a25a00; --usb-bg:#fbeedb;
+  --slp:#5f45b5; --slp-bg:#ebe6fa; --slp2-bg:#d9d0f5; --rst:#b23030; --rst-bg:#fbe5e5;
+  --sans:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC","WenQuanYi Zen Hei",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;}
+svg text{font-family:var(--sans);fill:var(--ink)}
+.tt{font-size:13px;font-weight:700}
+.ts{font-size:11.5px;fill:var(--muted)}
+.tm{font-size:10.5px;font-family:var(--mono);fill:var(--muted)}
+.td{font-size:12.5px;font-weight:700}
+.ch{font-size:12px;font-weight:700;fill:var(--muted)}
+.rl{font-size:14px;font-weight:700}
+.lb,.rl{paint-order:stroke;stroke:var(--panel);stroke-width:4px;stroke-linejoin:round}
+.lb{font-size:11.5px}
+.lt{font-size:11.5px;font-weight:700}
+.lb.ble,.rl.ble,.lt.ble{fill:var(--ble)} .lb.g24,.rl.g24{fill:var(--g24)} .lb.usb,.rl.usb{fill:var(--usb)}
+.lb.slp{fill:var(--slp)} .lb.rst,.rl.rst{fill:var(--rst)}
+.nd{stroke-width:1.4}
+.nd.n{fill:var(--panel);stroke:var(--ink)}
+.nd.note{fill:var(--bg);stroke:var(--line);stroke-dasharray:5 4}
+.nd.off{fill:var(--bg);stroke:var(--usb);stroke-dasharray:5 4}
+.nd.ble{fill:var(--ble-bg);stroke:var(--ble)} .nd.g24{fill:var(--g24-bg);stroke:var(--g24)}
+.nd.usb{fill:var(--usb-bg);stroke:var(--usb)} .nd.slp{fill:var(--slp-bg);stroke:var(--slp)}
+.nd.slp2{fill:var(--slp2-bg);stroke:var(--slp);stroke-width:2.2} .nd.rst{fill:var(--rst-bg);stroke:var(--rst)}
+.lane{fill:none;stroke-width:1.2;stroke-dasharray:6 4;stroke:var(--line)}
+.lane.ble{stroke:var(--ble)}
+.e{fill:none;stroke-width:1.5;stroke:var(--ink)}
+.e.dash{stroke-dasharray:5 4}
+.e.ble{stroke:var(--ble)} .e.g24{stroke:var(--g24)} .e.usb{stroke:var(--usb)} .e.slp{stroke:var(--slp)} .e.rst{stroke:var(--rst)}
+.mk{fill:var(--ink)} .mk.ble{fill:var(--ble)} .mk.g24{fill:var(--g24)} .mk.usb{fill:var(--usb)} .mk.slp{fill:var(--slp)} .mk.rst{fill:var(--rst)}
+</style>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<defs>
+<marker id="m8-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path class="mk ink" d="M0,0.8 L10,5 L0,9.2 z"/>
+</marker>
+<marker id="m8-ble" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path class="mk ble" d="M0,0.8 L10,5 L0,9.2 z"/>
+</marker>
+<marker id="m8-g24" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path class="mk g24" d="M0,0.8 L10,5 L0,9.2 z"/>
+</marker>
+<marker id="m8-usb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path class="mk usb" d="M0,0.8 L10,5 L0,9.2 z"/>
+</marker>
+<marker id="m8-slp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path class="mk slp" d="M0,0.8 L10,5 L0,9.2 z"/>
+</marker>
+<marker id="m8-rst" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path class="mk rst" d="M0,0.8 L10,5 L0,9.2 z"/>
+</marker>
+</defs>
+<polyline class="e ink" points="130,22 980,22" marker-end="url(#m8-ink)"/>
+<text class="lb ink" x="555" y="15" text-anchor="middle">越往右越省电，醒来越慢</text>
+<text class="ch ink" x="250" y="48" text-anchor="middle">工作</text>
+<text class="ch ink" x="570" y="48" text-anchor="middle">浅睡 · STOP1，RTC 还在走</text>
+<text class="ch ink" x="875" y="48" text-anchor="middle">深睡 · 时钟全关，唤醒即复位</text>
+<text class="rl g24" x="20" y="95" text-anchor="start">2.4G</text>
+<rect class="nd g24" x="130" y="60" width="240" height="60" rx="7"/>
+<text class="tt" x="250.0" y="86.6" text-anchor="middle">工作</text>
+<text class="ts" x="250.0" y="103.3" text-anchor="middle">4 ms 一拍扫键发包</text>
+<rect class="nd slp" x="450" y="60" width="240" height="60" rx="7"/>
+<text class="tt" x="570.0" y="86.6" text-anchor="middle">浅睡</text>
+<text class="ts" x="570.0" y="103.3" text-anchor="middle">只在充电时停留，亮充电灯</text>
+<rect class="nd slp2" x="770" y="60" width="210" height="60" rx="7"/>
+<text class="tt" x="875.0" y="86.6" text-anchor="middle">深睡</text>
+<text class="ts" x="875.0" y="103.3" text-anchor="middle">按键唤醒后整机复位，再同步</text>
+<polyline class="e slp" points="370,78 450,78" marker-end="url(#m8-slp)"/>
+<text class="lb slp" x="410" y="71" text-anchor="middle">空闲 5 min</text>
+<polyline class="e g24" points="450,102 370,102" marker-end="url(#m8-g24)"/>
+<text class="lb g24" x="410" y="117" text-anchor="middle">按键</text>
+<polyline class="e slp" points="690,78 770,78" marker-end="url(#m8-slp)"/>
+<text class="lb slp" x="730" y="71" text-anchor="middle">没充电：马上</text>
+<polyline class="e rst" points="875,120 875,140 250,140 250,120" marker-end="url(#m8-rst)"/>
+<text class="lb rst" x="562" y="134" text-anchor="middle">按键唤醒 = 复位，重走上电流程</text>
+<text class="rl ble" x="20" y="210" text-anchor="start">蓝牙</text>
+<rect class="nd ble" x="130" y="175" width="240" height="60" rx="7"/>
+<text class="tt" x="250.0" y="201.6" text-anchor="middle">工作</text>
+<text class="ts" x="250.0" y="218.3" text-anchor="middle">每 7.5 ms 连接事件扫键</text>
+<rect class="nd slp" x="450" y="175" width="240" height="60" rx="7"/>
+<text class="tt" x="570.0" y="201.6" text-anchor="middle">浅睡</text>
+<text class="ts" x="570.0" y="218.3" text-anchor="middle">连接保持，约 340 ms 应答一次</text>
+<rect class="nd slp2" x="770" y="175" width="210" height="60" rx="7"/>
+<text class="tt" x="875.0" y="201.6" text-anchor="middle">深睡</text>
+<text class="ts" x="875.0" y="218.3" text-anchor="middle">连接断开，醒来先回连</text>
+<polyline class="e slp" points="370,193 450,193" marker-end="url(#m8-slp)"/>
+<text class="lb slp" x="410" y="186" text-anchor="middle">空闲 5 min</text>
+<polyline class="e ble" points="450,217 370,217" marker-end="url(#m8-ble)"/>
+<text class="lb ble" x="410" y="232" text-anchor="middle">按键</text>
+<polyline class="e slp" points="690,193 770,193" marker-end="url(#m8-slp)"/>
+<text class="lb slp" x="730" y="186" text-anchor="middle">再 15 min</text>
+<polyline class="e rst" points="875,235 875,255 250,255 250,235" marker-end="url(#m8-rst)"/>
+<text class="lb rst" x="562" y="249" text-anchor="middle">按键唤醒 = 复位，重走上电流程</text>
+<text class="rl usb" x="20" y="325" text-anchor="start">USB</text>
+<rect class="nd usb" x="130" y="290" width="240" height="60" rx="7"/>
+<text class="tt" x="250.0" y="316.6" text-anchor="middle">工作</text>
+<text class="ts" x="250.0" y="333.3" text-anchor="middle">SOF 计拍，每 4 ms 扫键</text>
+<rect class="nd slp" x="450" y="290" width="240" height="60" rx="7"/>
+<text class="tt" x="570.0" y="316.6" text-anchor="middle">浅睡</text>
+<text class="ts" x="570.0" y="333.3" text-anchor="middle">按键可远程唤醒电脑</text>
+<rect class="nd off" x="770" y="290" width="210" height="60" rx="7"/>
+<text class="tt" x="875.0" y="316.6" text-anchor="middle">不进深睡</text>
+<text class="ts" x="875.0" y="333.3" text-anchor="middle">总线供电，没有必要</text>
+<polyline class="e slp" points="370,308 450,308" marker-end="url(#m8-slp)"/>
+<text class="lb slp" x="410" y="301" text-anchor="middle">主机挂起</text>
+<polyline class="e usb" points="450,332 370,332" marker-end="url(#m8-usb)"/>
+<text class="lb usb" x="410" y="347" text-anchor="middle">总线恢复</text>
+<text class="rl rst" x="20" y="440" text-anchor="start">低电</text>
+<rect class="nd rst" x="130" y="405" width="240" height="60" rx="7"/>
+<text class="tt" x="250.0" y="431.6" text-anchor="middle">无线模式 · 电量 0%</text>
+<text class="ts" x="250.0" y="448.3" text-anchor="middle">没在充电，持续约 10 s</text>
+<rect class="nd slp2" x="770" y="405" width="210" height="60" rx="7"/>
+<text class="tt" x="875.0" y="431.6" text-anchor="middle">低压锁定深睡</text>
+<text class="ts" x="875.0" y="448.3" text-anchor="middle">按键只闪低电灯 0.5 s 又睡回</text>
+<polyline class="e rst" points="370,423 770,423" marker-end="url(#m8-rst)"/>
+<text class="lb rst" x="570" y="416" text-anchor="middle">置低压关机标志</text>
+<polyline class="e g24" points="770,447 370,447" marker-end="url(#m8-g24)"/>
+<text class="lb g24" x="570" y="462" text-anchor="middle">插上 USB 5V 才解除</text>
+</svg>

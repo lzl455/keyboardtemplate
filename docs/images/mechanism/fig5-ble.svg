@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="500" viewBox="0 0 1000 500" role="img" aria-label="蓝牙模式状态机：配对广播或回连广播，连接后在工作、浅睡、深睡三级之间转换">
+<title>蓝牙模式状态机：配对广播或回连广播，连接后在工作、浅睡、深睡三级之间转换</title>
+<style>
+svg{--bg:#f2f4f8; --panel:#ffffff; --ink:#18212f; --muted:#566275; --line:#c3ccd9; --code-bg:#e7ebf2;
+  --ble:#2257c5; --ble-bg:#e3ebfb; --g24:#0a7a67; --g24-bg:#def2ed; --usb:#a25a00; --usb-bg:#fbeedb;
+  --slp:#5f45b5; --slp-bg:#ebe6fa; --slp2-bg:#d9d0f5; --rst:#b23030; --rst-bg:#fbe5e5;
+  --sans:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC","WenQuanYi Zen Hei",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;}
+svg text{font-family:var(--sans);fill:var(--ink)}
+.tt{font-size:13px;font-weight:700}
+.ts{font-size:11.5px;fill:var(--muted)}
+.tm{font-size:10.5px;font-family:var(--mono);fill:var(--muted)}
+.td{font-size:12.5px;font-weight:700}
+.ch{font-size:12px;font-weight:700;fill:var(--muted)}
+.rl{font-size:14px;font-weight:700}
+.lb,.rl{paint-order:stroke;stroke:var(--panel);stroke-width:4px;stroke-linejoin:round}
+.lb{font-size:11.5px}
+.lt{font-size:11.5px;font-weight:700}
+.lb.ble,.rl.ble,.lt.ble{fill:var(--ble)} .lb.g24,.rl.g24{fill:var(--g24)} .lb.usb,.rl.usb{fill:var(--usb)}
+.lb.slp{fill:var(--slp)} .lb.rst,.rl.rst{fill:var(--rst)}
+.nd{stroke-width:1.4}
+.nd.n{fill:var(--panel);stroke:var(--ink)}
+.nd.note{fill:var(--bg);stroke:var(--line);stroke-dasharray:5 4}
+.nd.off{fill:var(--bg);stroke:var(--usb);stroke-dasharray:5 4}
+.nd.ble{fill:var(--ble-bg);stroke:var(--ble)} .nd.g24{fill:var(--g24-bg);stroke:var(--g24)}
+.nd.usb{fill:var(--usb-bg);stroke:var(--usb)} .nd.slp{fill:var(--slp-bg);stroke:var(--slp)}
+.nd.slp2{fill:var(--slp2-bg);stroke:var(--slp);stroke-width:2.2} .nd.rst{fill:var(--rst-bg);stroke:var(--rst)}
+.lane{fill:none;stroke-width:1.2;stroke-dasharray:6 4;stroke:var(--line)}
+.lane.ble{stroke:var(--ble)}
+.e{fill:none;stroke-width:1.5;stroke:var(--ink)}
+.e.dash{stroke-dasharray:5 4}
+.e.ble{stroke:var(--ble)} .e.g24{stroke:var(--g24)} .e.usb{stroke:var(--usb)} .e.slp{stroke:var(--slp)} .e.rst{stroke:var(--rst)}
+.mk{fill:var(--ink)} .mk.ble{fill:var(--ble)} .mk.g24{fill:var(--g24)} .mk.usb{fill:var(--usb)} .mk.slp{fill:var(--slp)} .mk.rst{fill:var(--rst)}
+</style>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<defs>
+<marker id="m5-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path class="mk ink" d="M0,0.8 L10,5 L0,9.2 z"/>
+</marker>
+<marker id="m5-ble" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path class="mk ble" d="M0,0.8 L10,5 L0,9.2 z"/>
+</marker>
+<marker id="m5-g24" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path class="mk g24" d="M0,0.8 L10,5 L0,9.2 z"/>
+</marker>
+<marker id="m5-usb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path class="mk usb" d="M0,0.8 L10,5 L0,9.2 z"/>
+</marker>
+<marker id="m5-slp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path class="mk slp" d="M0,0.8 L10,5 L0,9.2 z"/>
+</marker>
+<marker id="m5-rst" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path class="mk rst" d="M0,0.8 L10,5 L0,9.2 z"/>
+</marker>
+</defs>
+<rect class="lane ble" x="40" y="40" width="480" height="112" rx="9"/>
+<text class="lt ble" x="52" y="59">配对广播 · 长按配对键后复位，或该通道从没配过 · 0 dBm</text>
+<rect class="nd ble" x="60" y="72" width="200" height="66" rx="7"/>
+<text class="tt" x="160.0" y="101.6" text-anchor="middle">快速广播</text>
+<text class="ts" x="160.0" y="118.3" text-anchor="middle">间隔 10 ms · 可被发现</text>
+<rect class="nd ble" x="300" y="72" width="200" height="66" rx="7"/>
+<text class="tt" x="400.0" y="101.6" text-anchor="middle">慢速广播</text>
+<text class="ts" x="400.0" y="118.3" text-anchor="middle">间隔 20 ms · 带 Swift Pair</text>
+<polyline class="e ble" points="260,105 300,105" marker-end="url(#m5-ble)"/>
+<text class="lb ble" x="280" y="98" text-anchor="middle">3.5 s</text>
+<rect class="lane ble" x="40" y="180" width="480" height="112" rx="9"/>
+<text class="lt ble" x="52" y="199">回连广播 · 普通上电、切到本通道、深睡唤醒 · 8 dBm</text>
+<rect class="nd ble" x="60" y="212" width="200" height="66" rx="7"/>
+<text class="tt" x="160.0" y="241.6" text-anchor="middle">快速回连</text>
+<text class="ts" x="160.0" y="258.3" text-anchor="middle">间隔 5 ms · 只认配过的主机</text>
+<rect class="nd ble" x="300" y="212" width="200" height="66" rx="7"/>
+<text class="tt" x="400.0" y="241.6" text-anchor="middle">慢速回连</text>
+<text class="ts" x="400.0" y="258.3" text-anchor="middle">间隔 20 ms</text>
+<polyline class="e ble" points="260,245 300,245" marker-end="url(#m5-ble)"/>
+<text class="lb ble" x="280" y="238" text-anchor="middle">5 s</text>
+<rect class="nd ble" x="680" y="60" width="290" height="80" rx="7"/>
+<text class="tt" x="825.0" y="88.6" text-anchor="middle">已连接 · 工作 LEVEL0</text>
+<text class="ts" x="825.0" y="105.3" text-anchor="middle">每 7.5 ms 一个连接事件：扫键、发 Notify</text>
+<text class="tm" x="825.0" y="121.3" text-anchor="middle">ex2_app_mouse_scan()</text>
+<rect class="nd slp" x="680" y="200" width="290" height="80" rx="7"/>
+<text class="tt" x="825.0" y="228.6" text-anchor="middle">已连接 · 浅睡 LEVEL1</text>
+<text class="ts" x="825.0" y="245.3" text-anchor="middle">灯效关，约 340 ms 才应答一次主机</text>
+<text class="ts" x="825.0" y="261.3" text-anchor="middle">其余时间 STOP1，连接不断</text>
+<rect class="nd slp2" x="380" y="400" width="280" height="80" rx="7"/>
+<text class="tt" x="520.0" y="428.6" text-anchor="middle">深睡 LEVEL2</text>
+<text class="ts" x="520.0" y="445.3" text-anchor="middle">协议栈关闭，连接断开</text>
+<text class="ts" x="520.0" y="461.3" text-anchor="middle">时钟全关，只留按键唤醒</text>
+<polyline class="e ble" points="520,95 680,95" marker-end="url(#m5-ble)"/>
+<text class="lb ble" x="600" y="88" text-anchor="middle">主机连上并加密</text>
+<polyline class="e ble" points="520,235 600,235 600,118 680,118" marker-end="url(#m5-ble)"/>
+<polyline class="e slp" points="760,140 760,200" marker-end="url(#m5-slp)"/>
+<text class="lb slp" x="752" y="174" text-anchor="end">空闲 5 min</text>
+<polyline class="e ble" points="890,200 890,140" marker-end="url(#m5-ble)"/>
+<text class="lb ble" x="898" y="174" text-anchor="start">按键即醒</text>
+<polyline class="e slp" points="825,280 825,440 660,440" marker-end="url(#m5-slp)"/>
+<text class="lb slp" x="833" y="352" text-anchor="start">再空闲 15 min</text>
+<text class="lb slp" x="833" y="369" text-anchor="start">（充电中不进深睡）</text>
+<polyline class="e slp" points="180,292 180,440 380,440" marker-end="url(#m5-slp)"/>
+<polyline class="e slp" points="40,96 20,96 20,458 380,458" marker-end="url(#m5-slp)"/>
+<text class="lb slp" x="190" y="420" text-anchor="start">广播超时没人连</text>
+<text class="lb slp" x="190" y="434" text-anchor="start">配对 120 s / 回连 55 s</text>
+<polyline class="e rst" points="450,400 450,292" marker-end="url(#m5-rst)"/>
+<text class="lb rst" x="458" y="350" text-anchor="start">按键唤醒 = 复位</text>
+</svg>
