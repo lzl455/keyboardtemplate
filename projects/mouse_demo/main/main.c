@@ -44,6 +44,7 @@
 #include <string.h>
 
 #include "mouse.h"
+#include "io_config.h"                  // 引脚配置，由 tools/om6239-io-config 生成
 #include "ex2_app_mouse.h"
 #include "main_usb.h"
 #include "main_24g.h"
@@ -131,30 +132,10 @@ void mouse_periph_wakeup_enable(uint8_t mask)
         delayus(2000);
         OM_PMU->PAD_PU_CTRL_1 = 0x0A000005;
 
-        drv_gpio_set_trig(OM_GPIO0, (1<<KEY_R0_PIN)|(1<<KEY_R1_PIN)|(1<<KEY_R2_PIN)|(1<<KEY_R3_PIN)| \
-                                    (1<<KEY_R4_PIN)|(1<<KEY_R5_PIN)|(1<<KEY_R6_PIN)|(1<<KEY_R7_PIN), \
-                                     GPIO_TRIG_FALLING_EDGE);
-        drv_pmu_wakeup_pin_set(KEY_R0_PIN, PMU_PIN_WAKEUP_TYPE_FALL);
-        drv_pmu_wakeup_pin_set(KEY_R1_PIN, PMU_PIN_WAKEUP_TYPE_FALL);
-        drv_pmu_wakeup_pin_set(KEY_R2_PIN, PMU_PIN_WAKEUP_TYPE_FALL);
-        drv_pmu_wakeup_pin_set(KEY_R3_PIN, PMU_PIN_WAKEUP_TYPE_FALL);
-        drv_pmu_wakeup_pin_set(KEY_R4_PIN, PMU_PIN_WAKEUP_TYPE_FALL);
-        drv_pmu_wakeup_pin_set(KEY_R5_PIN, PMU_PIN_WAKEUP_TYPE_FALL);
-        drv_pmu_wakeup_pin_set(KEY_R6_PIN, PMU_PIN_WAKEUP_TYPE_FALL);
-        drv_pmu_wakeup_pin_set(KEY_R7_PIN, PMU_PIN_WAKEUP_TYPE_FALL);
-        NVIC_SetPriority(WAKEUP_GPIO0_IRQn, RTE_GPIO0_IRQ_PRIORITY);
-        NVIC_EnableIRQ(WAKEUP_GPIO0_IRQn);
+        io_config_wakeup(true);         // 矩阵行下降沿唤醒
     }
     else {
-        drv_pmu_wakeup_pin_set(KEY_R0_PIN, PMU_PIN_WAKEUP_TYPE_DISABLE);
-        drv_pmu_wakeup_pin_set(KEY_R1_PIN, PMU_PIN_WAKEUP_TYPE_DISABLE);
-        drv_pmu_wakeup_pin_set(KEY_R2_PIN, PMU_PIN_WAKEUP_TYPE_DISABLE);
-        drv_pmu_wakeup_pin_set(KEY_R3_PIN, PMU_PIN_WAKEUP_TYPE_DISABLE);
-        drv_pmu_wakeup_pin_set(KEY_R4_PIN, PMU_PIN_WAKEUP_TYPE_DISABLE);
-        drv_pmu_wakeup_pin_set(KEY_R5_PIN, PMU_PIN_WAKEUP_TYPE_DISABLE);
-        drv_pmu_wakeup_pin_set(KEY_R6_PIN, PMU_PIN_WAKEUP_TYPE_DISABLE);
-        drv_pmu_wakeup_pin_set(KEY_R7_PIN, PMU_PIN_WAKEUP_TYPE_DISABLE);
-        NVIC_DisableIRQ(WAKEUP_GPIO0_IRQn);
+        io_config_wakeup(false);
 
         OM_PMU->PAD_PU_CTRL_1 = 0x0A0AAA25;
         MATRX_ALL_IN;
@@ -194,19 +175,7 @@ int main(void)
     drv_icache_enable();
     #endif
 
-    OM_RCC->CLKGATE |= RCC_DEV_CLK_GATE_GPIO_CLK_GATE_MASK;
-
-    OM_PMU->PAD_PU_CTRL = 0x00AAAA00;
-    OM_PMU->PAD_PU_CTRL_1 = 0x0A0AAA25;
-    OM_PMU->PAD_PD_CTRL = 0x4000000C;
-    OM_PMU->PAD_BUF_EN &= ~LVD_PIN_MASK;
-    OM_PMU->PAD_BUF_EN |= (1<<MODE_PIN);
-
-    OM_GPIO0->DATAOUT = 0xFFF7FFFE;
-    // 输出脚：P00 ARGB_OFF、P01 ARGB_OUT、P23 LED_VDD、P32 KEY_EX，其余为输入
-    // 原来写成 0x040800003（多一个 0），实际值 0x40800003 会把 P27 和 P36(USB_5V) 设成输出
-    OM_GPIO0->OUTENSET = 0x04080003;
-    OM_GPIO0->OUTENCLR = ~0x04080003;
+    io_config_init();                   // 上下拉、驱动、输入缓冲、初始电平和方向，见 periph/io_config.c
     device_type = iDEVICE_TYPE_ERR;
 
                                                 // ???????????????????????
