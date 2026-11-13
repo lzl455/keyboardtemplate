@@ -165,8 +165,9 @@ typedef struct {
 
 /* PMU PAD_PU_CTRL register */
 #define PAD_PU_CTRL_PADn_POS(n)                 ((n) * 2)
-#define PAD_PU_CTRL_PADn_PULL_UP_30K(n)         (2u << PAD_PU_CTRL_PADn_POS(n))
-#define PAD_PU_CTRL_PADn_PULL_UP_150K(n)        (1u << PAD_PU_CTRL_PADn_POS(n))
+/* 每脚 2 位，按手册 V0.1 PAD_PU_CTRL_REG：00 无上拉，01 30k，10 150k（原来这两个宏的值写反了） */
+#define PAD_PU_CTRL_PADn_PULL_UP_30K(n)         (1u << PAD_PU_CTRL_PADn_POS(n))
+#define PAD_PU_CTRL_PADn_PULL_UP_150K(n)        (2u << PAD_PU_CTRL_PADn_POS(n))
 /* only pin 4/5/6/7 pull up resistance is 2M when PU_CTRL set to 01b */
 #define PAD_PU_CTRL_PADn_PULL_UP_2M(n)          (1u << PAD_PU_CTRL_PADn_POS(n))
 #define PAD_PU_CTRL_PADn_PULL_UP_MASK(n)        (3u << PAD_PU_CTRL_PADn_POS(n))
