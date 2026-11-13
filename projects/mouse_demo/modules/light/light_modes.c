@@ -11,8 +11,10 @@
 #include "om_driver.h"
 
 #include "main.h"
-#include "led.h"
-#include "led_logo_tbl.h"
+#include "light_fx.h"
+#include "light_tables.h"
+
+#if (BOARD_LIGHT != LIGHT_NONE)
 
 //-----------------------------------------------------------------------------;
 // 常量定义区
@@ -984,3 +986,5 @@ void led_mode_txtw(void)
         rgb_pwm0_w();
     }
 }
+
+#endif /* (BOARD_LIGHT != LIGHT_NONE) */

@@ -74,7 +74,7 @@ int main_24g(void)
                 if(iMCU_MODE_NORMAL == work_mode)
                     device_led_process();
                 led_hint_process();
-                logo_process();
+                ui_frame_process();
                 sleep_process();
             }
         }
@@ -164,7 +164,7 @@ __RAM_CODE void RTC_IRQHandler_24G(void)
                 sys_ctrl |= bscan_flag;
             }
             if(0 == (sys_tick_count&0x01))
-                light_port_flush();
+                periph_flush_all();
 
             break;
         case iMCU_MODE_SLEEP:

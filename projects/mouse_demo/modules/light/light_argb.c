@@ -6,8 +6,7 @@
  */
 #include "om_driver.h"
 #include "main.h"
-#include "led.h"
-#include "light_port.h"
+#include "light_fx.h"
 
 #if (BOARD_LIGHT == LIGHT_ARGB)
 

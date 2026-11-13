@@ -382,7 +382,7 @@ void led_hint_process(void)
             if(600 > power_off_time_count)		// 10s
 			    return;
 
-            logo_off();
+            periph_blank_all();
             OM_PMU->SW_RSVD1 |= PMU_SW_RSVD1_POWER_OFF;
             mouse_periph_wakeup_enable(WAKEUP_SLEEP_LEVEL2);
             drv_pmu_set_low_power_mode(PMU_LPM_DEEP_SLEEP);

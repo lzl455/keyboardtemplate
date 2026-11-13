@@ -533,7 +533,7 @@ void __attribute__((noinline)) key_decode_cmd_0x40(void)
                 if(mMS_TO_TICK(2000) < (conn_rtc_value-default_time_count))
                 {
                     OM_RCC->USB_CTRL = 0;           // disconnect
-                    logo_off();
+                    periph_blank_all();
 
                     flash_erase(iKEY_MODE0_BANK);
                     flash_erase(iKEY_MODE1_BANK);

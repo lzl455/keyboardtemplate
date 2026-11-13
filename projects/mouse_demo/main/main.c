@@ -211,7 +211,6 @@ int main(void)
 
     bat_init();
 
-    bargb_valid = false;
     laod_flash_cfg();
     scan_mode_swtich(iMODE_CHECK_POWERUP);
 

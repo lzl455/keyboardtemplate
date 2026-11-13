@@ -530,7 +530,7 @@ __RAM_CODE void matrixkey_scan(void)
     matrix_status[18] &= 0x0F;
 
     matrixkey_value();
-    periph_task_all();                  // 可选外设在这里注入按键（如编码器的音量键）
+    periph_scan_all();                  // 可选外设在这里注入按键（如编码器的音量键）
     key_process();
 }
 

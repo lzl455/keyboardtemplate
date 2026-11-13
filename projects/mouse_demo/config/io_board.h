@@ -8,7 +8,7 @@
 #ifndef __IO_BOARD_H
 #define __IO_BOARD_H
 
-/* ---- 灯光（led/light_*.c），ARGB 和 PWM 二选一 -------------------------- */
+/* ---- 灯光（modules/light/），ARGB 和 PWM 二选一 ------------------------- */
 #ifndef BOARD_LIGHT
 #define BOARD_LIGHT              LIGHT_ARGB   /* ARGB 灯珠（LEDC） */
 #endif
@@ -25,7 +25,7 @@
 #define BOARD_LIGHT_PWR_ON       1   /* 打开灯电源时输出的电平 */
 #endif
 
-/* ---- 旋转编码器（periph/knob.c） ------------------------------------- */
+/* ---- 旋转编码器（modules/knob/） -------------------------------------- */
 /* 配置器里没有启用编码器 */
 #ifndef BOARD_HAS_KNOB
 #define BOARD_HAS_KNOB           0

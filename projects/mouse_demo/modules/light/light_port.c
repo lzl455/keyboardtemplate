@@ -1,12 +1,13 @@
 /**
  * @file    light_port.c
- * @brief   灯光输出层的共用部分：亮度换算、灯电源开关、无灯时的空实现
+ * @brief   灯光输出层的共用部分：亮度换算、灯电源开关、旧接口兼容
  */
 #include <string.h>
 #include "om_driver.h"
 #include "main.h"
-#include "led.h"
-#include "light_port.h"
+#include "light_fx.h"
+
+#if (BOARD_LIGHT != LIGHT_NONE)
 
 bool bargb_valid;
 
@@ -55,8 +56,4 @@ __RAM_CODE om_error_t drv_ledc_write(void)
     return OM_ERROR_OK;
 }
 
-#if (BOARD_LIGHT == LIGHT_NONE)
-void light_port_init(void)  { }
-void light_port_off(void)   { bargb_valid = false; }
-void light_port_flush(void) { }
-#endif
+#endif /* (BOARD_LIGHT != LIGHT_NONE) */

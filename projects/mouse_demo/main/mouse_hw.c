@@ -90,7 +90,7 @@ pmu_lpm_t pm_checker_callback(void)
         bms_sleep_rtc = false;
         if(MS_SLEEP_LEVEL0 == ms_sleep_level)
         {
-            if(true==bargb_valid)
+            if(periph_busy_any())        // 灯光等外设在工作，需要时钟
                 return PMU_LPM_IDLE;
             if(0 != OM_RTC->TICK)
                 return PMU_LPM_IDLE;
@@ -107,7 +107,7 @@ pmu_lpm_t pm_checker_callback(void)
             ex2_stk_uninit();
             //进入深睡眠前需要存一些配置信息(如dpi、模式、地址等)到HS_PMU->SCRATCH, 醒来后可通过OM_CPM->RSTCTRL判断复位原因决定广播还是回连。
 
-            logo_off();
+            periph_blank_all();
             mouse_periph_wakeup_enable(WAKEUP_SLEEP_LEVEL2);
             drv_pmu_set_low_power_mode(PMU_LPM_DEEP_SLEEP);
             while(1);        
@@ -121,7 +121,7 @@ pmu_lpm_t pm_checker_callback(void)
                 drv_rtc_control(OM_RTC, RTC_CONTROL_ALARM0_INT_EN, NULL);
                 NVIC_EnableIRQ(RTC_IRQn);
                 drv_rtc_set_alarm0(drv_rtc_read(OM_RTC) + mMS_TO_TICK(610));
-                logo_off();
+                periph_blank_all();
 
                 mouse_periph_wakeup_enable(WAKEUP_SLEEP_LEVEL2);
             }
@@ -167,8 +167,8 @@ __RAM_CODE uint8_t ex2_app_mouse_scan(void)
     if(MS_SLEEP_LEVEL0 == ms_sleep_level)
     {
         matrixkey_scan();
-        logo_process();
-        light_port_flush();
+        ui_frame_process();
+        periph_flush_all();
 
         lvd_scan_count++;
         if(0==(lvd_scan_count&0x01))
@@ -178,7 +178,7 @@ __RAM_CODE uint8_t ex2_app_mouse_scan(void)
     }
     else
     {
-        logo_off();
+        periph_blank_all();
         led_hint_process();
     }
 	scan_mode_swtich(iMODE_CHECK_DELAY);
@@ -344,9 +344,9 @@ void app_ble_evt_dispatch(uint32_t events)
         ble_24g_ctrl |= bom6239_sync_ing;
         matrixkey_scan();
         scan_mode_swtich(iMODE_CHECK_DELAY);
-        logo_off();
+        periph_blank_all();
         led_hint_process();
-        logo_process();
+        ui_frame_process();
         device_led_process();
     }
 }
@@ -390,7 +390,7 @@ __RAM_CODE void drv_rtc_isr_callback(void)
                     ms_sleep_level = MS_SLEEP_LEVEL1;
                     mouse_periph_wakeup_enable(WAKEUP_SLEEP_LEVEL1);
 
-                    logo_off();
+                    periph_blank_all();
                     ex2_ll_set_next_polling_time(1);
                 }
                 sys_tick_count += 8;

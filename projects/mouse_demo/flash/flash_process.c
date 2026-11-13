@@ -641,3 +641,22 @@ __attribute__((noinline)) void flash_save_ble_addr(void)
     flash_write_ble_addr(0x100);
     flash_load_ble_addr();
 }
+
+/*******************************************************************************
+* 函数名称: flash_save_pending()
+* 功能描述: 把按键 / 配置工具改过、还没写进 Flash 的设置保存下来
+* 说    明: 由 ui_frame_process() 每帧调用（原来放在 logo_process() 开头）
+*******************************************************************************/
+void flash_save_pending(void)
+{
+    if(true==bsave_status)
+    {
+        bsave_status = false;
+        flash_save_status();
+    }
+    if(true==bsave_cfg_dpi)
+    {
+        bsave_cfg_dpi = false;
+        flash_save_cfg_dpi();
+    }
+}

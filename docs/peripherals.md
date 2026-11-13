@@ -1,24 +1,46 @@
 # 可选外设：换灯、加编码器、新增外设
 
-可选外设（灯、编码器，以及以后新增的外设）都从 USB、2.4G、蓝牙三种模式的主循环里拆出来了。换灯、加外设只需要改配置或新增文件，主循环和休眠代码不用动。
+可选外设（灯光、旋转编码器，以及以后新增的外设）都从主流程里拆出来，各自放在独立目录里。主流程只调用一组统一入口，不直接调用任何外设模块里的函数。需要某个外设时打开开关、把它的目录加进 Keil 工程；不需要时关掉开关，目录也可以整个移除。
 
 ## 结构
 
 ```
-三种模式主循环 + 休眠路径
-  │
-  ├─ 灯光：灯效算法 logo_mode.c / led.c 写颜色缓冲 pwm_rgb_tbl
-  │        └─ 输出层 light_port.h，按 BOARD_LIGHT 编进一个后端
-  │             ├─ light_argb.c   LEDC 驱动 WS2812 类灯珠
-  │             ├─ light_pwm.c    PWM 驱动单色背光（1 路）或一颗 RGB 灯（3 路）
-  │             └─ light_port.c   无灯时的空实现
-  │
-  └─ 其他外设：periph.h 的模块表，三个统一入口
-       ├─ periph_init_all()        进入模式时（main.c）
-       ├─ periph_task_all()        每拍扫键后、生成报文前（matrix_key.c）
-       └─ periph_sleep_all(mask)   休眠级别变化时（main.c 的 mouse_periph_wakeup_enable）
-            └─ knob.c  旋转编码器（音量 / 滚轮），也是新增外设的样板
+projects/mouse_demo/
+├─ main/ mode_24g/ mode_usb/ periph/ ...   核心：三种模式、按键、指示灯、电量、Flash
+│     │
+│     │  只调用 periph/periph.h 的统一入口
+│     ▼
+├─ periph/periph.c            外设表 + 统一入口（核心的一部分）
+│     │  按 board_config.h 的开关，把启用的模块挂进表里
+│     ▼
+└─ modules/                   可选外设，每个目录一个模块
+   ├─ light/                  灯光（BOARD_LIGHT）
+   │   ├─ light.c             模块入口 light_periph + 灯效引擎
+   │   ├─ light_modes.c       各种灯效花样
+   │   ├─ light_tables.h      灯效表
+   │   ├─ light_fx.h          模块内部共享的声明
+   │   └─ light_port.* / light_argb.c / light_pwm.c   输出后端，ARGB 和 PWM 二选一
+   └─ knob/                   旋转编码器（BOARD_HAS_KNOB）
+       └─ knob.c              模块入口 knob_periph + 编码器中断
 ```
+
+统一入口和调用位置：
+
+| 入口 | 谁调用 | 时机 | 灯光 | 编码器 |
+| --- | --- | --- | --- | --- |
+| `periph_init_all()` | `main.c` 主循环 | 进入某个模式 | | 初始化编码器 |
+| `periph_scan_all()` | `matrixkey_scan()` | 每次扫键后、生成报文前 | | 发音量键 / 滚轮 |
+| `periph_frame_all()` | `ui_frame_process()` | 每帧（约 7–16ms） | 刷新一帧灯效 | |
+| `periph_flush_all()` | 各模式主循环、2.4G RTC 中断 | 每帧 | 把颜色送到灯上 | |
+| `periph_blank_all()` | 同步中、休眠前、低电关机、恢复出厂 | 需要关灯时 | 关灯 | |
+| `periph_sleep_all(mask)` | `mouse_periph_wakeup_enable()` | 休眠级别变化 | | 浅睡可唤醒、深睡关掉 |
+| `periph_busy_any()` | 蓝牙 `pm_checker_callback()` | 判断能否进 STOP1 | 灯亮着返回 true | |
+
+核心里留下、不随模块移走的：
+
+- **指示灯**（Num / Caps / 模式灯，`led/led.c`）：和矩阵列共用引脚，属于键盘本身。
+- **灯效设置**（模式、亮度、速度、颜色、开关，`led/led.c`）：按键、Flash、USB 配置工具都会读写。去掉灯光模块后这些设置照常保存，只是没有灯来显示。
+- **配置保存**（`flash_save_pending()`）：原来藏在 `logo_process()` 开头，现在由 `ui_frame_process()` 每帧调用，和灯光模块无关。
 
 所有开关和参数都在 `projects/mouse_demo/config/board_config.h`，其中灯光和编码器部分可以由配置器生成到同目录的 `io_board.h`，优先级：Keil Define > `io_board.h` > `board_config.h` 默认值。驱动开关 `RTE_LEDC`、`RTE_PWM`、`RTE_ENCODER` 由它自动推出，不用再去改 `RTE_om6239.h`。
 
@@ -75,21 +97,43 @@ PWM 通道号按 OM6252 QFN48 封装图：P00 = PWM0、P01 = PWM1、P04 = PWM2�
 
 ## 新增一个外设
 
-1. 新建 `projects/mouse_demo/periph/xxx.c`，照着 `knob.c` 定义：
+1. 建目录 `projects/mouse_demo/modules/xxx/`，写 `xxx.c`，照着 `modules/knob/knob.c`：
    ```c
+   #include "periph.h"
+
+   #if (BOARD_HAS_XXX)
+   static void xxx_init(void)  { ... }
+   static void xxx_scan(void)  { ... }
+
    const periph_ops_t xxx_periph = {
        .name  = "xxx",
        .init  = xxx_init,     // 进入模式时
-       .task  = xxx_task,     // 每拍扫键后，可往按键缓冲里注入按键
-       .sleep = xxx_sleep,    // 休眠级别变化时，参数同 mouse_periph_wakeup_enable()
+       .scan  = xxx_scan,     // 每次扫键后，可往按键缓冲里注入按键
+       // .frame / .flush / .blank / .sleep / .busy 用不到就不写
    };
+   #endif
    ```
-   用不到的函数填 NULL。
-2. 在 `board_config.h` 加开关 `BOARD_HAS_XXX` 和引脚参数。
-3. 在 `periph.c` 的 `periph_table` 里加一行，用 `#if (BOARD_HAS_XXX)` 包住。
-4. 在 Keil 工程的 periph 组里加上 `xxx.c`。
+   整个文件用 `#if (BOARD_HAS_XXX)` 包住，关掉时编译为空。需要中断的外设，中断函数（如 `XXX_IRQHandler`）也写在这个文件里，启动文件里有默认的弱定义。
+2. 在 `config/board_config.h` 加开关 `BOARD_HAS_XXX`（默认 0）和引脚参数。
+3. 在 `periph/periph.c` 的外设表里加一行，同样用 `#if (BOARD_HAS_XXX)` 包住：
+   ```c
+   #if (BOARD_HAS_XXX)
+   extern const periph_ops_t xxx_periph;
+   #endif
+   ...
+   #if (BOARD_HAS_XXX)
+       &xxx_periph,
+   #endif
+   ```
+4. Keil 工程里新建一个组（例如 `module_xxx`）加上这个目录的 `.c` 文件，并把 `..\modules\xxx` 加进头文件路径。
 
-引脚先用配置器检查冲突。需要中断的外设，在 `hal/driver/om6239/drv_isr.c` 对应的中断函数里调用模块提供的函数，参考 `ENCODER_IRQHandler` 调用 `knob_isr()` 的写法。
+主流程、休眠代码都不用改。引脚先用配置器检查冲突。
+
+## 去掉一个外设
+
+1. 把它的开关设成 0（灯光是 `BOARD_LIGHT = LIGHT_NONE`，编码器是 `BOARD_HAS_KNOB = 0`），可以在 `board_config.h`、`io_board.h` 或 Keil Define 里设。
+2. 只改开关就够了，模块文件会编译为空。想让工程更干净，也可以在 Keil 里删掉对应的 `module_xxx` 组。
+3. 如果开关打开了但模块文件没加进工程，链接时会报找不到 `xxx_periph`，按提示把模块加回来即可。
 
 ## 一套代码出多个型号
 

@@ -9,20 +9,21 @@
  */
 #include "om_driver.h"
 #include "main.h"
-#include "led.h"
-#include "light_port.h"
+#include "light_fx.h"
 
 #if (BOARD_LIGHT == LIGHT_PWM)
 
 #define PWM_PERIOD          255u
 
+/* 通道表放 RAM：flush 可能在 2.4G 的 RTC 中断里调用 */
+
 #if (BOARD_PWM_LIGHT == PWM_LIGHT_RGB)
 #define PWM_CH_NUM          3
-static const uint8_t pwm_ch[PWM_CH_NUM]    = {BOARD_PWM_CH_R, BOARD_PWM_CH_G, BOARD_PWM_CH_B};
-static const uint8_t pwm_color[PWM_CH_NUM] = {iR_INDEX, iG_INDEX, iB_INDEX};
+static uint8_t pwm_ch[PWM_CH_NUM]    = {BOARD_PWM_CH_R, BOARD_PWM_CH_G, BOARD_PWM_CH_B};
+static uint8_t pwm_color[PWM_CH_NUM] = {iR_INDEX, iG_INDEX, iB_INDEX};
 #elif (BOARD_PWM_LIGHT == PWM_LIGHT_MONO)
 #define PWM_CH_NUM          1
-static const uint8_t pwm_ch[PWM_CH_NUM]    = {BOARD_PWM_CH_MONO};
+static uint8_t pwm_ch[PWM_CH_NUM]    = {BOARD_PWM_CH_MONO};
 #else
 #error "BOARD_PWM_LIGHT must be PWM_LIGHT_MONO or PWM_LIGHT_RGB"
 #endif

@@ -994,7 +994,7 @@ function genBoard(){
   L.push('#define __IO_BOARD_H');
   L.push('');
   const lm = lightMode(), LA = state.light;
-  L.push('/* ---- 灯光（led/light_*.c），ARGB 和 PWM 二选一 -------------------------- */');
+  L.push('/* ---- 灯光（modules/light/），ARGB 和 PWM 二选一 ------------------------- */');
   const rgbOk = lm === 'rgb' && ['PWM_R','PWM_G','PWM_B'].every(sg => count(sg) === 1);
   const lightOn = lm === 'argb' || lm === 'mono' || rgbOk;
   if (!lightOn) L.push('/* ' + (lm === 'none' ? '没有选灯' : '灯光配置不完整或 ARGB / PWM 混用，按无灯生成') + ' */');
@@ -1016,7 +1016,7 @@ function genBoard(){
     if (pw >= 0) def('BOARD_LIGHT_PWR_ON', state.pins[pw].level ? '0' : '1', '打开灯电源时输出的电平');
   }
   L.push('');
-  L.push('/* ---- 旋转编码器（periph/knob.c） ------------------------------------- */');
+  L.push('/* ---- 旋转编码器（modules/knob/） -------------------------------------- */');
   if (ps.enc >= 0){
     const g = ENC_G[ps.enc];
     def('BOARD_HAS_KNOB', '1');

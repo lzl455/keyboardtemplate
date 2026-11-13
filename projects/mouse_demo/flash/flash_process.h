@@ -220,4 +220,6 @@ extern void flash_save_cfg_dpi(void);
 extern void flash_load_ble_addr(void);
 extern void flash_save_ble_addr(void);
 
+extern void flash_save_pending(void);
+
 #endif
