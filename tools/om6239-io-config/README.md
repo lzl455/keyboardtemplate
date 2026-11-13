@@ -15,13 +15,13 @@
 - **寄存器解码**：粘贴寄存器值，逐脚列出含义并和配置器生成值对比。内置了 `main.c`、`drv_pmu.c` 里的初始化值作为示例。
 - **其他**：撤销（Ctrl+Z）、JSON 导入导出。配置保存在浏览器本地存储里，换电脑请用导出 / 导入。
 
-打开时默认载入本工程（SE73K 键盘）的引脚配置，是从 `projects/mouse_demo/main/main.h` 和 `main.c:199-207` 还原的。
+打开时默认载入本工程（SE73K 键盘）的引脚配置，是从 `projects/mouse_demo/main/main.h` 和 `main()` 开头原来那几行寄存器初始化还原的。
 
 ## 把生成的代码接进工程
 
 1. **保存文件**：在「生成代码」页分别复制 `io_config.h` 和 `io_config.c`，存到 `projects/mouse_demo/periph/`，用 UTF-8 编码保存（工程源码都是 UTF-8）。这个目录已经在 Keil 的头文件路径里。
 2. **加进 Keil 工程**：在 Project 窗口的 `periph` 组上右键 → Add Existing Files to Group，选 `io_config.c`。
-3. **上电初始化**：`main.c` 里加 `#include "io_config.h"`，再把 `main()` 开头直接写寄存器的这几行换成一行 `io_config_init();`：
+3. **上电初始化**：`main.c` 里加 `#include "io_config.h"`，再把 `main()` 开头直接写寄存器的这几行换成一行 `io_config_init();`（下面是模板原来的写法）：
 
    ```c
    // 删除
@@ -32,8 +32,8 @@
    OM_PMU->PAD_BUF_EN &= ~LVD_PIN_MASK;
    OM_PMU->PAD_BUF_EN |= (1<<MODE_PIN);
    OM_GPIO0->DATAOUT = 0xFFF7FFFE;
-   OM_GPIO0->OUTENSET = 0x040800003;
-   OM_GPIO0->OUTENCLR = ~0x040800003;
+   OM_GPIO0->OUTENSET = 0x04080003;
+   OM_GPIO0->OUTENCLR = ~0x04080003;
 
    // 换成
    io_config_init();
@@ -45,7 +45,7 @@
 说明：
 
 - 生成的宏都带 `IO_` 前缀（`IO_KEY_R0_PIN`、`IO_CHR_OK_READ()` 等）。`main.h` 里已有 `USB_5V_PIN`、`CHR_OK_PIN` 这类同名宏，前者是读电平、后者是引脚号，不加前缀会互相覆盖。加了前缀后两套可以共存，旧代码不用一次改完。
-- 载入 SE73K 工程时，`io_config_init()` 写进寄存器的值和原来那几行完全一样，只有 `OUTENSET` 是 `0x04080003`，也就是修正了 `0x040800003` 多一个 0 的笔误（见 `claude/fix-gpio-outenset` 分支）。
+- 载入 SE73K 工程时，`io_config_init()` 写进寄存器的值和原来那几行完全一样，`OUTENSET` 是修正笔误后的 `0x04080003`。
 - 以后改引脚：在配置器里改好，重新生成并覆盖这两个文件，再重新编译。配置可以用「导出配置」保存成 JSON，下次「导入配置」接着改。
 
 ## 依据和注意事项
@@ -56,5 +56,5 @@
 - **保留脚**：P14–P17 接芯片内部 Flash，P37 是 BOOT 启动脚，不能配置。生成代码时这几个脚保持工程现有的值（无上下拉、驱动 24mA、输入缓冲按复位值）。
 - **PWM 通道**（来自 OM6252 封装图）：P00 = PWM0、P01 = PWM1、P04 = PWM2、P05 = PWM3、P26 = PWM6、P32 = PWM7。P06、P22 图上只标了 PWM，是 PWM4/PWM5 中的一个，具体对应待确认。
 - **P35**：OM6252 QFN48 引出了 P35（第 3 脚），本工程用它做模式开关；手册的 QFN32 没有引出。
-- **`main.c:206` 疑似笔误**：`OUTENSET = 0x040800003` 是 9 位十六进制，按数值等于 `0x40800003`，会把 P36（USB 5V 检测）设成输出。原意很可能是 `0x04080003`，即配置器生成的值。建议上板验证后修正。
+- **`OUTENSET` 笔误（已修正）**：`main.c` 原来写成 `0x040800003`（9 位十六进制），按数值等于 `0x40800003`，会把 P36（USB 5V 检测）和 P27 设成输出。现已改为 `0x04080003`，即配置器生成的值。解码页保留了修复前的写法作为示例。
 - 生成的代码用 clang（Cortex-M0，`-Wall`）对着本仓库的 SDK 头文件做过语法检查，0 警告；尚未在 Keil 里编译或上板运行。

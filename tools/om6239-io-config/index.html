@@ -397,7 +397,7 @@ function sigDefaults(sig){
 function reservedPin(i){ return Object.assign(blankPin(i), {sig:RESERVED[i], pull:'none', wake:'none'}); }
 function blankState(){ return {project:'新工程', pkg:'qfn48', pins:Array.from({length:N}, (_, i) => RESERVED[i] ? reservedPin(i) : blankPin(i))}; }
 
-// SE73K keyboard, reconstructed from projects/mouse_demo/main/main.h + main.c:199-207
+// SE73K keyboard, reconstructed from projects/mouse_demo/main/main.h and the original register setup in main()
 function presetState(){
   const s = blankState();
   s.project = 'SE73K 键盘';
@@ -590,7 +590,7 @@ function problems(){
   P.forEach((p, i) => {
     const s = SIG[p.sig];
     if (p.sig !== 'RESET' && !isReserved(i) && !pinNo(i)) add('warn', i, pinName(i) + ' 在 ' + pkg().chip + ' ' + pkg().name + ' 封装上没有引出');
-    if ((i === 18 || i === 21) && p.sig !== 'RESET' && s.cat !== 'dbg') add('info', i, pinName(i) + ' 是 SWD ' + (i === 18 ? '时钟' : '数据') + '脚，被占用后要在启动后关闭 SWD 时钟（main.c:211 的做法），调试器只能在复位后的短窗口里连上');
+    if ((i === 18 || i === 21) && p.sig !== 'RESET' && s.cat !== 'dbg') add('info', i, pinName(i) + ' 是 SWD ' + (i === 18 ? '时钟' : '数据') + '脚，被占用后要在启动后关闭 SWD 时钟（main.c 里的做法），调试器只能在复位后的短窗口里连上');
     if (p.wake !== 'none' && (s.dir === 'out')) add('err', i, pinName(i) + ' 是输出脚，不能做唤醒源');
     if (p.wake === 'fall' && !(p.pull === 'pu1' || p.pull === 'pu2')) add('warn', i, pinName(i) + ' 下降沿唤醒但没开上拉，引脚悬空时可能误唤醒');
     if (p.wake === 'rise' && p.pull !== 'pd') add('warn', i, pinName(i) + ' 上升沿唤醒但没开下拉，引脚悬空时可能误唤醒');
@@ -963,12 +963,13 @@ const REGS = [
   {id:'outen', name:'OM_GPIO0->OUTENSET', w:1, from:0, to:32, dec:v => v ? '输出' : '—'}
 ];
 const SAMPLES = [
-  {reg:'outen', val:'0x040800003', src:'main.c:206 上电'},
-  {reg:'dout', val:'0xFFF7FFFE', src:'main.c:205 上电'},
-  {reg:'pu0', val:'0x00AAAA00', src:'main.c:199 上电'},
-  {reg:'pu1', val:'0x0A0AAA25', src:'main.c:200 上电'},
-  {reg:'pd', val:'0x4000000C', src:'main.c:201 上电'},
-  {reg:'pu1', val:'0x0A000005', src:'main.c:132 开按键唤醒'},
+  {reg:'outen', val:'0x040800003', src:'原 main.c 笔误'},
+  {reg:'outen', val:'0x04080003', src:'原 main.c 修正后'},
+  {reg:'dout', val:'0xFFF7FFFE', src:'原 main.c 上电'},
+  {reg:'pu0', val:'0x00AAAA00', src:'原 main.c 上电'},
+  {reg:'pu1', val:'0x0A0AAA25', src:'原 main.c 上电'},
+  {reg:'pd', val:'0x4000000C', src:'原 main.c 上电'},
+  {reg:'pu1', val:'0x0A000005', src:'main.c 开按键唤醒'},
   {reg:'pu1', val:'0x02000005', src:'drv_pmu.c 深睡前'},
   {reg:'pd', val:'0x6000000C', src:'drv_pmu.c 深睡前'},
   {reg:'dout', val:'0xF803FFF2', src:'drv_pmu.c 深睡前'},
@@ -995,7 +996,7 @@ function renderDecode(){
   let n = '';
   if (pv.digits > 8) n += '<div class="callout">你写了 ' + pv.digits + ' 位十六进制数字，编译器按数值取，就是 ' + hex(v) + '。如果本意是 8 位，可能多打或少打了一个 0。</div>';
   if (reg.id === 'outen' && $('decVal').value.trim().toLowerCase() === '0x040800003'){
-    n += '<div class="callout" style="margin-top:8px">这是 <span class="mono">main.c:206</span> 的原文。按数值它把 <b>P27</b> 和 <b>P36</b> 设成了输出，P36 是 USB 5V 检测输入，被驱动成高电平后固件会一直以为插着 USB。对照后面的用法（P23 灯电源、P32 扩展时钟都要输出），原意很可能是 <span class="mono">0x04080003</span>，正好等于配置器生成的值。建议上板验证后修正。</div>';
+    n += '<div class="callout" style="margin-top:8px">这是 <span class="mono">main.c</span> 修复前的写法。按数值它把 <b>P27</b> 和 <b>P36</b> 设成了输出，P36 是 USB 5V 检测输入，被驱动成高电平后固件会一直以为插着 USB。现在已改为 <span class="mono">0x04080003</span>，和配置器生成的值一致。</div>';
   }
   note.innerHTML = n;
   const only = $('decOnlyDiff').checked;

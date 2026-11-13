@@ -203,8 +203,10 @@ int main(void)
     OM_PMU->PAD_BUF_EN |= (1<<MODE_PIN);
 
     OM_GPIO0->DATAOUT = 0xFFF7FFFE;
-    OM_GPIO0->OUTENSET = 0x040800003;
-    OM_GPIO0->OUTENCLR = ~0x040800003;
+    // 输出脚：P00 ARGB_OFF、P01 ARGB_OUT、P23 LED_VDD、P32 KEY_EX，其余为输入
+    // 原来写成 0x040800003（多一个 0），实际值 0x40800003 会把 P27 和 P36(USB_5V) 设成输出
+    OM_GPIO0->OUTENSET = 0x04080003;
+    OM_GPIO0->OUTENCLR = ~0x04080003;
     device_type = iDEVICE_TYPE_ERR;
 
                                                 // ???????????????????????
