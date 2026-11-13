@@ -20,6 +20,10 @@
 #include "matrix_key.h"
 #include "matrix_key_tbl_win.h"
 #include "matrix_key_tbl_win_fn.h"
+#if (MATRIX_MAC_KEYMAP)                         // Mac 独立键表（matrix_cfg.h），不用时不编进固件
+#include "matrix_key_tbl_mac.h"
+#include "matrix_key_tbl_mac_fn.h"
+#endif
 
 //-----------------------------------------------------------------------------;
 // 常量定义区
@@ -150,9 +154,18 @@ static uint8_t win_mac_channel(void)
 
 void win_mac_load(void)
 {
+    uint16_t old = (key_ctrl & bwin_mac_sataus);
+
     key_ctrl &= ~bwin_mac_sataus;
     if(sys_mode & (1u<<win_mac_channel()))
         key_ctrl |= bwin_mac_sataus;
+
+#if (MATRIX_MAC_KEYMAP)
+    if(old != (key_ctrl & bwin_mac_sataus))
+        laod_key_cfg();                         // Win / Mac 用不同的键表，模式变了要换表
+#else
+    (void)old;
+#endif
 }
 
 /*******************************************************************************
@@ -301,88 +314,53 @@ void laod_cfg_dpi(void)
     }
 }
 
-extern unsigned char    const   matrixkey_win_tbl[];
-extern unsigned char    const   matrixkey_win_fn_tbl[];
-extern unsigned char    const   matrixkey_mac_tbl[];
-extern unsigned char    const   matrixkey_mac_fn_tbl[];
-
 /*******************************************************************************
-* 函数名称: laod_mode_data()
-* 功能描述:
-* 输入参数:无
-* 输出参数:无
-* 说    明:
+* 函数名称: key_tbl_load()
+* 功能描述: 读一张键表到 dst；Flash 里没有（最后一个字节不是 0xA5）就先从代码里的键表写进去
+* 说    明: 键表 248 字节，后面保持 0xFF。恢复出厂会擦掉这些页，下次加载时重新写入。
 *******************************************************************************/
-void laod_key_cfg(void)
+static void key_tbl_load(unsigned int addr, unsigned char bank, const unsigned char *tbl, unsigned int size, uint8_t *dst)
 {
-    // 键表数组定义在本文件包含的两个头文件里，sizeof 是实际大小；最后一个字节留给 0xA5 标记
-    typedef char key_tbl_size_check[(sizeof(matrixkey_win_tbl) <= 255 && sizeof(matrixkey_win_fn_tbl) <= 255) ? 1 : -1];
-    (void)sizeof(key_tbl_size_check);
-
-//----------------------------------------------------------------------------
-// WIN MODE
-//
-    flash_read(iKEY_MODE0_ADDR, 256);
+    flash_read(addr, 256);
     if(0xA5 != flash_fifo[255])
     {
         memset(flash_fifo, 0xFF, 255);
-        memcpy(flash_fifo, matrixkey_win_tbl, sizeof(matrixkey_win_tbl));   // 键表 248 字节，后面保持 0xFF
+        memcpy(flash_fifo, tbl, size);
         flash_fifo[255] = 0xA5;
 
-        flash_erase(iKEY_MODE0_BANK);
-        flash_write(iKEY_MODE0_ADDR, 256);
+        flash_erase(bank);
+        flash_write(addr, 256);
     }
+    memcpy(dst, flash_fifo, 250);
+}
 
-    //if(0!=(key_ctrl&bwin_mac_sataus))
-        memcpy(def_key_dat, flash_fifo, 250);
-//----------------------------------------------------------------------------
-// WIN FN MODE
-//
-    flash_read(iKEY_MODE1_ADDR, 256);
-    if(0xA5 != flash_fifo[255])                 // 标记在最后一个字节，和基础层一样（原来误写成 [0]，每次开机都会擦写一遍）
-    {
-        memset(flash_fifo, 0xFF, 255);
-        memcpy(flash_fifo, matrixkey_win_fn_tbl, sizeof(matrixkey_win_fn_tbl));   // 键表 248 字节，后面保持 0xFF
-        flash_fifo[255] = 0xA5;
+/*******************************************************************************
+* 函数名称: laod_key_cfg()
+* 功能描述: 按当前 Win / Mac 模式加载基础层和 Fn 层键表到 def_key_dat / def_key_fn_dat
+* 说    明: MATRIX_MAC_KEYMAP = 0：Win / Mac 共用 Flash 第 0、4 页的键表，Mac 模式下
+*           key_process() 把 Alt 和 Win 对调。
+*           MATRIX_MAC_KEYMAP = 1：Mac 模式用第 8、12 页的 Mac 独立键表，不再对调。
+*           切换 Win / Mac 时（iKEY_WIN / iKEY_MAC / iKEY_WIN_MAC、win_mac_load()）会重新调用。
+*******************************************************************************/
+void laod_key_cfg(void)
+{
+    // 键表数组定义在本文件包含的头文件里，sizeof 是实际大小；最后一个字节留给 0xA5 标记
+    typedef char key_tbl_size_check[(sizeof(matrixkey_win_tbl) <= 255 && sizeof(matrixkey_win_fn_tbl) <= 255) ? 1 : -1];
+    (void)sizeof(key_tbl_size_check);
 
-        flash_erase(iKEY_MODE1_BANK);
-        flash_write(iKEY_MODE1_ADDR, 256);
+#if (MATRIX_MAC_KEYMAP)
+    typedef char mac_tbl_size_check[(sizeof(matrixkey_mac_tbl) <= 255 && sizeof(matrixkey_mac_fn_tbl) <= 255) ? 1 : -1];
+    (void)sizeof(mac_tbl_size_check);
+
+    if(0 == (key_ctrl&bwin_mac_sataus))
+    {                                           // Mac 模式
+        key_tbl_load(iKEY_MODE2_ADDR, iKEY_MODE2_BANK, matrixkey_mac_tbl, sizeof(matrixkey_mac_tbl), def_key_dat);
+        key_tbl_load(iKEY_MODE3_ADDR, iKEY_MODE3_BANK, matrixkey_mac_fn_tbl, sizeof(matrixkey_mac_fn_tbl), def_key_fn_dat);
+        return;
     }
-
-    //if(0!=(key_ctrl&bwin_mac_sataus))
-        memcpy(def_key_fn_dat, flash_fifo, 250);
-
-////----------------------------------------------------------------------------
-//// MAC MODE
-////
-//    flash_read(iKEY_MODE2_ADDR, 256);
-//    if(0xA5 != flash_fifo[0])
-//    {
-//        memset(flash_fifo, 0xFF, 255);
-//        memcpy(flash_fifo, matrixkey_mac_tbl, 255);
-//        flash_fifo[255] = 0xA5;
-
-//        flash_erase(iKEY_MODE2_BANK);
-//        flash_write(iKEY_MODE2_ADDR, 256);
-//    }
-//    if(0==(key_ctrl&bwin_mac_sataus))
-//        memcpy(def_key_dat, flash_fifo, 250);
-////----------------------------------------------------------------------------
-//// MAC FN MODE
-////
-//    flash_read(iKEY_MODE3_ADDR, 256);
-//    if(0xA5 != flash_fifo[0])
-//    {
-//        memset(flash_fifo, 0xFF, 255);
-//        memcpy(flash_fifo, matrixkey_mac_fn_tbl, 255);
-//        flash_fifo[255] = 0xA5;
-
-//        flash_erase(iKEY_MODE3_BANK);
-//        flash_write(iKEY_MODE3_ADDR, 256);
-//    }
-//    if(0==(key_ctrl&bwin_mac_sataus))
-//        memcpy(def_key_fn_dat, flash_fifo, 250);
-//
+#endif
+    key_tbl_load(iKEY_MODE0_ADDR, iKEY_MODE0_BANK, matrixkey_win_tbl, sizeof(matrixkey_win_tbl), def_key_dat);
+    key_tbl_load(iKEY_MODE1_ADDR, iKEY_MODE1_BANK, matrixkey_win_fn_tbl, sizeof(matrixkey_win_fn_tbl), def_key_fn_dat);
 }
 
 /*******************************************************************************

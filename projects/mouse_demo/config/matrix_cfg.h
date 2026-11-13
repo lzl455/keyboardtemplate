@@ -94,4 +94,9 @@
 #define MATRIX_LED_LOW_ON           {OM_GPIO0->DATAOUTCLR = (1u<<22); OM_GPIO0->OUTENSET = (1u<<22);}   /* P26，和列 C2 复用 */
 #define MATRIX_LED_LOW_OFF          {OM_GPIO0->DATAOUTSET = (1u<<22); OM_GPIO0->OUTENCLR = (1u<<22);}
 
+/* ---- Mac 独立键表 ----
+ * 0：Win / Mac 共用 matrix_key_tbl_win*.h，Mac 模式下 key_process() 把 Alt 和 Win 对调
+ * 1：Mac 模式用 matrix_key_tbl_mac*.h（存在 Flash 第 8、12 页），不再对调；切换 Win / Mac 时换表 */
+#define MATRIX_MAC_KEYMAP       0
+
 #endif /* __MATRIX_CFG_H */
