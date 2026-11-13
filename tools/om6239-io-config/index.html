@@ -1,0 +1,1094 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OM6239 引脚配置器</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+[hidden]{display:none!important}
+body{margin:0}
+/* layout: tool header + tab bar; pin tab = 3 columns (peripherals | package + table | pin inspector), stacks on narrow screens */
+:root{
+  --bg:#e9edf1; --panel:#ffffff; --panel-2:#f4f6f8; --ink:#17202b; --muted:#5a6676; --line:#cfd6de;
+  --accent:#0d6e8a; --accent-ink:#ffffff; --chip:#28303a; --chip-ink:#c9d2dc; --pad:#a9b3be;
+  --err:#c0392b; --err-bg:#fbe6e3; --warn:#a86400; --warn-bg:#fdf0d8; --info:#356bb3; --info-bg:#e4edf9;
+  --c-none:#c5ccd4; --c-gpio:#3f9a52; --c-key:#2f6fd0; --c-usb:#d07a12; --c-uart:#8a4fc9; --c-ledc:#c93d8f;
+  --c-pwm:#b59a00; --c-enc:#0f9aa8; --c-lvd:#cf4430; --c-dbg:#6b7785; --c-sns:#8c6239;
+  --code-bg:#f6f8fa; --code-cm:#5e7a5e; --code-kw:#8a3fb5; --code-num:#a14d00; --code-pp:#0d6e8a;
+  --sans:"IBM Plex Sans","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#12171d; --panel:#1a2129; --panel-2:#212a34; --ink:#e3e9ef; --muted:#97a3b1; --line:#334050;
+  --accent:#4cb8d6; --accent-ink:#0b1a20; --chip:#0c1014; --chip-ink:#aeb9c5; --pad:#6b7785;
+  --err:#ff8a7a; --err-bg:#3d1f1b; --warn:#f2b552; --warn-bg:#3a2c12; --info:#8db6f2; --info-bg:#1b2a40;
+  --c-none:#4a5563; --c-gpio:#5cc36f; --c-key:#5d97f0; --c-usb:#f0a043; --c-uart:#b384ec; --c-ledc:#ec74ba;
+  --c-pwm:#e0c437; --c-enc:#3cc9d6; --c-lvd:#f27662; --c-dbg:#9aa6b4; --c-sns:#c4925f;
+  --code-bg:#141a20; --code-cm:#86a886; --code-kw:#c99bf0; --code-num:#f0a35e; --code-pp:#6cc8e2; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#12171d; --panel:#1a2129; --panel-2:#212a34; --ink:#e3e9ef; --muted:#97a3b1; --line:#334050;
+  --accent:#4cb8d6; --accent-ink:#0b1a20; --chip:#0c1014; --chip-ink:#aeb9c5; --pad:#6b7785;
+  --err:#ff8a7a; --err-bg:#3d1f1b; --warn:#f2b552; --warn-bg:#3a2c12; --info:#8db6f2; --info-bg:#1b2a40;
+  --c-none:#4a5563; --c-gpio:#5cc36f; --c-key:#5d97f0; --c-usb:#f0a043; --c-uart:#b384ec; --c-ledc:#ec74ba;
+  --c-pwm:#e0c437; --c-enc:#3cc9d6; --c-lvd:#f27662; --c-dbg:#9aa6b4; --c-sns:#c4925f;
+  --code-bg:#141a20; --code-cm:#86a886; --code-kw:#c99bf0; --code-num:#f0a35e; --code-pp:#6cc8e2; color-scheme:dark }
+*{box-sizing:border-box}
+html,body{background:var(--bg)}
+body{color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5}
+button,input,select,textarea{font:inherit;color:inherit}
+.app{max-width:1480px;margin:0 auto;padding-block:16px 40px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:14px}
+header.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px}
+.brand{display:flex;align-items:baseline;gap:10px;min-width:0}
+.brand h1{font-size:19px;margin:0;font-weight:700;letter-spacing:.01em}
+.brand span{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.proj{display:flex;align-items:center;gap:8px;flex:1 1 220px;min-width:0}
+.proj label{font-size:12.5px;color:var(--muted);white-space:nowrap}
+.proj input{flex:1;min-width:0;max-width:260px}
+.actions{display:flex;flex-wrap:wrap;gap:6px}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:5px 11px;cursor:pointer;font-size:13px;white-space:nowrap}
+.btn:hover{border-color:var(--muted)}
+.btn:focus-visible,.tab:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible,.seg button:focus-visible,.pinrow:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn:disabled{opacity:.45;cursor:default}
+input[type=text],select,textarea{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:5px 8px}
+nav.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tab{border:none;background:none;padding:8px 14px;cursor:pointer;font-weight:600;font-size:13.5px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.tab[aria-selected=true]{color:var(--ink);border-bottom-color:var(--accent)}
+.badge{display:inline-block;min-width:18px;padding:0 5px;border-radius:9px;font-size:11px;line-height:18px;text-align:center;margin-left:6px;font-family:var(--mono)}
+.badge.err{background:var(--err);color:var(--panel)} .badge.warn{background:var(--warn);color:var(--panel)} .badge.ok{background:var(--line);color:var(--muted)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;min-width:0}
+.ph{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 12px;border-bottom:1px solid var(--line)}
+.ph h2{font-size:13px;margin:0;font-weight:700;letter-spacing:.02em}
+.pb{padding:10px 12px;display:flex;flex-direction:column;gap:10px}
+.muted{color:var(--muted)}
+.small{font-size:12.5px}
+.mono{font-family:var(--mono)}
+/* pin tab grid */
+.grid{display:grid;grid-template-columns:260px minmax(0,1fr) 320px;gap:14px;align-items:start}
+@media (max-width:1180px){.grid{grid-template-columns:minmax(0,1fr) 320px}.col-left{grid-column:1/-1;order:3}}
+@media (max-width:820px){.grid{grid-template-columns:minmax(0,1fr)}.col-right{order:2}.col-left{order:3}}
+.col{display:flex;flex-direction:column;gap:14px;min-width:0}
+/* peripherals */
+.per{display:grid;grid-template-columns:minmax(0,1fr);gap:4px}
+.per label{font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:7px}
+.per select{width:100%}
+.dot{width:10px;height:10px;border-radius:3px;display:inline-block;flex:none}
+.state{font-size:11.5px;font-weight:600}
+.state.bad{color:var(--err)}
+.matrix{display:flex;gap:16px;font-size:12.5px}
+.matrix b{font-family:var(--mono);font-size:18px;display:block;line-height:1.2}
+/* problems */
+.probs{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
+.probs li{border-radius:6px;padding:6px 9px 6px 10px;font-size:12.5px;cursor:pointer;border-left:3px solid}
+.probs li.err{background:var(--err-bg);border-color:var(--err)}
+.probs li.warn{background:var(--warn-bg);border-color:var(--warn)}
+.probs li.info{background:var(--info-bg);border-color:var(--info)}
+.probs li b{font-family:var(--mono);font-weight:600;margin-right:4px}
+.probs .none{cursor:default;background:var(--panel-2);border-color:var(--line);color:var(--muted)}
+/* chip */
+.chipwrap{padding:6px 6px 0;overflow-x:auto}
+.chipwrap svg{display:block;width:100%;height:auto;max-width:720px;min-width:560px;margin:0 auto}
+.chipwrap text{font-family:var(--mono)}
+.pin{cursor:pointer}
+.pin .pad{stroke:var(--panel);stroke-width:1}
+.pin:hover .pad,.pin:focus .pad{stroke:var(--ink);stroke-width:2}
+.pin:focus{outline:none}
+.pin.sel .pad{stroke:var(--accent);stroke-width:3}
+.pin .nm{font-size:12px;font-weight:600;fill:var(--ink)}
+.pin .lb{font-size:11px;fill:var(--muted)}
+.pin.sel .nm{fill:var(--accent)}
+.pin .num{font-size:9.5px;fill:var(--chip-ink)}
+.fixed .pad{fill:var(--pad)} .fixed .nm{font-size:12px;fill:var(--muted)} .fixed .num{font-size:9.5px;fill:var(--chip-ink)}
+.tray{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 12px 12px;font-size:12.5px}
+.tray .tp{border:1px dashed var(--line);border-radius:6px;padding:2px 8px;cursor:pointer;background:var(--panel-2);font-family:var(--mono);font-size:12px;display:inline-flex;align-items:center;gap:6px}
+.tray .tp.sel{border-color:var(--accent);border-style:solid}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;padding:0 12px 10px;font-size:12px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+/* pin table */
+.tblwrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:12.5px;min-width:760px}
+th,td{padding:6px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{font-size:11.5px;color:var(--muted);font-weight:600;background:var(--panel-2);position:sticky;top:0}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:var(--panel-2)}
+tbody tr.sel{background:var(--info-bg)}
+td.mono{font-family:var(--mono)}
+.fn{display:inline-flex;align-items:center;gap:6px}
+/* inspector */
+.insp-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.insp-h b{font-family:var(--mono);font-size:22px;line-height:1}
+.field{display:flex;flex-direction:column;gap:4px}
+.field>span{font-size:12px;font-weight:600;color:var(--muted)}
+.field select,.field input[type=text]{width:100%}
+.seg{display:flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg button{flex:1 1 auto;border:none;background:var(--panel);padding:5px 8px;cursor:pointer;font-size:12.5px;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:none}
+.seg button[aria-pressed=true]{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.seg button:disabled{color:var(--muted);opacity:.5;cursor:default}
+.hint{font-size:11.5px;color:var(--muted);line-height:1.45}
+.alts{display:flex;flex-wrap:wrap;gap:5px}
+.alts button{border:1px solid var(--line);background:var(--panel-2);border-radius:12px;padding:2px 9px;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:5px}
+.alts button[aria-current=true]{border-color:var(--accent);color:var(--accent);font-weight:600}
+.bits{font-family:var(--mono);font-size:11.5px;background:var(--panel-2);border-radius:6px;padding:8px 10px;display:grid;grid-template-columns:auto auto 1fr;gap:2px 12px;overflow-x:auto}
+.bits .k{color:var(--muted)}
+.chk{display:flex;align-items:center;gap:7px;font-size:12.5px}
+/* code tab */
+.codebar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;justify-content:space-between}
+.files{display:flex;gap:4px}
+.files .btn[aria-pressed=true]{border-color:var(--accent);color:var(--accent);font-weight:600}
+pre.code{margin:0;background:var(--code-bg);border:1px solid var(--line);border-radius:8px;padding:12px 0;overflow:auto;max-height:70vh;font-family:var(--mono);font-size:12.5px;line-height:1.55;tab-size:4}
+pre.code .ln{display:block;padding:0 14px 0 0;white-space:pre}
+pre.code .ln::before{content:attr(data-n);display:inline-block;width:3.2em;padding-right:1em;text-align:right;color:var(--muted);opacity:.6;user-select:none}
+.cm{color:var(--code-cm)} .kw{color:var(--code-kw)} .nu{color:var(--code-num)} .pp{color:var(--code-pp)}
+.howto{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.howto ol{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px;font-size:13px}
+/* decode tab */
+.dec{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:14px;align-items:start}
+@media (max-width:900px){.dec{grid-template-columns:minmax(0,1fr)}}
+.samples{display:flex;flex-direction:column;gap:4px}
+.samples button{text-align:left;border:1px solid var(--line);background:var(--panel-2);border-radius:6px;padding:5px 9px;cursor:pointer;font-size:12px;display:flex;justify-content:space-between;gap:10px}
+.samples button .mono{color:var(--muted)}
+.callout{border-radius:6px;padding:9px 11px;font-size:12.5px;border-left:3px solid var(--warn);background:var(--warn-bg)}
+.callout.ok{border-color:var(--c-gpio);background:var(--panel-2)}
+td.diff{color:var(--err);font-weight:700}
+tr.difrow{background:var(--err-bg)}
+.valbox{font-family:var(--mono);font-size:13px;display:flex;flex-direction:column;gap:2px}
+/* dialog + toast */
+.overlay{position:fixed;inset:0;background:rgba(10,14,18,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:40}
+.dialog{background:var(--panel);border:1px solid var(--line);border-radius:10px;width:min(640px,100%);max-height:90vh;display:flex;flex-direction:column}
+.dialog textarea{width:100%;min-height:260px;font-family:var(--mono);font-size:12px;resize:vertical}
+.dialog .foot{display:flex;justify-content:flex-end;gap:8px;padding:10px 12px;border-top:1px solid var(--line);flex-wrap:wrap}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--panel);padding:8px 14px;border-radius:8px;font-size:13px;z-index:50;max-width:calc(100% - 32px)}
+@media (prefers-reduced-motion:no-preference){.pin .pad{transition:fill .15s}}
+</style>
+
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand"><h1>OM6239 引脚配置器</h1><span>QFN32 · 26 个 GPIO</span></div>
+    <div class="proj"><label for="projName">工程</label><input type="text" id="projName" spellcheck="false"></div>
+    <div class="actions">
+      <button class="btn" id="btnUndo" title="Ctrl+Z">撤销</button>
+      <button class="btn" id="btnPreset">载入 SE73K 键盘工程</button>
+      <button class="btn" id="btnBlank">清空</button>
+      <button class="btn" id="btnExport">导出配置</button>
+      <button class="btn" id="btnImport">导入配置</button>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="视图">
+    <button class="tab" role="tab" id="tab-pins" data-view="pins">引脚配置</button>
+    <button class="tab" role="tab" id="tab-code" data-view="code">生成代码</button>
+    <button class="tab" role="tab" id="tab-decode" data-view="decode">寄存器解码</button>
+  </nav>
+
+  <!-- ===================== pins view ===================== -->
+  <section id="view-pins" class="grid" role="tabpanel" aria-labelledby="tab-pins">
+    <div class="col col-left">
+      <div class="panel">
+        <div class="ph"><h2>外设</h2><span class="small muted">选了就自动占脚</span></div>
+        <div class="pb" id="perList"></div>
+      </div>
+      <div class="panel">
+        <div class="ph"><h2>键盘矩阵</h2></div>
+        <div class="pb">
+          <div class="matrix" id="matrixSum"></div>
+          <div class="hint">在引脚上选「矩阵行 / 矩阵列」。行默认上拉加下降沿唤醒，列平时是输入，扫描时拉低。</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="ph"><h2>检查结果</h2><span id="probCount" class="small muted"></span></div>
+        <div class="pb"><ul class="probs" id="probList"></ul></div>
+      </div>
+    </div>
+
+    <div class="col col-mid">
+      <div class="panel">
+        <div class="ph"><h2>封装视图</h2><span class="small muted">点引脚进行配置</span></div>
+        <div class="chipwrap" id="chip"></div>
+        <div class="legend" id="legend"></div>
+        <div class="tray" id="tray"></div>
+      </div>
+      <div class="panel">
+        <div class="ph"><h2>引脚表</h2><label class="chk small"><input type="checkbox" id="showAll"> 显示未使用的引脚</label></div>
+        <div class="tblwrap"><table>
+          <thead><tr><th>引脚</th><th>封装脚</th><th>功能</th><th>标签</th><th>上下拉</th><th>驱动</th><th>初始电平</th><th>唤醒</th><th>输入缓冲</th></tr></thead>
+          <tbody id="pinTbody"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <div class="col col-right">
+      <div class="panel" id="inspector"></div>
+    </div>
+  </section>
+
+  <!-- ===================== code view ===================== -->
+  <section id="view-code" class="col" role="tabpanel" aria-labelledby="tab-code" hidden>
+    <div class="codebar">
+      <div class="files" id="fileBtns">
+        <button class="btn mono" data-file="h" aria-pressed="true">io_config.h</button>
+        <button class="btn mono" data-file="c" aria-pressed="false">io_config.c</button>
+      </div>
+      <div class="actions"><span class="small muted" id="codeState"></span><button class="btn primary" id="btnCopyCode">复制当前文件</button></div>
+    </div>
+    <pre class="code" id="codeOut" tabindex="0" aria-label="生成的代码"></pre>
+    <div class="howto">
+      <div class="panel"><div class="ph"><h2>怎么接进工程</h2></div><div class="pb"><ol>
+        <li>把两个文件放到 <span class="mono">projects/mouse_demo/periph/</span>，在 Keil 的 periph 组里加上 <span class="mono">io_config.c</span>。</li>
+        <li>在 <span class="mono">main()</span> 里用 <span class="mono">io_config_init();</span> 替换 <span class="mono">main.c:197-207</span> 那几行直接写寄存器的代码。</li>
+        <li>进深睡前调用 <span class="mono">io_config_wakeup(true)</span>，醒来后调用 <span class="mono">io_config_wakeup(false)</span>。</li>
+      </ol></div></div>
+      <div class="panel"><div class="ph"><h2>生成规则</h2></div><div class="pb"><ol>
+        <li>上下拉、驱动、输入缓冲、唤醒都按整寄存器写，每行后面注明涉及哪些脚。</li>
+        <li>先写 <span class="mono">DATAOUT</span> 再开输出，上电不会出毛刺。非输出脚的 <span class="mono">DATAOUT</span> 位写 1。</li>
+        <li>上拉编码按 SDK 的 <span class="mono">pmu_reg.h</span>：01 = 150k，10 = 30k。</li>
+      </ol></div></div>
+    </div>
+  </section>
+
+  <!-- ===================== decode view ===================== -->
+  <section id="view-decode" class="dec" role="tabpanel" aria-labelledby="tab-decode" hidden>
+    <div class="col">
+      <div class="panel">
+        <div class="ph"><h2>输入寄存器值</h2></div>
+        <div class="pb">
+          <label class="field"><span>寄存器</span><select id="decReg"></select></label>
+          <label class="field"><span>数值（十六进制）</span><input type="text" id="decVal" class="mono" spellcheck="false"></label>
+          <div class="valbox" id="decInfo"></div>
+          <div id="decNote"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="ph"><h2>工程里现成的写法</h2></div>
+        <div class="pb"><div class="samples" id="samples"></div></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="ph"><h2>逐脚解码</h2><label class="chk small"><input type="checkbox" id="decOnlyDiff"> 只看和配置器不同的脚</label></div>
+      <div class="tblwrap"><table>
+        <thead><tr><th>引脚</th><th>封装脚</th><th>当前配置</th><th>输入值的含义</th><th>配置器生成值</th><th></th></tr></thead>
+        <tbody id="decTbody"></tbody>
+      </table></div>
+    </div>
+  </section>
+</div>
+
+<div class="overlay" id="dlg" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dlgTitle">
+    <div class="ph"><h2 id="dlgTitle"></h2></div>
+    <div class="pb"><p class="small muted" id="dlgHint" style="margin:0"></p><textarea id="dlgText" spellcheck="false"></textarea></div>
+    <div class="foot" id="dlgFoot"></div>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function(){
+"use strict";
+/* ------------------------------------------------------------------ chip data */
+const N = 32;
+const pinName = i => 'P' + (i >> 3) + (i & 7);
+// QFN32 package: pin number -> GPIO index, or fixed name (datasheet Figure 1.1)
+const PKG = [null,
+  26,0,1,'VDD','VBUS',2,3,4,          // 1-8   left, top -> bottom
+  5,6,7,8,9,10,11,27,                 // 9-16  bottom, left -> right
+  28,'XTALP','XTALN','BOOT','RF',30,16,17, // 17-24 right, bottom -> top
+  18,19,20,21,22,23,24,25];           // 25-32 top, right -> left
+const QFN = Array(N).fill(null);
+PKG.forEach((v, n) => { if (typeof v === 'number') QFN[v] = n; });
+const NOT_BONDED = [12,13,14,15,29,31];
+
+const CATS = {
+  none:{name:'未使用',v:'--c-none'}, gpio:{name:'GPIO',v:'--c-gpio'}, key:{name:'键盘矩阵',v:'--c-key'},
+  usb:{name:'USB',v:'--c-usb'}, uart:{name:'UART',v:'--c-uart'}, ledc:{name:'ARGB (LEDC)',v:'--c-ledc'},
+  pwm:{name:'PWM',v:'--c-pwm'}, enc:{name:'滚轮编码器',v:'--c-enc'}, lvd:{name:'电压检测',v:'--c-lvd'},
+  dbg:{name:'SWD 调试',v:'--c-dbg'}, sns:{name:'传感器扫描',v:'--c-sns'}
+};
+// signals: dir 'in' | 'out' | 'col' (input when idle, driven low while scanning) | 'ana'
+const SIG = {
+  RESET:{label:'未使用', cat:'none', dir:'in'},
+  GPIO_IN:{label:'GPIO 输入', cat:'gpio', dir:'in'},
+  GPIO_OUT:{label:'GPIO 输出', cat:'gpio', dir:'out'},
+  KEY_ROW:{label:'矩阵行', cat:'key', dir:'in'},
+  KEY_COL:{label:'矩阵列', cat:'key', dir:'col'},
+  USB_DM:{label:'USB D-', cat:'usb', dir:'in', pins:[2]},
+  USB_DP:{label:'USB D+', cat:'usb', dir:'in', pins:[3]},
+  UART_TX:{label:'UART TX', cat:'uart', dir:'out', pins:[4,10,21]},
+  UART_RX:{label:'UART RX', cat:'uart', dir:'in', pins:[6,9,18]},
+  LEDC_DO:{label:'ARGB 数据 (LEDC)', cat:'ledc', dir:'out', pins:[1,5,17,27]},
+  PWM:{label:'PWM 输出', cat:'pwm', dir:'out', pins:[0,1,4,5,6,18,22,26]},
+  ENC_A:{label:'滚轮 A (WHEELA)', cat:'enc', dir:'in', pins:[1,6,17,21]},
+  ENC_B:{label:'滚轮 B (WHEELB)', cat:'enc', dir:'in', pins:[0,5,16,20]},
+  LVD_IN:{label:'电压检测 (LVD)', cat:'lvd', dir:'ana', pins:[19,27]},
+  SWCLK:{label:'SWD 时钟 (TCK)', cat:'dbg', dir:'in', pins:[18]},
+  SWDIO:{label:'SWD 数据 (TMS)', cat:'dbg', dir:'in', pins:[21]},
+  SNS_CSN:{label:'传感器 CSN', cat:'sns', dir:'out', pins:[8]},
+  SNS_SCK:{label:'传感器 SCK', cat:'sns', dir:'out', pins:[9]},
+  SNS_MOSI:{label:'传感器 MOSI / SDIO', cat:'sns', dir:'out', pins:[10]},
+  SNS_MISO:{label:'传感器 MISO', cat:'sns', dir:'in', pins:[11]}
+};
+const GENERIC = ['RESET','GPIO_IN','GPIO_OUT','KEY_ROW','KEY_COL'];
+const sigsFor = i => GENERIC.concat(Object.keys(SIG).filter(k => SIG[k].pins && SIG[k].pins.includes(i)));
+const isOut = s => SIG[s].dir === 'out';
+const hasLevel = s => SIG[s].dir === 'out' || SIG[s].dir === 'col';
+
+const UART_G = [{tx:4,rx:6,en:'PMU_UART_SEL_IO_04_06'},{tx:10,rx:9,en:'PMU_UART_SEL_IO_09_10'},{tx:21,rx:18,en:'PMU_UART_SEL_IO_18_21'}];
+const LEDC_G = [{p:1,en:'PMU_LEDC_SEL_IO_01'},{p:5,en:'PMU_LEDC_SEL_IO_05'},{p:17,en:'PMU_LEDC_SEL_IO_17'},{p:27,en:'PMU_LEDC_SEL_IO_27'}];
+const ENC_G = [{a:1,b:0,en:'ENCODER_PINMUX_SEL_IO_00_01'},{a:6,b:5,en:'ENCODER_PINMUX_SEL_IO_05_06'},{a:17,b:16,en:'ENCODER_PINMUX_SEL_IO_20_21'},{a:21,b:20,en:'ENCODER_PINMUX_SEL_IO_24_25'}];
+const LVD_G = [{p:19,en:'POF_LVD_PIN_P23'},{p:27,en:'POF_LVD_PIN_P33'}];
+
+const PULL = {none:'无', pu1:'上拉 150k', pu2:'上拉 30k', pd:'下拉'};
+const PU_CODE = {none:0, pu1:1, pu2:2, pd:0};
+const DRV = ['8mA','24mA','32mA','48mA'];
+const WAKE = {none:'不唤醒', rise:'上升沿', fall:'下降沿'};
+
+/* ------------------------------------------------------------------ state */
+function blankPin(i){
+  return {sig:'RESET', label:'', pull:'pd', drv:(i===2||i===3)?2:1, level:1, wake:'none', buf:!(i===13||i===15)};
+}
+function sigDefaults(sig){
+  switch(sig){
+    case 'RESET': return {pull:'pd', wake:'none', level:1};
+    case 'GPIO_IN': return {pull:'none', wake:'none', buf:true};
+    case 'GPIO_OUT': return {pull:'none', wake:'none', level:0, buf:true};
+    case 'KEY_ROW': return {pull:'pu2', wake:'fall', buf:true};
+    case 'KEY_COL': return {pull:'pu2', wake:'none', level:1, buf:true};
+    case 'USB_DM': case 'USB_DP': return {pull:'none', wake:'none', drv:2, buf:true};
+    case 'UART_TX': return {pull:'none', wake:'none', level:1, buf:true};
+    case 'UART_RX': return {pull:'pu1', wake:'none', buf:true};
+    case 'LEDC_DO': case 'PWM': return {pull:'none', wake:'none', level:0, buf:true};
+    case 'ENC_A': case 'ENC_B': return {pull:'pu1', wake:'none', buf:true};
+    case 'LVD_IN': return {pull:'none', wake:'none', buf:false};
+    case 'SWCLK': case 'SWDIO': return {pull:'none', wake:'none', buf:true};
+    case 'SNS_CSN': return {pull:'none', wake:'none', level:1, buf:true};
+    case 'SNS_SCK': case 'SNS_MOSI': return {pull:'none', wake:'none', level:0, buf:true};
+    case 'SNS_MISO': return {pull:'none', wake:'none', buf:true};
+  }
+  return {};
+}
+function blankState(){ return {project:'新工程', pins:Array.from({length:N}, (_, i) => blankPin(i))}; }
+
+// SE73K keyboard, reconstructed from projects/mouse_demo/main/main.h + main.c:199-207
+function presetState(){
+  const s = blankState();
+  s.project = 'SE73K 键盘';
+  const set = (i, o) => { s.pins[i] = Object.assign(blankPin(i), sigDefaults(o.sig || 'RESET'), o); };
+  for (let i = 0; i < N; i++) set(i, {sig:'RESET', pull:'none'});
+  set(0, {sig:'GPIO_OUT', label:'ARGB_OFF', level:0});
+  set(1, {sig:'LEDC_DO', label:'ARGB_OUT', level:1});
+  set(2, {sig:'USB_DM', label:'USB_DN', pull:'pd'});
+  set(3, {sig:'USB_DP', label:'USB_DP', pull:'pd'});
+  [4,5,6,7,8,9,10,11].forEach((p, k) => set(p, {sig:'KEY_ROW', label:'KEY_R' + k}));
+  set(16, {sig:'RESET', pull:'pu1'});
+  set(17, {sig:'RESET', pull:'pu1'});
+  set(18, {sig:'KEY_COL', label:'KEY_C19'});
+  set(19, {sig:'GPIO_OUT', label:'LED_VDD', level:0});
+  set(20, {sig:'KEY_COL', label:'KEY_C18'});
+  set(21, {sig:'KEY_COL', label:'KEY_C1'});
+  set(22, {sig:'KEY_COL', label:'KEY_C2'});
+  set(23, {sig:'KEY_COL', label:'KEY_C3'});
+  set(24, {sig:'KEY_COL', label:'KEY_C4'});
+  set(25, {sig:'KEY_COL', label:'KEY_C5'});
+  set(26, {sig:'GPIO_OUT', label:'KEY_EX', level:1});
+  set(27, {sig:'LVD_IN', label:'BAT_LVD'});
+  set(28, {sig:'GPIO_IN', label:'CHR_OK', pull:'pu2'});
+  set(29, {sig:'GPIO_IN', label:'MODE_SW', pull:'pu2'});
+  set(30, {sig:'GPIO_IN', label:'USB_5V', pull:'pd'});
+  return s;
+}
+
+const LS_KEY = 'om6239-io-config-v1';
+let state = load() || presetState();
+let selected = 4;
+let undo = [];
+let view = 'pins';
+let codeFile = 'h';
+let showAll = false;
+
+function load(){
+  try { const t = localStorage.getItem(LS_KEY); if (!t) return null; return validateState(JSON.parse(t)); } catch(e){ return null; }
+}
+function save(){ try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch(e){} }
+function validateState(o){
+  if (!o || !Array.isArray(o.pins) || o.pins.length !== N) return null;
+  const s = blankState();
+  s.project = typeof o.project === 'string' ? o.project.slice(0, 60) : '新工程';
+  o.pins.forEach((p, i) => {
+    const b = blankPin(i);
+    if (p && SIG[p.sig] && sigsFor(i).includes(p.sig)) b.sig = p.sig;
+    if (p && typeof p.label === 'string') b.label = p.label.slice(0, 32);
+    if (p && PULL[p.pull]) b.pull = p.pull;
+    if (p && [0,1,2,3].includes(p.drv)) b.drv = p.drv;
+    if (p && (p.level === 0 || p.level === 1)) b.level = p.level;
+    if (p && WAKE[p.wake]) b.wake = p.wake;
+    if (p && typeof p.buf === 'boolean') b.buf = p.buf;
+    s.pins[i] = b;
+  });
+  return s;
+}
+function commit(fn, msg){
+  undo.push(JSON.stringify(state)); if (undo.length > 60) undo.shift();
+  fn();
+  save(); renderAll();
+  const m = typeof msg === 'function' ? msg() : msg;
+  if (m) toast(m);
+}
+
+/* ------------------------------------------------------------------ helpers */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const hex = v => '0x' + (v >>> 0).toString(16).toUpperCase().padStart(8, '0');
+const catColor = s => 'var(' + CATS[SIG[s].cat].v + ')';
+function defName(i){
+  const p = state.pins[i];
+  let n = (p.label || '').trim().toUpperCase().replace(/[^A-Z0-9_]/g, '_');
+  if (!n) n = (p.sig === 'RESET' ? 'IO' : p.sig) + '_' + pinName(i);
+  if (/^[0-9]/.test(n)) n = '_' + n;
+  return n;
+}
+function shortLabel(i){
+  const p = state.pins[i];
+  if (p.sig === 'RESET') return '';
+  return p.label ? p.label : SIG[p.sig].label;
+}
+let toastTimer = 0;
+function toast(msg){
+  const t = $('toast'); t.textContent = msg; t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 2600);
+}
+
+/* ------------------------------------------------------------------ register model */
+function regValues(){
+  const P = state.pins;
+  let pu0 = 0, pu1 = 0, pd = 0, buf = 0, drv0 = 0, drv1 = 0, wk0 = 0, wk1 = 0, dout = 0, outen = 0;
+  for (let i = 0; i < N; i++){
+    const p = P[i], sh = (i & 15) * 2;
+    const code = PU_CODE[p.pull];
+    if (i < 16) { pu0 |= code << sh; drv0 |= p.drv << sh; } else { pu1 |= code << sh; drv1 |= p.drv << sh; }
+    if (p.pull === 'pd') pd |= 1 << i;
+    if (p.buf) buf |= 1 << i;
+    if (p.wake !== 'none'){
+      const w = (2 | (p.wake === 'fall' ? 1 : 0)) << sh;
+      if (i < 16) wk0 |= w; else wk1 |= w;
+    }
+    const lvl = isOut(p.sig) ? p.level : (p.sig === 'KEY_COL' ? p.level : 1);
+    if (lvl) dout |= 1 << i;
+    if (isOut(p.sig)) outen |= 1 << i;
+  }
+  return {pu0:pu0>>>0, pu1:pu1>>>0, pd:pd>>>0, buf:buf>>>0, drv0:drv0>>>0, drv1:drv1>>>0, wk0:wk0>>>0, wk1:wk1>>>0, dout:dout>>>0, outen:outen>>>0};
+}
+function maskOf(pred){ let m = 0; for (let i = 0; i < N; i++) if (pred(state.pins[i], i)) m |= 1 << i; return m >>> 0; }
+
+/* ------------------------------------------------------------------ peripherals */
+function count(sig){ return state.pins.filter(p => p.sig === sig).length; }
+function perState(){
+  const P = state.pins, has = (i, s) => P[i].sig === s;
+  const uartG = UART_G.findIndex(g => has(g.tx,'UART_TX') && has(g.rx,'UART_RX'));
+  const ledcG = LEDC_G.findIndex(g => has(g.p,'LEDC_DO'));
+  const encG = ENC_G.findIndex(g => has(g.a,'ENC_A') && has(g.b,'ENC_B'));
+  const lvdG = LVD_G.findIndex(g => has(g.p,'LVD_IN'));
+  return {
+    usb: has(2,'USB_DM') && has(3,'USB_DP') ? 1 : 0,
+    usbBad: (count('USB_DM') + count('USB_DP')) === 1,
+    uart: uartG, uartBad: uartG < 0 && (count('UART_TX') + count('UART_RX')) > 0 || count('UART_TX') > 1 || count('UART_RX') > 1,
+    ledc: ledcG, ledcBad: count('LEDC_DO') > 1,
+    enc: encG, encBad: encG < 0 && (count('ENC_A') + count('ENC_B')) > 0 || count('ENC_A') > 1 || count('ENC_B') > 1,
+    lvd: lvdG, lvdBad: count('LVD_IN') > 1,
+    swd: has(18,'SWCLK') && has(21,'SWDIO') ? 1 : 0,
+    sns: ['SNS_CSN','SNS_SCK','SNS_MOSI','SNS_MISO'].every(s => count(s) === 1) ? 1 : 0,
+    snsBad: (() => { const c = ['SNS_CSN','SNS_SCK','SNS_MOSI','SNS_MISO'].filter(s => count(s) > 0).length; return c > 0 && c < 4; })()
+  };
+}
+const PERS = [
+  {id:'usb', name:'USB', cat:'usb', sigs:['USB_DM','USB_DP'], opts:[{t:'关闭'},{t:'开启：P02 D- / P03 D+', pins:[[2,'USB_DM'],[3,'USB_DP']]}]},
+  {id:'uart', name:'UART', cat:'uart', sigs:['UART_TX','UART_RX'], opts:[{t:'关闭'}].concat(UART_G.map(g => ({t:pinName(g.tx)+' TX / '+pinName(g.rx)+' RX', pins:[[g.tx,'UART_TX'],[g.rx,'UART_RX']]})))},
+  {id:'ledc', name:'ARGB 灯 (LEDC)', cat:'ledc', sigs:['LEDC_DO'], opts:[{t:'关闭'}].concat(LEDC_G.map(g => ({t:'数据脚 '+pinName(g.p), pins:[[g.p,'LEDC_DO']]})))},
+  {id:'enc', name:'滚轮编码器', cat:'enc', sigs:['ENC_A','ENC_B'], opts:[{t:'关闭'}].concat(ENC_G.map(g => ({t:'A '+pinName(g.a)+' / B '+pinName(g.b), pins:[[g.a,'ENC_A'],[g.b,'ENC_B']]})))},
+  {id:'lvd', name:'电压检测 (LVD)', cat:'lvd', sigs:['LVD_IN'], opts:[{t:'不用引脚（测 VBUS/VDD）'}].concat(LVD_G.map(g => ({t:'检测脚 '+pinName(g.p), pins:[[g.p,'LVD_IN']]})))},
+  {id:'swd', name:'SWD 调试口', cat:'dbg', sigs:['SWCLK','SWDIO'], opts:[{t:'不保留（当普通脚用）'},{t:'保留：P22 时钟 / P25 数据', pins:[[18,'SWCLK'],[21,'SWDIO']]}]},
+  {id:'sns', name:'传感器扫描', cat:'sns', sigs:['SNS_CSN','SNS_SCK','SNS_MOSI','SNS_MISO'], opts:[{t:'关闭'},{t:'开启：P10-P13', pins:[[8,'SNS_CSN'],[9,'SNS_SCK'],[10,'SNS_MOSI'],[11,'SNS_MISO']]}]}
+];
+function applyPer(per, optIdx){
+  const opt = per.opts[optIdx];
+  const replaced = [];
+  commit(() => {
+    state.pins.forEach((p, i) => { if (per.sigs.includes(p.sig)) state.pins[i] = Object.assign(blankPin(i), {label:''}); });
+    (opt.pins || []).forEach(([i, sig]) => {
+      const old = state.pins[i];
+      if (old.sig !== 'RESET') replaced.push(pinName(i) + ' 原来的「' + (old.label || SIG[old.sig].label) + '」');
+      state.pins[i] = Object.assign(blankPin(i), sigDefaults(sig), {sig, label:''});
+    });
+    if (opt.pins) selected = opt.pins[0][0];
+  }, () => replaced.length ? per.name + '已占用，替换了 ' + replaced.join('、') : per.name + '：' + opt.t);
+}
+
+/* ------------------------------------------------------------------ validation */
+function problems(){
+  const P = state.pins, out = [];
+  const add = (lvl, pin, txt) => out.push({lvl, pin, txt});
+  const ps = perState();
+  // duplicate names
+  const seen = {};
+  P.forEach((p, i) => { if (p.sig === 'RESET') return; const n = defName(i); (seen[n] = seen[n] || []).push(i); });
+  Object.keys(seen).forEach(n => { if (seen[n].length > 1) add('err', seen[n][0], '标签重名：' + seen[n].map(pinName).join('、') + ' 都会生成 ' + n + '_PIN'); });
+  if (ps.usbBad) add('err', P[2].sig === 'USB_DM' ? 2 : 3, 'USB 只配了一根数据线，D- 和 D+ 必须同时选');
+  if (ps.uartBad) add('err', P.findIndex(p => p.sig === 'UART_TX' || p.sig === 'UART_RX'), 'UART 的 TX 和 RX 必须来自同一组：P04/P06、P12/P11 或 P25/P22');
+  if (ps.ledcBad) add('err', P.findIndex(p => p.sig === 'LEDC_DO'), 'LEDC 只有一个输出，ARGB 数据脚只能选一个');
+  if (ps.encBad) add('err', P.findIndex(p => p.sig === 'ENC_A' || p.sig === 'ENC_B'), '滚轮 A/B 必须是同一组：P01/P00、P06/P05、P21/P20 或 P25/P24');
+  if (ps.lvdBad) add('err', P.findIndex(p => p.sig === 'LVD_IN'), '电压检测一次只能接一个脚');
+  if (ps.snsBad) add('warn', P.findIndex(p => p.sig.startsWith('SNS_')), '传感器扫描要 P10-P13 四个脚一起用');
+  P.forEach((p, i) => {
+    const s = SIG[p.sig];
+    if (p.sig !== 'RESET' && NOT_BONDED.includes(i)) add('warn', i, pinName(i) + ' 在手册的 QFN32 封装上没有引出，请确认板子用的实际封装');
+    if ((i === 18 || i === 21) && p.sig !== 'RESET' && s.cat !== 'dbg') add('info', i, pinName(i) + ' 是 SWD ' + (i === 18 ? '时钟' : '数据') + '脚，被占用后要在启动后关闭 SWD 时钟（main.c:211 的做法），调试器只能在复位后的短窗口里连上');
+    if (p.wake !== 'none' && (s.dir === 'out')) add('err', i, pinName(i) + ' 是输出脚，不能做唤醒源');
+    if (p.wake === 'fall' && !(p.pull === 'pu1' || p.pull === 'pu2')) add('warn', i, pinName(i) + ' 下降沿唤醒但没开上拉，引脚悬空时可能误唤醒');
+    if (p.wake === 'rise' && p.pull !== 'pd') add('warn', i, pinName(i) + ' 上升沿唤醒但没开下拉，引脚悬空时可能误唤醒');
+    if ((p.sig === 'KEY_ROW' || p.sig === 'KEY_COL') && !(p.pull === 'pu1' || p.pull === 'pu2')) add('warn', i, pinName(i) + ' 是矩阵' + (p.sig === 'KEY_ROW' ? '行' : '列') + '，没开上拉会读到悬空电平');
+    if (p.sig === 'KEY_ROW' && p.wake === 'none') add('info', i, pinName(i) + ' 这一行没设唤醒，按这一行的键叫不醒深睡');
+    if (p.sig === 'LVD_IN' && p.buf) add('warn', i, pinName(i) + ' 接模拟电压，数字输入缓冲应该关掉，否则会漏电');
+    if (s.dir === 'out' && p.pull !== 'none') add('info', i, pinName(i) + ' 是输出脚还开着' + PULL[p.pull] + '，会多一点静态电流');
+    if (p.sig === 'GPIO_IN' && p.pull === 'none' && !p.label) add('info', i, pinName(i) + ' 是没有标签的悬空输入，没外部驱动的话建议加上下拉');
+  });
+  const rows = count('KEY_ROW'), cols = count('KEY_COL');
+  if ((rows > 0) !== (cols > 0)) add('warn', P.findIndex(p => p.sig === 'KEY_ROW' || p.sig === 'KEY_COL'), '键盘矩阵只配了' + (rows ? '行' : '列') + '，还缺' + (rows ? '列' : '行'));
+  const order = {err:0, warn:1, info:2};
+  return out.sort((a, b) => order[a.lvl] - order[b.lvl]);
+}
+
+/* ------------------------------------------------------------------ render: chip */
+const SVGNS = 'http://www.w3.org/2000/svg';
+function chipSVG(){
+  const W = 760, B0 = 190, B1 = 570, PITCH = 42, FIRST = B0 + 43; // body 380, pins 8 per side
+  let s = '<svg viewBox="0 0 ' + W + ' ' + W + '" role="group" aria-label="OM6239 QFN32 封装引脚图">';
+  s += '<rect x="' + B0 + '" y="' + B0 + '" width="' + (B1 - B0) + '" height="' + (B1 - B0) + '" rx="10" fill="var(--chip)"/>';
+  s += '<circle cx="' + (B0 + 26) + '" cy="' + (B0 + 26) + '" r="8" fill="none" stroke="var(--chip-ink)" stroke-width="1.5"/>';
+  s += '<text x="380" y="368" text-anchor="middle" font-size="30" font-weight="600" fill="var(--chip-ink)" style="font-family:var(--mono)">OM6239</text>';
+  s += '<text x="380" y="396" text-anchor="middle" font-size="13" fill="var(--chip-ink)" style="font-family:var(--mono)">QFN32 · 4×4 mm</text>';
+  s += '<text x="380" y="418" text-anchor="middle" font-size="11.5" fill="var(--chip-ink)" style="font-family:var(--sans)">' + esc(state.project) + '</text>';
+  for (let n = 1; n <= 32; n++){
+    const side = Math.floor((n - 1) / 8), k = (n - 1) % 8;
+    let cx, cy, pad, numXY, txt;
+    const L = 28, Wd = 18;
+    if (side === 0){ cy = FIRST + k * PITCH; cx = B0; pad = [B0 - L, cy - Wd/2, L, Wd]; numXY = [B0 + 14, cy + 3.5, 'middle']; txt = {x:B0 - L - 8, y:cy, anchor:'end', rot:0}; }
+    else if (side === 1){ cx = FIRST + k * PITCH; cy = B1; pad = [cx - Wd/2, B1, Wd, L]; numXY = [cx, B1 - 8, 'middle']; txt = {x:cx, y:B1 + L + 8, anchor:'end', rot:-90}; }
+    else if (side === 2){ cy = FIRST + (7 - k) * PITCH; cx = B1; pad = [B1, cy - Wd/2, L, Wd]; numXY = [B1 - 14, cy + 3.5, 'middle']; txt = {x:B1 + L + 8, y:cy, anchor:'start', rot:0}; }
+    else { cx = FIRST + (7 - k) * PITCH; cy = B0; pad = [cx - Wd/2, B0 - L, Wd, L]; numXY = [cx, B0 + 15, 'middle']; txt = {x:cx, y:B0 - L - 8, anchor:'start', rot:-90}; }
+    const v = PKG[n];
+    const tf = txt.rot ? ' transform="rotate(-90 ' + txt.x + ' ' + txt.y + ')"' : '';
+    if (typeof v === 'number'){
+      const p = state.pins[v], lbl = shortLabel(v);
+      const cut = lbl.length > 16 ? lbl.slice(0, 15) + '…' : lbl;
+      s += '<g class="pin' + (v === selected ? ' sel' : '') + '" data-idx="' + v + '" tabindex="0" role="button" aria-label="' + esc(pinName(v) + ' 封装第 ' + n + ' 脚，' + (lbl || '未使用')) + '">';
+      s += '<title>' + esc(pinName(v) + ' · 第 ' + n + ' 脚 · ' + SIG[p.sig].label + (p.label ? ' · ' + p.label : '')) + '</title>';
+      s += '<rect class="pad" x="' + pad[0] + '" y="' + pad[1] + '" width="' + pad[2] + '" height="' + pad[3] + '" rx="3" fill="' + catColor(p.sig) + '"/>';
+      s += '<text class="num" x="' + numXY[0] + '" y="' + numXY[1] + '" text-anchor="' + numXY[2] + '">' + n + '</text>';
+      // the pin name always sits next to the chip; the label runs outward
+      const nameFirst = txt.anchor === 'start';
+      const body = nameFirst
+        ? '<tspan class="nm">' + pinName(v) + '</tspan>' + (cut ? '<tspan class="lb" dx="6">' + esc(cut) + '</tspan>' : '')
+        : (cut ? '<tspan class="lb">' + esc(cut) + '</tspan><tspan class="nm" dx="6">' : '<tspan class="nm">') + pinName(v) + '</tspan>';
+      s += '<text' + tf + ' x="' + txt.x + '" y="' + (txt.y + 4) + '" text-anchor="' + txt.anchor + '">' + body + '</text>';
+      s += '</g>';
+    } else {
+      s += '<g class="fixed"><rect class="pad" x="' + pad[0] + '" y="' + pad[1] + '" width="' + pad[2] + '" height="' + pad[3] + '" rx="3"/>';
+      s += '<text class="num" x="' + numXY[0] + '" y="' + numXY[1] + '" text-anchor="' + numXY[2] + '">' + n + '</text>';
+      s += '<text class="nm"' + tf + ' x="' + txt.x + '" y="' + (txt.y + 4) + '" text-anchor="' + txt.anchor + '">' + v + '</text></g>';
+    }
+  }
+  s += '</svg>';
+  return s;
+}
+function renderChip(){
+  $('chip').innerHTML = chipSVG();
+  $('legend').innerHTML = Object.keys(CATS).map(c => '<span><i class="dot" style="background:var(' + CATS[c].v + ')"></i>' + CATS[c].name + '</span>').join('');
+  $('tray').innerHTML = '<span class="small muted">封装上没有、寄存器里有的脚：</span>' + NOT_BONDED.map(i => {
+    const p = state.pins[i];
+    return '<button class="tp' + (i === selected ? ' sel' : '') + '" data-idx="' + i + '"><i class="dot" style="background:' + catColor(p.sig) + '"></i>' + pinName(i) + (p.sig !== 'RESET' ? ' · ' + esc(shortLabel(i)) : '') + '</button>';
+  }).join('');
+}
+
+/* ------------------------------------------------------------------ render: table */
+function renderTable(){
+  const rows = [];
+  for (let i = 0; i < N; i++){
+    const p = state.pins[i];
+    if (!showAll && p.sig === 'RESET') continue;
+    const s = SIG[p.sig];
+    rows.push('<tr class="pinrow' + (i === selected ? ' sel' : '') + '" data-idx="' + i + '" tabindex="0">' +
+      '<td class="mono"><b>' + pinName(i) + '</b></td>' +
+      '<td class="mono">' + (QFN[i] ? QFN[i] : '<span class="muted">未引出</span>') + '</td>' +
+      '<td><span class="fn"><i class="dot" style="background:' + catColor(p.sig) + '"></i>' + s.label + '</span></td>' +
+      '<td class="mono">' + (p.sig === 'RESET' ? '' : esc(defName(i))) + '</td>' +
+      '<td>' + PULL[p.pull] + '</td>' +
+      '<td class="mono">' + DRV[p.drv] + '</td>' +
+      '<td>' + (hasLevel(p.sig) ? (p.level ? '高' : '低') : '<span class="muted">—</span>') + '</td>' +
+      '<td>' + (p.wake === 'none' ? '<span class="muted">—</span>' : WAKE[p.wake]) + '</td>' +
+      '<td>' + (p.buf ? '开' : '<b>关</b>') + '</td></tr>');
+  }
+  $('pinTbody').innerHTML = rows.join('') || '<tr><td colspan="9" class="muted">还没有配置任何引脚。点封装图上的引脚开始。</td></tr>';
+}
+
+/* ------------------------------------------------------------------ render: left column */
+function renderLeft(){
+  const ps = perState();
+  $('perList').innerHTML = PERS.map(per => {
+    let cur = 0;
+    if (per.id === 'usb') cur = ps.usb; else if (per.id === 'swd') cur = ps.swd; else if (per.id === 'sns') cur = ps.sns;
+    else cur = ps[per.id] + 1;
+    const bad = ps[per.id + 'Bad'];
+    const partial = !bad && cur === 0 && per.sigs.some(s => count(s) > 0);
+    return '<div class="per"><label for="per-' + per.id + '"><i class="dot" style="background:var(' + CATS[per.cat].v + ')"></i>' + per.name +
+      (bad ? ' <span class="state bad">配置不完整</span>' : partial ? ' <span class="state bad">部分</span>' : '') + '</label>' +
+      '<select id="per-' + per.id + '" data-per="' + per.id + '">' + per.opts.map((o, k) => '<option value="' + k + '"' + (k === cur ? ' selected' : '') + '>' + esc(o.t) + '</option>').join('') +
+      ((bad || partial) && cur === 0 ? '<option value="-1" selected>（手动配置，不完整）</option>' : '') + '</select></div>';
+  }).join('');
+  $('matrixSum').innerHTML = '<div><b>' + count('KEY_ROW') + '</b>行</div><div><b>' + count('KEY_COL') + '</b>列（直驱）</div>';
+  const pr = problems();
+  const ne = pr.filter(x => x.lvl === 'err').length, nw = pr.filter(x => x.lvl === 'warn').length;
+  $('probCount').textContent = pr.length ? ne + ' 错误 · ' + nw + ' 警告 · ' + (pr.length - ne - nw) + ' 提示' : '';
+  $('probList').innerHTML = pr.length ? pr.map(x => '<li class="' + x.lvl + '" data-idx="' + x.pin + '" tabindex="0"><b>' + ({err:'错误',warn:'警告',info:'提示'})[x.lvl] + '</b>' + esc(x.txt) + '</li>').join('') :
+    '<li class="none">没有发现冲突。</li>';
+  const tb = $('tab-pins');
+  tb.innerHTML = '引脚配置' + (ne ? '<span class="badge err">' + ne + '</span>' : nw ? '<span class="badge warn">' + nw + '</span>' : '');
+}
+
+/* ------------------------------------------------------------------ render: inspector */
+function segHTML(name, opts, cur, disabled){
+  return '<div class="seg" role="group" data-field="' + name + '">' + opts.map(([v, t]) =>
+    '<button type="button" data-v="' + v + '" aria-pressed="' + (!disabled && String(v) === String(cur)) + '"' + (disabled ? ' disabled' : '') + '>' + t + '</button>').join('') + '</div>';
+}
+function renderInspector(){
+  const i = selected, p = state.pins[i], s = SIG[p.sig];
+  const sigs = sigsFor(i);
+  const gen = sigs.filter(k => GENERIC.includes(k)), spec = sigs.filter(k => !GENERIC.includes(k));
+  const sh = (i & 15) * 2;
+  const isInput = s.dir === 'in' || s.dir === 'col';
+  let h = '<div class="ph"><h2>引脚设置</h2><span class="small muted mono">GPIO 序号 ' + i + '</span></div><div class="pb">';
+  h += '<div class="insp-h"><b>' + pinName(i) + '</b><span class="small muted">' + (QFN[i] ? '封装第 ' + QFN[i] + ' 脚' : '手册 QFN32 封装未引出') + '</span></div>';
+  h += '<label class="field"><span>功能</span><select id="fSig">' +
+    '<optgroup label="通用">' + gen.map(k => '<option value="' + k + '"' + (k === p.sig ? ' selected' : '') + '>' + SIG[k].label + '</option>').join('') + '</optgroup>' +
+    (spec.length ? '<optgroup label="这个脚的外设功能">' + spec.map(k => '<option value="' + k + '"' + (k === p.sig ? ' selected' : '') + '>' + SIG[k].label + '</option>').join('') + '</optgroup>' : '') +
+    '</select></label>';
+  if (spec.length){
+    h += '<div class="alts">' + spec.map(k => '<button type="button" data-sig="' + k + '" aria-current="' + (k === p.sig) + '"><i class="dot" style="background:' + catColor(k) + '"></i>' + SIG[k].label + '</button>').join('') + '</div>';
+  }
+  h += '<label class="field"><span>标签</span><input type="text" id="fLabel" value="' + esc(p.label) + '" placeholder="例如 KEY_R0" maxlength="32" spellcheck="false"' + (p.sig === 'RESET' ? ' disabled' : '') + '></label>';
+  h += '<div class="hint mono">' + (p.sig === 'RESET' ? '未使用的脚不生成宏' : '生成 ' + esc(defName(i)) + '_PIN') + '</div>';
+  h += '<div class="field"><span>上下拉</span>' + segHTML('pull', [['none','无'],['pu1','上拉 150k'],['pu2','上拉 30k'],['pd','下拉']], p.pull) + '</div>';
+  h += '<div class="field"><span>初始电平' + (hasLevel(p.sig) ? (p.sig === 'KEY_COL' ? '（释放时）' : '') : '（只对输出有效）') + '</span>' + segHTML('level', [[0,'低'],[1,'高']], p.level, !hasLevel(p.sig)) + '</div>';
+  h += '<div class="field"><span>深睡唤醒' + (isInput ? '' : '（只对输入有效）') + '</span>' + segHTML('wake', [['none','不唤醒'],['rise','上升沿'],['fall','下降沿']], p.wake, !isInput) + '</div>';
+  h += '<label class="field"><span>驱动能力</span><select id="fDrv">' + DRV.map((d, k) => '<option value="' + k + '"' + (k === p.drv ? ' selected' : '') + '>' + d + (k === 1 ? '（复位默认）' : '') + '</option>').join('') + '</select></label>';
+  h += '<label class="chk"><input type="checkbox" id="fBuf"' + (p.buf ? ' checked' : '') + '> 打开数字输入缓冲（模拟脚要关）</label>';
+  // register bits this pin contributes
+  const wk = p.wake === 'none' ? '00' : (p.wake === 'fall' ? '11' : '10');
+  const pu = PU_CODE[p.pull].toString(2).padStart(2, '0');
+  h += '<div class="field"><span>这个脚对应的寄存器位</span><div class="bits">' +
+    '<span>' + (i < 16 ? 'PAD_PU_CTRL' : 'PAD_PU_CTRL_1') + '</span><span class="k">[' + (sh + 1) + ':' + sh + ']</span><span>' + pu + '</span>' +
+    '<span>PAD_PD_CTRL</span><span class="k">[' + i + ']</span><span>' + (p.pull === 'pd' ? 1 : 0) + '</span>' +
+    '<span>PAD_BUF_EN</span><span class="k">[' + i + ']</span><span>' + (p.buf ? 1 : 0) + '</span>' +
+    '<span>' + (i < 16 ? 'PAD_DRV_CTRL' : 'PAD_DRV_CTRL_1') + '</span><span class="k">[' + (sh + 1) + ':' + sh + ']</span><span>' + p.drv.toString(2).padStart(2, '0') + '</span>' +
+    '<span>' + (i < 16 ? 'PAD_WK_CTRL' : 'PAD_WK_CTRL_1') + '</span><span class="k">[' + (sh + 1) + ':' + sh + ']</span><span>' + wk + '</span>' +
+    '<span>GPIO OUTEN</span><span class="k">[' + i + ']</span><span>' + (isOut(p.sig) ? 1 : 0) + '</span>' +
+    '</div></div>';
+  h += '<div class="hint">上拉编码按 SDK <span class="mono">pmu_reg.h</span>（01 = 150k，10 = 30k）。手册 V0.1 写的是 01 = 30k、10 = 150k，两边相反，阻值以实测为准。</div>';
+  h += '</div>';
+  $('inspector').innerHTML = h;
+}
+
+/* ------------------------------------------------------------------ code generation */
+function pinList(mask){ const a = []; for (let i = 0; i < N; i++) if (mask & (1 << i)) a.push(pinName(i)); return a; }
+function joinPins(a){ return a.length ? a.join(' ') : '无'; }
+function groupBy(idxs, keyFn){
+  const g = {}; idxs.forEach(i => { const k = keyFn(i); if (k == null) return; (g[k] = g[k] || []).push(pinName(i)); }); return g;
+}
+const range = (a, b) => Array.from({length:b - a}, (_, k) => a + k);
+function genH(){
+  const P = state.pins, r = regValues();
+  const used = range(0, N).filter(i => P[i].sig !== 'RESET');
+  const L = [];
+  L.push('/**');
+  L.push(' * @file    io_config.h');
+  L.push(' * @brief   OM6239 引脚定义，由 OM6239 引脚配置器生成');
+  L.push(' * @note    工程：' + state.project);
+  L.push(' *          引脚序号 = 端口 x 8 + 位号，和 OM_GPIO0 的位一一对应');
+  L.push(' *          改引脚请回到配置器里改，再重新生成');
+  L.push(' */');
+  L.push('#ifndef __IO_CONFIG_H');
+  L.push('#define __IO_CONFIG_H');
+  L.push('');
+  L.push('#include <stdbool.h>');
+  L.push('#include "om_driver.h"');
+  L.push('');
+  L.push('/* ---- 引脚序号 ---------------------------------------------------------- */');
+  used.forEach(i => {
+    const n = defName(i) + '_PIN';
+    L.push('#define ' + n.padEnd(24) + ' ' + (i + 'u').padEnd(4) + '    /* ' + pinName(i) + (QFN[i] ? '  第' + String(QFN[i]).padStart(2) + '脚' : '  未引出') + '  ' + SIG[P[i].sig].label + ' */');
+  });
+  const rowM = maskOf(p => p.sig === 'KEY_ROW'), colM = maskOf(p => p.sig === 'KEY_COL');
+  const fallM = maskOf(p => p.wake === 'fall'), riseM = maskOf(p => p.wake === 'rise');
+  L.push('');
+  L.push('/* ---- 分组掩码 ---------------------------------------------------------- */');
+  L.push('#define ' + 'IO_OUTPUT_MASK'.padEnd(24) + ' ' + hex(r.outen) + 'u   /* ' + joinPins(pinList(r.outen)) + ' */');
+  L.push('#define ' + 'IO_WAKEUP_FALL_MASK'.padEnd(24) + ' ' + hex(fallM) + 'u   /* ' + joinPins(pinList(fallM)) + ' */');
+  L.push('#define ' + 'IO_WAKEUP_RISE_MASK'.padEnd(24) + ' ' + hex(riseM) + 'u   /* ' + joinPins(pinList(riseM)) + ' */');
+  if (rowM) L.push('#define ' + 'IO_KEY_ROW_MASK'.padEnd(24) + ' ' + hex(rowM) + 'u   /* ' + joinPins(pinList(rowM)) + ' */');
+  if (colM) L.push('#define ' + 'IO_KEY_COL_MASK'.padEnd(24) + ' ' + hex(colM) + 'u   /* ' + joinPins(pinList(colM)) + ' */');
+  if (rowM){
+    const lo = Math.clz32(0) - 1 - Math.clz32(rowM & -rowM), hi = 31 - Math.clz32(rowM);
+    const contiguous = ((rowM >>> lo) & ((rowM >>> lo) + 1)) === 0;
+    if (contiguous){
+      L.push('');
+      L.push('/* 读矩阵行：按下为 1，返回值的 bit0 对应 ' + pinName(lo) + ' */');
+      L.push('#define IO_KEY_ROW_READ()        ((~OM_GPIO0->DATA & IO_KEY_ROW_MASK) >> ' + lo + ')');
+    } else {
+      L.push('');
+      L.push('/* 矩阵行不连续（' + joinPins(pinList(rowM)) + '），没有生成 IO_KEY_ROW_READ()，请逐位读取 */');
+    }
+  }
+  const outs = used.filter(i => isOut(P[i].sig) && (P[i].sig === 'GPIO_OUT' || P[i].sig === 'SNS_CSN'));
+  const ins = used.filter(i => P[i].sig === 'GPIO_IN');
+  const cols = used.filter(i => P[i].sig === 'KEY_COL');
+  if (outs.length || ins.length || cols.length){
+    L.push('');
+    L.push('/* ---- 读写宏 ------------------------------------------------------------ */');
+  }
+  outs.forEach(i => {
+    const n = defName(i);
+    L.push('#define ' + (n + '_HIGH()').padEnd(24) + ' (OM_GPIO0->DATAOUTSET = (1u << ' + n + '_PIN))');
+    L.push('#define ' + (n + '_LOW()').padEnd(24) + ' (OM_GPIO0->DATAOUTCLR = (1u << ' + n + '_PIN))');
+    L.push('#define ' + (n + '_TOGGLE()').padEnd(24) + ' (OM_GPIO0->DATAOUT ^= (1u << ' + n + '_PIN))');
+  });
+  ins.forEach(i => {
+    const n = defName(i);
+    L.push('#define ' + (n + '_READ()').padEnd(24) + ' ((OM_GPIO0->DATA >> ' + n + '_PIN) & 1u)');
+  });
+  if (cols.length){
+    L.push('/* 矩阵列：扫描时拉低，扫完释放为输入（靠上拉回到高电平） */');
+    cols.forEach(i => {
+      const n = defName(i);
+      L.push('#define ' + (n + '_SCAN()').padEnd(24) + ' do { OM_GPIO0->DATAOUTCLR = (1u << ' + n + '_PIN); OM_GPIO0->OUTENSET = (1u << ' + n + '_PIN); } while (0)');
+      L.push('#define ' + (n + '_RELEASE()').padEnd(24) + ' do { OM_GPIO0->DATAOUTSET = (1u << ' + n + '_PIN); OM_GPIO0->OUTENCLR = (1u << ' + n + '_PIN); } while (0)');
+    });
+    L.push('#define ' + 'IO_KEY_COL_RELEASE_ALL()'.padEnd(24) + ' (OM_GPIO0->OUTENCLR = IO_KEY_COL_MASK)');
+  }
+  L.push('');
+  L.push('void io_config_init(void);');
+  L.push('void io_config_wakeup(bool enable);');
+  L.push('');
+  L.push('#endif /* __IO_CONFIG_H */');
+  return L.join('\n');
+}
+function genC(){
+  const P = state.pins, r = regValues(), all = range(0, N);
+  const L = [];
+  const puDesc = idxs => { const g = groupBy(idxs, i => P[i].pull === 'pu1' ? '150k' : P[i].pull === 'pu2' ? '30k' : null); const k = Object.keys(g); return k.length ? k.map(x => x + '：' + g[x].join(' ')).join('；') : '无上拉'; };
+  const drvDesc = idxs => {
+    const bonded = idxs.filter(i => QFN[i]);
+    const g = groupBy(bonded, i => DRV[P[i].drv]), keys = Object.keys(g);
+    const major = keys.sort((a, b) => g[b].length - g[a].length)[0];
+    const rest = keys.filter(k => k !== major).map(k => k + '：' + g[k].join(' '));
+    return rest.length ? rest.join('；') + '；其余 ' + major : '全部 ' + major;
+  };
+  const wkDesc = idxs => { const g = groupBy(idxs, i => P[i].wake === 'none' ? null : WAKE[P[i].wake]); const k = Object.keys(g); return k.length ? k.map(x => x + '：' + g[x].join(' ')).join('；') : '无'; };
+  const ps = perState();
+  L.push('/**');
+  L.push(' * @file    io_config.c');
+  L.push(' * @brief   OM6239 引脚初始化，由 OM6239 引脚配置器生成');
+  L.push(' * @note    工程：' + state.project);
+  L.push(' */');
+  L.push('#include "io_config.h"');
+  L.push('');
+  L.push('void io_config_init(void)');
+  L.push('{');
+  L.push('    OM_RCC->CLKGATE |= RCC_DEV_CLK_GATE_GPIO_CLK_GATE_MASK;');
+  L.push('');
+  L.push('    /* 上拉，每脚 2 位：00 无，01 150k，10 30k（按 SDK pmu_reg.h） */');
+  L.push('    OM_PMU->PAD_PU_CTRL    = ' + hex(r.pu0) + 'u;   /* ' + puDesc(range(0,16)) + ' */');
+  L.push('    OM_PMU->PAD_PU_CTRL_1  = ' + hex(r.pu1) + 'u;   /* ' + puDesc(range(16,32)) + ' */');
+  L.push('    /* 下拉，每脚 1 位 */');
+  L.push('    OM_PMU->PAD_PD_CTRL    = ' + hex(r.pd) + 'u;   /* ' + joinPins(pinList(r.pd)) + ' */');
+  L.push('    /* 数字输入缓冲，接模拟电压的脚要关 */');
+  L.push('    OM_PMU->PAD_BUF_EN     = ' + hex(r.buf) + 'u;   /* 关闭：' + joinPins(pinList(~r.buf >>> 0)) + ' */');
+  L.push('    /* 驱动能力，每脚 2 位：0 8mA，1 24mA，2 32mA，3 48mA */');
+  L.push('    OM_PMU->PAD_DRV_CTRL   = ' + hex(r.drv0) + 'u;   /* ' + drvDesc(range(0,16)) + ' */');
+  L.push('    OM_PMU->PAD_DRV_CTRL_1 = ' + hex(r.drv1) + 'u;   /* ' + drvDesc(range(16,32)) + ' */');
+  const mux = [];
+  if (ps.uart >= 0) mux.push('    drv_pmu_uart_select(' + UART_G[ps.uart].en + ');   /* TX ' + pinName(UART_G[ps.uart].tx) + '，RX ' + pinName(UART_G[ps.uart].rx) + ' */');
+  if (ps.ledc >= 0) mux.push('    drv_pmu_ledc_sel(' + LEDC_G[ps.ledc].en + ');         /* ARGB 数据 ' + pinName(LEDC_G[ps.ledc].p) + ' */');
+  if (ps.enc >= 0) mux.push('    /* 滚轮编码器：drv_encoder.c 里的 pinmux_sel 设为 ' + ENC_G[ps.enc].en + ' */');
+  if (ps.lvd >= 0) mux.push('    /* 电压检测：POFCON 的 LVD 引脚选 ' + LVD_G[ps.lvd].en + '（见 lvd.c） */');
+  if (ps.swd === 0 && (P[18].sig !== 'RESET' || P[21].sig !== 'RESET')) mux.push('    OM_RCC->CLKGATE &= ~RCC_DEV_CLK_GATE_SWD_CLK_GATE_MASK;   /* 关闭 SWD，让出 P22/P25 */');
+  if (mux.length){ L.push(''); L.push('    /* 复用选择 */'); L.push(...mux); }
+  L.push('');
+  L.push('    /* GPIO：先写电平再开输出，避免上电毛刺 */');
+  L.push('    OM_GPIO0->DATAOUT  = ' + hex(r.dout) + 'u;   /* 低电平：' + joinPins(pinList(~r.dout >>> 0)) + ' */');
+  L.push('    OM_GPIO0->OUTENSET = ' + hex(r.outen) + 'u;   /* 输出：' + joinPins(pinList(r.outen)) + ' */');
+  L.push('    OM_GPIO0->OUTENCLR = ' + hex(~r.outen >>> 0) + 'u;   /* 其余为输入 */');
+  L.push('}');
+  L.push('');
+  L.push('void io_config_wakeup(bool enable)');
+  L.push('{');
+  L.push('    OM_CRITICAL_BEGIN();');
+  L.push('    if (enable) {');
+  L.push('        /* 唤醒，每脚 2 位：高位使能，低位 1 为下降沿 */');
+  L.push('        OM_PMU->PAD_WK_CTRL   = ' + hex(r.wk0) + 'u;   /* ' + wkDesc(range(0,16)) + ' */');
+  L.push('        OM_PMU->PAD_WK_CTRL_1 = ' + hex(r.wk1) + 'u;   /* ' + wkDesc(range(16,32)) + ' */');
+  L.push('        if (IO_WAKEUP_FALL_MASK) drv_gpio_set_trig(OM_GPIO0, IO_WAKEUP_FALL_MASK, GPIO_TRIG_FALLING_EDGE);');
+  L.push('        if (IO_WAKEUP_RISE_MASK) drv_gpio_set_trig(OM_GPIO0, IO_WAKEUP_RISE_MASK, GPIO_TRIG_RISING_EDGE);');
+  L.push('        drv_pmu_clear_wakeup();');
+  L.push('        NVIC_ClearPendingIRQ(WAKEUP_GPIO0_IRQn);');
+  L.push('        NVIC_SetPriority(WAKEUP_GPIO0_IRQn, RTE_GPIO0_IRQ_PRIORITY);');
+  L.push('        NVIC_EnableIRQ(WAKEUP_GPIO0_IRQn);');
+  L.push('    } else {');
+  L.push('        OM_PMU->PAD_WK_CTRL   = 0u;');
+  L.push('        OM_PMU->PAD_WK_CTRL_1 = 0u;');
+  L.push('        drv_gpio_set_trig(OM_GPIO0, IO_WAKEUP_FALL_MASK | IO_WAKEUP_RISE_MASK, GPIO_TRIG_NONE);');
+  L.push('        NVIC_DisableIRQ(WAKEUP_GPIO0_IRQn);');
+  L.push('        drv_pmu_clear_wakeup();');
+  L.push('    }');
+  L.push('    OM_CRITICAL_END();');
+  L.push('}');
+  return L.join('\n');
+}
+function highlight(line){
+  let code = line, cm = '';
+  const a = line.indexOf('/*'), b = line.indexOf('//');
+  let cut = -1;
+  if (a >= 0 && (b < 0 || a < b)) cut = a; else if (b >= 0) cut = b;
+  if (/^\s*\*/.test(line) && a < 0) cut = 0;
+  if (cut >= 0){ code = line.slice(0, cut); cm = line.slice(cut); }
+  let h = esc(code)
+    .replace(/^(\s*)(#\w+)/, '$1<span class="pp">$2</span>')
+    .replace(/\b(void|bool|if|else|do|while|return|true|false)\b/g, '<span class="kw">$1</span>')
+    .replace(/\b(0x[0-9A-Fa-f]+u?|\d+u)\b/g, '<span class="nu">$1</span>');
+  return h + (cm ? '<span class="cm">' + esc(cm) + '</span>' : '');
+}
+function renderCode(){
+  const txt = codeFile === 'h' ? genH() : genC();
+  $('codeOut').innerHTML = txt.split('\n').map((l, k) => '<span class="ln" data-n="' + (k + 1) + '">' + (highlight(l) || ' ') + '</span>').join('');
+  document.querySelectorAll('#fileBtns .btn').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.file === codeFile)));
+  const pr = problems(), ne = pr.filter(x => x.lvl === 'err').length;
+  $('codeState').textContent = ne ? '配置里还有 ' + ne + ' 个错误，生成的代码可能不对' : '';
+  $('codeState').style.color = ne ? 'var(--err)' : '';
+}
+
+/* ------------------------------------------------------------------ register decoder */
+const REGS = [
+  {id:'pu0', name:'OM_PMU->PAD_PU_CTRL', w:2, from:0, to:16, dec:v => ['无','150k','30k','11(保留)'][v]},
+  {id:'pu1', name:'OM_PMU->PAD_PU_CTRL_1', w:2, from:16, to:32, dec:v => ['无','150k','30k','11(保留)'][v]},
+  {id:'pd', name:'OM_PMU->PAD_PD_CTRL', w:1, from:0, to:32, dec:v => v ? '下拉' : '—'},
+  {id:'buf', name:'OM_PMU->PAD_BUF_EN', w:1, from:0, to:32, dec:v => v ? '开' : '关'},
+  {id:'drv0', name:'OM_PMU->PAD_DRV_CTRL', w:2, from:0, to:16, dec:v => DRV[v]},
+  {id:'drv1', name:'OM_PMU->PAD_DRV_CTRL_1', w:2, from:16, to:32, dec:v => DRV[v]},
+  {id:'wk0', name:'OM_PMU->PAD_WK_CTRL', w:2, from:0, to:16, dec:v => v & 2 ? (v & 1 ? '下降沿唤醒' : '上升沿唤醒') : '—'},
+  {id:'wk1', name:'OM_PMU->PAD_WK_CTRL_1', w:2, from:16, to:32, dec:v => v & 2 ? (v & 1 ? '下降沿唤醒' : '上升沿唤醒') : '—'},
+  {id:'dout', name:'OM_GPIO0->DATAOUT', w:1, from:0, to:32, dec:v => v ? '高' : '低'},
+  {id:'outen', name:'OM_GPIO0->OUTENSET', w:1, from:0, to:32, dec:v => v ? '输出' : '—'}
+];
+const SAMPLES = [
+  {reg:'outen', val:'0x040800003', src:'main.c:206 上电'},
+  {reg:'dout', val:'0xFFF7FFFE', src:'main.c:205 上电'},
+  {reg:'pu0', val:'0x00AAAA00', src:'main.c:199 上电'},
+  {reg:'pu1', val:'0x0A0AAA25', src:'main.c:200 上电'},
+  {reg:'pd', val:'0x4000000C', src:'main.c:201 上电'},
+  {reg:'pu1', val:'0x0A000005', src:'main.c:132 开按键唤醒'},
+  {reg:'pu1', val:'0x02000005', src:'drv_pmu.c 深睡前'},
+  {reg:'pd', val:'0x6000000C', src:'drv_pmu.c 深睡前'},
+  {reg:'dout', val:'0xF803FFF2', src:'drv_pmu.c 深睡前'},
+  {reg:'outen', val:'0x07FC0003', src:'drv_pmu.c 深睡前'}
+];
+function parseHex(t){
+  const m = String(t).trim().replace(/u$/i, '').match(/^(0x)?([0-9a-f]+)$/i);
+  if (!m) return null;
+  const digits = m[2].replace(/^0+(?=.)/, '');
+  if (digits.length > 8) return {v:null, digits:m[2].length, over:true};
+  return {v:parseInt(m[2], 16) >>> 0, digits:m[2].length};
+}
+function renderDecode(){
+  const regSel = $('decReg');
+  if (!regSel.options.length) regSel.innerHTML = REGS.map(r => '<option value="' + r.id + '">' + r.name + '</option>').join('');
+  const reg = REGS.find(r => r.id === regSel.value) || REGS[0];
+  const pv = parseHex($('decVal').value);
+  const gen = regValues()[reg.id];
+  const info = $('decInfo'), note = $('decNote');
+  if (!pv){ info.innerHTML = '<span style="color:var(--err)">请输入十六进制数，例如 0x0A0AAA25</span>'; $('decTbody').innerHTML = ''; note.innerHTML = ''; return; }
+  if (pv.over){ info.innerHTML = '<span style="color:var(--err)">超过 32 位，C 编译器会报错或截断</span>'; $('decTbody').innerHTML = ''; note.innerHTML = ''; return; }
+  const v = pv.v;
+  info.innerHTML = '<span>输入值　' + hex(v) + '</span><span>配置器　' + hex(gen) + (v === gen ? '　<b style="color:var(--c-gpio)">一致</b>' : '　<b style="color:var(--err)">不同</b>') + '</span>';
+  let n = '';
+  if (pv.digits > 8) n += '<div class="callout">你写了 ' + pv.digits + ' 位十六进制数字，编译器按数值取，就是 ' + hex(v) + '。如果本意是 8 位，可能多打或少打了一个 0。</div>';
+  if (reg.id === 'outen' && $('decVal').value.trim().toLowerCase() === '0x040800003'){
+    n += '<div class="callout" style="margin-top:8px">这是 <span class="mono">main.c:206</span> 的原文。按数值它把 <b>P27</b> 和 <b>P36</b> 设成了输出，P36 是 USB 5V 检测输入，被驱动成高电平后固件会一直以为插着 USB。对照后面的用法（P23 灯电源、P32 扩展时钟都要输出），原意很可能是 <span class="mono">0x04080003</span>，正好等于配置器生成的值。建议上板验证后修正。</div>';
+  }
+  note.innerHTML = n;
+  const only = $('decOnlyDiff').checked;
+  const rows = [];
+  for (let i = reg.from; i < reg.to; i++){
+    const sh = (i - reg.from) * reg.w, mask = (1 << reg.w) - 1;
+    const a = (v >>> sh) & mask, b = (gen >>> sh) & mask, diff = a !== b;
+    if (only && !diff) continue;
+    const p = state.pins[i];
+    rows.push('<tr class="' + (diff ? 'difrow' : '') + '" data-idx="' + i + '"><td class="mono"><b>' + pinName(i) + '</b></td><td class="mono">' + (QFN[i] || '<span class="muted">未引出</span>') + '</td>' +
+      '<td><span class="fn"><i class="dot" style="background:' + catColor(p.sig) + '"></i>' + (p.sig === 'RESET' ? '未使用' : esc(defName(i))) + '</span></td>' +
+      '<td>' + reg.dec(a) + '</td><td>' + reg.dec(b) + '</td><td class="diff">' + (diff ? '≠' : '') + '</td></tr>');
+  }
+  $('decTbody').innerHTML = rows.join('') || '<tr><td colspan="6" class="muted">没有不同的脚。</td></tr>';
+}
+function renderSamples(){
+  $('samples').innerHTML = SAMPLES.map((s, k) => '<button type="button" data-k="' + k + '"><span>' + REGS.find(r => r.id === s.reg).name.replace(/^OM_\w+->/, '') + ' <span class="mono">' + s.val + '</span></span><span class="mono">' + s.src + '</span></button>').join('');
+}
+
+/* ------------------------------------------------------------------ view switching */
+const VIEWS = ['pins','code','decode'];
+function setView(v, push){
+  if (!VIEWS.includes(v)) v = 'pins';
+  view = v;
+  VIEWS.forEach(x => { $('view-' + x).hidden = x !== v; $('tab-' + x).setAttribute('aria-selected', String(x === v)); });
+  if (v === 'code') renderCode();
+  if (v === 'decode') renderDecode();
+  if (push){ try { history.replaceState(null, '', v === 'pins' ? location.pathname + location.search : '#' + v); } catch(e){} }
+}
+function renderAll(){
+  $('projName').value = state.project;
+  renderChip(); renderTable(); renderLeft(); renderInspector();
+  $('btnUndo').disabled = undo.length === 0;
+  if (view === 'code') renderCode();
+  if (view === 'decode') renderDecode();
+}
+function select(i, scroll){
+  if (i == null || i < 0) return;
+  selected = i;
+  renderChip(); renderTable(); renderInspector();
+  if (scroll && window.matchMedia('(max-width:820px)').matches) $('inspector').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+/* ------------------------------------------------------------------ events */
+document.addEventListener('click', e => {
+  const t = e.target;
+  const pinEl = t.closest('.pin, .tp, .pinrow, .probs li[data-idx], #decTbody tr[data-idx]');
+  if (pinEl){
+    const i = +pinEl.dataset.idx;
+    if (pinEl.matches('#decTbody tr')) { setView('pins', true); }
+    select(i, true);
+    return;
+  }
+  const tab = t.closest('.tab'); if (tab){ setView(tab.dataset.view, true); return; }
+  const seg = t.closest('.seg button');
+  if (seg && !seg.disabled){
+    const f = seg.parentElement.dataset.field; let v = seg.dataset.v;
+    if (f === 'level') v = +v;
+    commit(() => { state.pins[selected][f] = v; });
+    return;
+  }
+  const alt = t.closest('.alts button'); if (alt){ changeSig(alt.dataset.sig); return; }
+  const fb = t.closest('#fileBtns .btn'); if (fb){ codeFile = fb.dataset.file; renderCode(); return; }
+  const smp = t.closest('#samples button');
+  if (smp){ const s = SAMPLES[+smp.dataset.k]; $('decReg').value = s.reg; $('decVal').value = s.val; renderDecode(); return; }
+});
+document.addEventListener('keydown', e => {
+  const el = e.target;
+  if ((e.key === 'Enter' || e.key === ' ') && el.matches && el.matches('.pin, .pinrow, .probs li[data-idx]')){ e.preventDefault(); el.click(); }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !el.matches('input,textarea')){ e.preventDefault(); doUndo(); }
+});
+function changeSig(sig){
+  const i = selected;
+  if (state.pins[i].sig === sig) return;
+  commit(() => {
+    const old = state.pins[i];
+    const keepLabel = old.sig !== 'RESET' && sig !== 'RESET' && SIG[old.sig].cat === SIG[sig].cat ? old.label : '';
+    state.pins[i] = Object.assign(blankPin(i), sigDefaults(sig), {sig, label: sig === 'RESET' ? '' : keepLabel, drv: old.drv});
+    if (sig === 'USB_DM' || sig === 'USB_DP') state.pins[i].drv = 2;
+  });
+}
+document.addEventListener('change', e => {
+  const t = e.target;
+  if (t.id === 'fSig') changeSig(t.value);
+  else if (t.id === 'fDrv') commit(() => { state.pins[selected].drv = +t.value; });
+  else if (t.id === 'fBuf') commit(() => { state.pins[selected].buf = t.checked; });
+  else if (t.dataset && t.dataset.per){ const per = PERS.find(p => p.id === t.dataset.per); const k = +t.value; if (k >= 0) applyPer(per, k); }
+  else if (t.id === 'showAll'){ showAll = t.checked; renderTable(); }
+  else if (t.id === 'decReg' || t.id === 'decOnlyDiff') renderDecode();
+  else if (t.id === 'fLabel'){
+    const v = t.value.trim().slice(0, 32);
+    if (v !== state.pins[selected].label) commit(() => { state.pins[selected].label = v; });
+  }
+  else if (t.id === 'projName'){
+    const v = t.value.trim().slice(0, 60) || '新工程';
+    if (v !== state.project) commit(() => { state.project = v; });
+  }
+});
+document.addEventListener('input', e => {
+  if (e.target.id === 'decVal') renderDecode();
+  if (e.target.id === 'fLabel'){
+    const hint = e.target.closest('.pb').querySelector('.hint.mono');
+    let n = e.target.value.trim().toUpperCase().replace(/[^A-Z0-9_]/g, '_');
+    if (!n) n = state.pins[selected].sig + '_' + pinName(selected);
+    if (/^[0-9]/.test(n)) n = '_' + n;
+    if (hint) hint.textContent = '生成 ' + n + '_PIN';
+  }
+});
+document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'fLabel') e.target.blur(); });
+function doUndo(){
+  if (!undo.length) return;
+  state = JSON.parse(undo.pop());
+  save(); renderAll(); toast('已撤销');
+}
+$('btnUndo').addEventListener('click', doUndo);
+$('btnPreset').addEventListener('click', () => commit(() => { state = presetState(); selected = 4; }, '已载入 SE73K 键盘工程的引脚配置'));
+$('btnBlank').addEventListener('click', () => commit(() => { state = blankState(); selected = 0; }, '已清空，所有脚恢复为未使用（可以撤销）'));
+
+/* copy */
+async function copyText(txt, okMsg){
+  try { await navigator.clipboard.writeText(txt); toast(okMsg); }
+  catch(e){
+    const ta = document.createElement('textarea'); ta.value = txt; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch(_){}
+    document.body.removeChild(ta);
+    toast(ok ? okMsg : '浏览器不允许自动复制，请在代码框里全选后手动复制');
+  }
+}
+$('btnCopyCode').addEventListener('click', () => copyText(codeFile === 'h' ? genH() : genC(), (codeFile === 'h' ? 'io_config.h' : 'io_config.c') + ' 已复制'));
+
+/* import / export dialog */
+function openDlg(title, hint, text, buttons){
+  $('dlgTitle').textContent = title; $('dlgHint').textContent = hint; $('dlgText').value = text;
+  const foot = $('dlgFoot'); foot.innerHTML = '';
+  buttons.forEach(b => { const el = document.createElement('button'); el.className = 'btn' + (b.primary ? ' primary' : ''); el.textContent = b.t; el.addEventListener('click', b.fn); foot.appendChild(el); });
+  $('dlg').hidden = false; $('dlgText').focus();
+}
+const closeDlg = () => { $('dlg').hidden = true; };
+$('dlg').addEventListener('click', e => { if (e.target.id === 'dlg') closeDlg(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('dlg').hidden) closeDlg(); });
+$('btnExport').addEventListener('click', () => {
+  const txt = JSON.stringify({tool:'om6239-io-config', version:1, project:state.project, pins:state.pins}, null, 1);
+  openDlg('导出配置', '复制下面的 JSON 存成文件或发给同事，下次用「导入配置」粘贴回来。', txt,
+    [{t:'关闭', fn:closeDlg}, {t:'复制', primary:true, fn:() => copyText(txt, '配置 JSON 已复制')}]);
+});
+$('btnImport').addEventListener('click', () => {
+  openDlg('导入配置', '把之前导出的 JSON 粘贴到下面，当前配置会被替换（可以撤销）。', '',
+    [{t:'取消', fn:closeDlg}, {t:'导入', primary:true, fn:() => {
+      let o = null; try { o = validateState(JSON.parse($('dlgText').value)); } catch(e){}
+      if (!o){ toast('没能读懂这段 JSON：需要包含 32 个引脚的 pins 数组'); return; }
+      closeDlg(); commit(() => { state = o; }, '已导入：' + o.project);
+    }}]);
+});
+
+/* boot */
+renderSamples();
+$('decReg').innerHTML = REGS.map(r => '<option value="' + r.id + '">' + r.name + '</option>').join('');
+$('decReg').value = 'outen'; $('decVal').value = '0x040800003';
+renderAll();
+const h = (location.hash || '').slice(1);
+setView(VIEWS.includes(h) ? h : 'pins', false);
+window.addEventListener('hashchange', () => { const v = (location.hash || '').slice(1); setView(VIEWS.includes(v) ? v : 'pins', false); });
+})();
+</script>
+</body>
+</html>
