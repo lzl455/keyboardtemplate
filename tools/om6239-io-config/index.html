@@ -325,8 +325,11 @@ const PACKAGES = {
     18,19,20,21,22,23,24,25]}
 };
 const PKG_ORDER = ['qfn48','qfn32'];
-// PA/PB：键盘列扩展输出（main.h 注释的扫描顺序），不经 GPIO 寄存器配置
+// PA/PB：键盘列扩展输出（main.h 注释的翻转顺序），不经 GPIO 寄存器配置。
+// 13 路输出都由 PA5 控制：固件每翻转一次 KEY_EX（P32），输出就按下面的顺序换到下一列。
+// FIXED_SUB 是封装图上的丝印（SCK / SDO / SDI / VPP），只放在提示里，脚的实际用途是扩展列。
 const EXT_ORDER = ['PA7','PA6','PA4','PA3','PA2','PB0','PB1','PB2','PB3','PB4','PB5','PA0','PA1'];
+const EXT_CTRL = 'PA5';
 const FIXED_SUB = {PA4:'SCK', PA3:'SDO', PA2:'SDI', PB3:'SDO', PA5:'VPP'};
 // PWM 通道号，来自 OM6252 封装图；P06、P22 图上只标了 PWM，是 PWM4/PWM5 中的一个
 const PWM_CH = {0:'PWM0', 1:'PWM1', 4:'PWM2', 5:'PWM3', 22:'PWM6', 26:'PWM7', 6:'PWM4/5', 18:'PWM4/5'};
@@ -743,8 +746,11 @@ function chipSVG(){
       s += padRect + ' fill="' + catColor(p.sig) + '"/>' + numText + lineOf(pinName(v), lbl) + '</g>';
     } else if (isExtPin(v)){
       const ord = EXT_ORDER.indexOf(v);
-      const tip = v + (FIXED_SUB[v] ? ' / ' + FIXED_SUB[v] : '') + ' · ' + (ord >= 0 ? '键盘列扩展输出，扫描顺序第 ' + (ord + 1) + ' 个（main.h 注释）' : '扩展芯片引脚');
-      s += '<g class="fixed ext"><title>' + esc(tip) + '</title>' + padRect + '/>' + numText + lineOf(v, FIXED_SUB[v] || (ord >= 0 ? '扩展列' : '')) + '</g>';
+      const silk = FIXED_SUB[v] ? '（封装图丝印 ' + FIXED_SUB[v] + '）' : '';
+      const tip = v + silk + ' · ' + (ord >= 0 ? '键盘列扩展输出，翻转顺序第 ' + (ord + 1) + ' 个（main.h 注释），由 PA5 控制'
+        : v === EXT_CTRL ? '扩展列控制脚：13 路扩展列输出由它控制，固件翻转 KEY_EX（P32）切换到下一列' : '扩展芯片引脚');
+      const lbl = ord >= 0 ? '扩展列' + (ord + 1) : v === EXT_CTRL ? '扩展控制' : '';
+      s += '<g class="fixed ext"><title>' + esc(tip) + '</title>' + padRect + '/>' + numText + lineOf(v, lbl) + '</g>';
     } else {
       s += '<g class="fixed">' + padRect + '/>' + numText + lineOf(v, '') + '</g>';
     }
@@ -756,7 +762,7 @@ function renderChip(){
   const P = pkg();
   $('chip').innerHTML = chipSVG();
   $('legend').innerHTML = Object.keys(CATS).map(c => '<span><i class="dot" style="background:var(' + CATS[c].v + ')"></i>' + CATS[c].name + '</span>').join('') +
-    (P.pins.some(isExtPin) ? '<span><i class="dot ext"></i>键盘列扩展输出（PA/PB，不经 GPIO 寄存器）</span>' : '');
+    (P.pins.some(isExtPin) ? '<span><i class="dot ext"></i>键盘列扩展输出（PA/PB，由 PA5 控制，不经 GPIO 寄存器）</span>' : '');
   $('tray').innerHTML = '<span class="small muted">' + P.chip + ' ' + P.name + ' 没有引出的脚：</span>' + notBonded().map(i => {
     const p = state.pins[i];
     const txt = isReserved(i) ? ' · ' + SIG[RESERVED[i]].label.replace('（内部）', '') : (p.sig !== 'RESET' ? ' · ' + esc(shortLabel(i)) : '');
