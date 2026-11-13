@@ -297,6 +297,10 @@ extern unsigned char    const   matrixkey_mac_fn_tbl[];
 *******************************************************************************/
 void laod_key_cfg(void)
 {
+    // 键表数组定义在本文件包含的两个头文件里，sizeof 是实际大小；最后一个字节留给 0xA5 标记
+    typedef char key_tbl_size_check[(sizeof(matrixkey_win_tbl) <= 255 && sizeof(matrixkey_win_fn_tbl) <= 255) ? 1 : -1];
+    (void)sizeof(key_tbl_size_check);
+
 //----------------------------------------------------------------------------
 // WIN MODE
 //
@@ -304,7 +308,7 @@ void laod_key_cfg(void)
     if(0xA5 != flash_fifo[255])
     {
         memset(flash_fifo, 0xFF, 255);
-        memcpy(flash_fifo, matrixkey_win_tbl, 255);
+        memcpy(flash_fifo, matrixkey_win_tbl, sizeof(matrixkey_win_tbl));   // 键表 248 字节，后面保持 0xFF
         flash_fifo[255] = 0xA5;
 
         flash_erase(iKEY_MODE0_BANK);
@@ -320,7 +324,7 @@ void laod_key_cfg(void)
     if(0xA5 != flash_fifo[255])                 // 标记在最后一个字节，和基础层一样（原来误写成 [0]，每次开机都会擦写一遍）
     {
         memset(flash_fifo, 0xFF, 255);
-        memcpy(flash_fifo, matrixkey_win_fn_tbl, 255);
+        memcpy(flash_fifo, matrixkey_win_fn_tbl, sizeof(matrixkey_win_fn_tbl));   // 键表 248 字节，后面保持 0xFF
         flash_fifo[255] = 0xA5;
 
         flash_erase(iKEY_MODE1_BANK);
