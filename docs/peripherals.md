@@ -31,7 +31,7 @@
    #define BOARD_PWM_CH_MONO  ?                // RGB 灯填 BOARD_PWM_CH_R / G / B
    #define BOARD_PWM_ACTIVE_HIGH 1             // 低电平点亮改成 0
    ```
-2. 填 PWM 通道号。手册只列出能输出 PWM 的脚（P00 P01 P04 P05 P06 P22 P26 P32），没写每个脚对应几号通道，需要查原厂资料或上板实测。
+2. 填 PWM 通道号。按 OM6252 QFN48 封装图：P00 = PWM0、P01 = PWM1、P04 = PWM2、P05 = PWM3、P26 = PWM6、P32 = PWM7；P06、P22 是 PWM4/PWM5 中的一个，具体对应要上板确认。注意本工程 P00/P01 现在接 ARGB，P04/P05 是矩阵行，P26 是矩阵列，P32 是列扩展时钟，换灯时要一起调整引脚分配。
 3. 如果灯有电源开关脚，改 `BOARD_LIGHT_PWR_PIN`，没有就设成 -1。
 4. 在引脚配置器（`tools/om6239-io-config`）里把对应脚设成「PWM 输出」，重新检查冲突。
 
@@ -89,5 +89,5 @@ BOARD_LIGHT=LIGHT_PWM,BOARD_PWM_LIGHT=PWM_LIGHT_RGB,BOARD_HAS_KNOB=1
 
 PWM 后端和编码器模块只在代码层面检查过，打开后需要：
 
-- 确认 PWM 通道号和引脚对应、点亮电平、闪烁频率。
+- 确认 PWM 通道和引脚对应（尤其 P06/P22）、点亮电平、闪烁频率。
 - 确认编码器方向、每格计数，以及浅睡时转动能唤醒。

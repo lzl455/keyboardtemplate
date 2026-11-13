@@ -44,12 +44,14 @@
 #define BOARD_PWM_LIGHT         PWM_LIGHT_MONO
 #endif
 
-/* PWM 通道号 0-7。手册只列出能输出 PWM 的脚（P00 P01 P04 P05 P06 P22 P26 P32），
- * 没写每个脚对应几号通道，请按原厂资料或上板实测填写 */
-#define BOARD_PWM_CH_MONO       0
-#define BOARD_PWM_CH_R          0
-#define BOARD_PWM_CH_G          1
-#define BOARD_PWM_CH_B          2
+/* PWM 通道号 0-7，按 OM6252 QFN48 封装图：
+ *   P00 = PWM0   P01 = PWM1   P04 = PWM2   P05 = PWM3   P26 = PWM6   P32 = PWM7
+ *   P06、P22 图上只标了 PWM，是 PWM4 / PWM5 中的一个，用之前先上板确认
+ * 下面的默认值只是示例，按实际接灯的脚填写，引脚冲突用配置器检查 */
+#define BOARD_PWM_CH_MONO       0       /* 例：单色背光接 P00 */
+#define BOARD_PWM_CH_R          0       /* 例：RGB 灯 R 接 P00 */
+#define BOARD_PWM_CH_G          1       /*      G 接 P01 */
+#define BOARD_PWM_CH_B          6       /*      B 接 P26 */
 
 #define BOARD_PWM_ACTIVE_HIGH   1       /* 1：高电平点亮；0：低电平点亮 */
 /* PWM 分频，周期固定为 255 级。48MHz / 8 / 256 约 23kHz，蓝牙模式 12MHz 时约 6kHz */
