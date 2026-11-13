@@ -8,6 +8,9 @@
 #include "main_24g.h"
 #include "hid_process.h"
 #include "usb_cfg_info.h"
+#include "board_config.h"
+
+#if (BOARD_HAS_FCC_TEST)            /* FCC / SRRC 认证测试，关掉时整个文件编译为空 */
 
 //----------------------------------------------------------------------------;
 //变量定义
@@ -577,4 +580,4 @@ fcc_test_end:
     OM_CRITICAL_END();
 }
 
-
+#endif /* (BOARD_HAS_FCC_TEST) */

@@ -117,6 +117,7 @@ void logo_process(void)
             return;
     }
 
+#if (BOARD_HAS_USB)
     if(iDEVICE_TYPE_USB == device_type)
     {
         if(0 != (usb_ctrl_flag&busb_suspend_resume))
@@ -126,6 +127,7 @@ void logo_process(void)
         }
     }
     else
+#endif
     {
         if(ble_24g_ctrl&bom6239_sync_ing)
         {

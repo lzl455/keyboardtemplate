@@ -118,6 +118,27 @@
 #endif
 
 /* =============================================================================
+ * 可选功能（关掉后对应代码不编进固件）
+ * ========================================================================== */
+/* USB 有线模式：mode_usb/ 里的 USB 协议栈（hal_usb_decs.c、main_usb.c、usb_user_process.c），约 9KB。
+ * 注意：scan_mode_swtich() 里检测 5V 并进入 USB 模式的那段代码目前是注释掉的，
+ * 打开这个开关后还要恢复那段代码，键盘才会真正进入 USB 模式。
+ * 配置协议 hid_process.c 在 2.4G 模式下也要用，不受这个开关影响。 */
+#ifndef BOARD_HAS_USB
+#define BOARD_HAS_USB           1
+#endif
+
+/* FCC / SRRC 认证测试（mode_24g/rf_fcc.c，约 1.8KB）：送测时需要，量产固件可以关掉 */
+#ifndef BOARD_HAS_FCC_TEST
+#define BOARD_HAS_FCC_TEST      1
+#endif
+
+/* 灯光 Fn 键（亮度、模式、速度、颜色、开关灯）。默认跟着灯光走：没有灯就不编进去 */
+#ifndef BOARD_LIGHT_KEYS
+#define BOARD_LIGHT_KEYS        (BOARD_LIGHT != LIGHT_NONE)
+#endif
+
+/* =============================================================================
  * 由上面的开关推出驱动开关，RTE_om6239.h 使用，不要手改
  * ========================================================================== */
 #define BOARD_RTE_LEDC          (BOARD_LIGHT == LIGHT_ARGB)

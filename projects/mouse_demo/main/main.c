@@ -292,13 +292,16 @@ soft_reset_process:
 
         periph_init_all();                  // 可选外设初始化（periph/periph.c）
 
+#if (BOARD_HAS_USB)
         if(iDEVICE_TYPE_USB == device_type)
         {
             DRV_RCC_CLOCK_ENABLE(RCC_CLK_RF, 1U);
             mouse_usb_init();
             main_usb();
         }
-        else if(iDEVICE_TYPE_24G == device_type)
+        else
+#endif
+        if(iDEVICE_TYPE_24G == device_type)
         {
             bencrypted_en = false;   //  true  false
 

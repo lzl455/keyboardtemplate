@@ -79,6 +79,8 @@ nav.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);overflow-x:aut
 .knobset{display:flex;flex-direction:column;gap:8px;margin:6px 0 2px 17px;padding:8px 10px;border-left:2px solid var(--c-enc);background:var(--panel-2);border-radius:0 6px 6px 0}
 .per label span.small{margin-left:4px}
 .knobset.light{border-left-color:var(--c-ledc)}
+#featList .chk{flex-wrap:wrap;align-items:center;row-gap:0}
+#featList .chk .small{flex-basis:100%;padding-left:21px}
 .per .knobset label.field{display:flex;flex-direction:column;align-items:stretch;gap:4px;font-weight:400}
 .per .knobset label.chk{font-weight:400;align-items:flex-start}
 .dot{width:10px;height:10px;border-radius:3px;display:inline-block;flex:none}
@@ -201,6 +203,10 @@ tr.difrow{background:var(--err-bg)}
       <div class="panel">
         <div class="ph"><h2>外设</h2><span class="small muted">选了就自动占脚</span></div>
         <div class="pb" id="perList"></div>
+      </div>
+      <div class="panel">
+        <div class="ph"><h2>固件功能</h2><span class="small muted">关掉的不编进固件</span></div>
+        <div class="pb" id="featList"></div>
       </div>
       <div class="panel">
         <div class="ph"><h2>键盘矩阵</h2></div>
@@ -420,7 +426,7 @@ function sigDefaults(sig){
   return {};
 }
 function reservedPin(i){ return Object.assign(blankPin(i), {sig:RESERVED[i], pull:'none', wake:'none'}); }
-function blankState(){ return {project:'新工程', pkg:'qfn48', knob:knobDefault(), light:{activeHigh:true}, pins:Array.from({length:N}, (_, i) => RESERVED[i] ? reservedPin(i) : blankPin(i))}; }
+function blankState(){ return {project:'新工程', pkg:'qfn48', knob:knobDefault(), light:{activeHigh:true}, features:{fcc:true, lightKeys:true}, pins:Array.from({length:N}, (_, i) => RESERVED[i] ? reservedPin(i) : blankPin(i))}; }
 
 // SE73K keyboard, reconstructed from projects/mouse_demo/main/main.h and the original register setup in main()
 function presetState(){
@@ -469,6 +475,7 @@ function validateState(o){
   s.project = typeof o.project === 'string' ? o.project.slice(0, 60) : '新工程';
   s.pkg = PACKAGES[o.pkg] ? o.pkg : 'qfn48';
   if (o.light) s.light.activeHigh = o.light.activeHigh !== false;
+  if (o.features){ s.features.fcc = o.features.fcc !== false; s.features.lightKeys = o.features.lightKeys !== false; }
   if (o.knob){
     if (KNOB_ACTION[o.knob.action]) s.knob.action = o.knob.action;
     s.knob.invert = o.knob.invert === true;
@@ -586,7 +593,7 @@ const PERS = [
   {id:'uart', name:'UART', cat:'uart', sigs:['UART_TX','UART_RX'], opts:[{t:'关闭'}].concat(UART_G.map(g => ({t:pinName(g.tx)+' TX / '+pinName(g.rx)+' RX', pins:[[g.tx,'UART_TX'],[g.rx,'UART_RX']]})))},
   {id:'light', custom:true, name:'灯光', cat:'ledc', sigs:LIGHT_SIGS},
   {id:'enc', name:'旋转编码器', cat:'enc', sigs:['ENC_A','ENC_B'], opts:[{t:'关闭'}].concat(ENC_G.map(g => ({t:'A '+pinName(g.a)+' / B '+pinName(g.b), pins:[[g.a,'ENC_A'],[g.b,'ENC_B']]})))},
-  {id:'lvd', name:'电压检测 (LVD)', cat:'lvd', sigs:['LVD_IN'], opts:[{t:'不用引脚（测 VBUS/VDD）'}].concat(LVD_G.map(g => ({t:'检测脚 '+pinName(g.p), pins:[[g.p,'LVD_IN']]})))},
+  {id:'lvd', name:'电压检测 (LVD，必需)', cat:'lvd', sigs:['LVD_IN'], opts:[{t:'不用引脚（测 VBUS/VDD）'}].concat(LVD_G.map(g => ({t:'检测脚 '+pinName(g.p), pins:[[g.p,'LVD_IN']]})))},
   {id:'swd', name:'SWD 调试口', cat:'dbg', sigs:['SWCLK','SWDIO'], opts:[{t:'不保留（当普通脚用）'},{t:'保留：P22 时钟 / P25 数据', pins:[[18,'SWCLK'],[21,'SWDIO']]}]},
   {id:'sns', name:'传感器扫描', cat:'sns', sigs:['SNS_CSN','SNS_SCK','SNS_MOSI','SNS_MISO'], opts:[{t:'关闭'},{t:'开启：P10-P13', pins:[[8,'SNS_CSN'],[9,'SNS_SCK'],[10,'SNS_MOSI'],[11,'SNS_MISO']]}]}
 ];
@@ -819,7 +826,17 @@ function knobSettingsHTML(){
     '<div class="hint">这几项生成到 <span class="mono">io_board.h</span>，见「生成代码」页。</div>' +
     '</div>';
 }
+function renderFeatures(){
+  const F = state.features, ps = perState(), lightOn = lightMode() !== 'none';
+  $('featList').innerHTML =
+    '<label class="chk"><input type="checkbox" checked disabled> 电量检测（LVD）<span class="small muted">必需，始终编进固件</span></label>' +
+    '<label class="chk"><input type="checkbox" disabled' + (ps.usb ? ' checked' : '') + '> USB 有线模式 <span class="small muted">跟着上面的「USB」，约 9KB</span></label>' +
+    '<label class="chk"><input type="checkbox" id="featFcc"' + (F.fcc ? ' checked' : '') + '> FCC / SRRC 认证测试 <span class="small muted">送测时需要，约 1.8KB</span></label>' +
+    '<label class="chk"><input type="checkbox" id="featLightKeys"' + (F.lightKeys && lightOn ? ' checked' : '') + (lightOn ? '' : ' disabled') + '> 灯光 Fn 键 <span class="small muted">' + (lightOn ? '亮度、模式、速度、颜色' : '没有灯时自动去掉') + '</span></label>' +
+    '<div class="hint">这几项生成到 <span class="mono">io_board.h</span>。</div>';
+}
 function renderLeft(){
+  renderFeatures();
   const ps = perState();
   $('perList').innerHTML = PERS.map(per => {
     if (per.custom) return lightBlockHTML();
@@ -1015,6 +1032,11 @@ function genBoard(){
     def('BOARD_LIGHT_PWR_PIN', pw >= 0 ? String(pw) : '-1', pw >= 0 ? pinName(pw) + ' 灯电源开关' : '没有灯电源开关');
     if (pw >= 0) def('BOARD_LIGHT_PWR_ON', state.pins[pw].level ? '0' : '1', '打开灯电源时输出的电平');
   }
+  L.push('');
+  L.push('/* ---- 可选功能（关掉的不编进固件；电量检测是必需功能，没有开关） -------- */');
+  def('BOARD_HAS_USB', ps.usb ? '1' : '0', ps.usb ? 'USB 有线模式' : '不用 USB 有线模式');
+  def('BOARD_HAS_FCC_TEST', state.features.fcc ? '1' : '0', 'FCC / SRRC 认证测试');
+  def('BOARD_LIGHT_KEYS', lightOn && state.features.lightKeys ? '1' : '0', '灯光 Fn 键');
   L.push('');
   L.push('/* ---- 旋转编码器（modules/knob/） -------------------------------------- */');
   if (ps.enc >= 0){
@@ -1274,6 +1296,8 @@ document.addEventListener('change', e => {
   else if (t.id === 'fBuf') commit(() => { state.pins[selected].buf = t.checked; });
   else if (t.dataset && t.dataset.per){ const per = PERS.find(p => p.id === t.dataset.per); const k = +t.value; if (k >= 0) applyPer(per, k); }
   else if (t.id === 'showAll'){ showAll = t.checked; renderTable(); }
+  else if (t.id === 'featFcc'){ commit(() => { state.features.fcc = t.checked; }); }
+  else if (t.id === 'featLightKeys'){ commit(() => { state.features.lightKeys = t.checked; }); }
   else if (t.id === 'lightMode'){ if (LIGHT_MODES[t.value]) setLightMode(t.value); }
   else if (t.dataset && t.dataset.lsig){ const i = +t.value; if (i >= 0) moveSig(t.dataset.lsig, i); }
   else if (t.id === 'lightPwr'){ moveSig('LIGHT_PWR', +t.value); }
@@ -1341,7 +1365,7 @@ const closeDlg = () => { $('dlg').hidden = true; };
 $('dlg').addEventListener('click', e => { if (e.target.id === 'dlg') closeDlg(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('dlg').hidden) closeDlg(); });
 $('btnExport').addEventListener('click', () => {
-  const txt = JSON.stringify({tool:'om6239-io-config', version:1, project:state.project, pkg:state.pkg, light:state.light, knob:state.knob, pins:state.pins}, null, 1);
+  const txt = JSON.stringify({tool:'om6239-io-config', version:1, project:state.project, pkg:state.pkg, light:state.light, features:state.features, knob:state.knob, pins:state.pins}, null, 1);
   openDlg('导出配置', '复制下面的 JSON 存成文件或发给同事，下次用「导入配置」粘贴回来。', txt,
     [{t:'关闭', fn:closeDlg}, {t:'复制', primary:true, fn:() => copyText(txt, '配置 JSON 已复制')}]);
 });

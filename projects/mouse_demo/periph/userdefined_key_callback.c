@@ -125,6 +125,7 @@ void __attribute__((noinline)) key_decode_cmd_0x00(void)
 ******************************************************************************/
 void __attribute__((noinline)) key_decode_cmd_0x10(void)
 {
+#if (BOARD_LIGHT_KEYS)                  /* 灯光 Fn 键；关掉时函数保留（预编译的 key_decode 会调用），但为空 */
     if(iDEVICE_TYPE_USB != device_type)
     {
         if(ble_24g_ctrl & bom6239_conning)
@@ -225,6 +226,7 @@ void __attribute__((noinline)) key_decode_cmd_0x10(void)
             }
             break;
     }
+#endif
 }
 
 /******************************************************************************
@@ -236,6 +238,7 @@ void __attribute__((noinline)) key_decode_cmd_0x10(void)
 ******************************************************************************/
 void __attribute__((noinline)) key_decode_cmd_0x20(void)
 {
+#if (BOARD_LIGHT_KEYS)                  /* 灯光 Fn 键；关掉时函数保留（预编译的 key_decode 会调用），但为空 */
     switch(decode_data_l&0x0F)
     {
         case iLED_MODE_0&0x0F:
@@ -295,6 +298,7 @@ void __attribute__((noinline)) key_decode_cmd_0x20(void)
 
             break;
     }
+#endif
 }
 
 /******************************************************************************

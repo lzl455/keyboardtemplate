@@ -25,6 +25,17 @@
 #define BOARD_LIGHT_PWR_ON       1   /* 打开灯电源时输出的电平 */
 #endif
 
+/* ---- 可选功能（关掉的不编进固件；电量检测是必需功能，没有开关） -------- */
+#ifndef BOARD_HAS_USB
+#define BOARD_HAS_USB            1   /* USB 有线模式 */
+#endif
+#ifndef BOARD_HAS_FCC_TEST
+#define BOARD_HAS_FCC_TEST       1   /* FCC / SRRC 认证测试 */
+#endif
+#ifndef BOARD_LIGHT_KEYS
+#define BOARD_LIGHT_KEYS         1   /* 灯光 Fn 键 */
+#endif
+
 /* ---- 旋转编码器（modules/knob/） -------------------------------------- */
 /* 配置器里没有启用编码器 */
 #ifndef BOARD_HAS_KNOB

@@ -328,7 +328,9 @@ __attribute__((noinline)) void hid_process(void)
 
         if(iHID_CMD_FCC == out_report_data[1])
         {
+#if (BOARD_HAS_FCC_TEST)
             hid_cmd_fcc_test();
+#endif
             return;
         }
 
@@ -426,7 +428,9 @@ __attribute__((noinline)) void hid_process(void)
                 }
                 else
                 {
+#if (BOARD_HAS_FCC_TEST)
                     hid_cmd_fcc_test();
+#endif
                 }
             }
             else

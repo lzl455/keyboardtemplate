@@ -10,6 +10,9 @@
 #include "main.h"
 #include "main_usb.h"
 #include "matrix_key.h"
+#include "board_config.h"
+
+#if (BOARD_HAS_USB)            /* USB 有线模式，关掉时整个文件编译为空 */
 
 //-----------------------------------------------------------------------------;
 // 变量定义
@@ -226,3 +229,4 @@ usb_wakeup_process:
 
 /** @} */
 
+#endif /* (BOARD_HAS_USB) */

@@ -222,7 +222,9 @@ void device_led_process(void)
                     device_hint_count = 0;
                 }
 
+#if (BOARD_HAS_FCC_TEST)
                 key_into_fcc_test();
+#endif
                 if(false == bdevice_led_status)
                 {
                     device_led_off();
@@ -348,8 +350,10 @@ void device_led_process(void)
     else
     {
         hint_led_status &= ~bled_hint_mode;
+#if (BOARD_HAS_USB)
         if(0 != (usb_ctrl_flag&busb_suspend_resume))
             return;
+#endif
     }
 }
 
