@@ -66,21 +66,21 @@
  * 没有指定的设成 MATRIX_POS_NONE：对应 matrix_status[19]，永远不会按下 */
 #define MATRIX_SLOT(c, r)       (((c) - 3) * 8 + (r))
 #define MATRIX_POS_NONE         128
-#define KEYPOS_FCC_FN           MATRIX_SLOT(8, 7)     /* FCC 测试：进入测试：Fn，物理 C8 R7，现在是 N */
+#define KEYPOS_FCC_FN           MATRIX_SLOT(9, 7)     /* FCC 测试：进入测试：Fn，物理 C9 R7，现在是 Fn */
 #define KEYPOS_FCC_SWITCH       MATRIX_SLOT(6, 4)     /* FCC 测试：切换频点（下）· 也用于进入测试，物理 C18 R4，现在是 ↓ */
-#define KEYPOS_FCC_BT0          MATRIX_SLOT(7, 7)     /* FCC 测试：进入测试：蓝牙模式下要按的键，物理 C7 R7，现在是 Esc */
-#define KEYPOS_FCC_24G          MATRIX_SLOT(12, 7)    /* FCC 测试：进入测试：2.4G 模式下要按的键，物理 C12 R7，现在是 , */
-#define KEYPOS_FCC_TX           MATRIX_SLOT(6, 7)     /* FCC 测试：切换定频收发（右），物理 C6 R7，现在是 ScrLk */
-#define KEYPOS_FCC_FREQ         MATRIX_SLOT(6, 3)     /* FCC 测试：进入跳频（左），物理 C6 R3，现在是 计算器 */
-#define KEYPOS_FCC_WAVE         MATRIX_SLOT(6, 2)     /* FCC 测试：切换空载波（上），物理 C6 R2，现在是 O */
-#define KEYPOS_WASD_W           MATRIX_SLOT(10, 0)    /* WASD 互换：W，物理 C10 R0，现在是 W */
-#define KEYPOS_WASD_A           MATRIX_SLOT(6, 0)     /* WASD 互换：A，物理 C6 R0，现在是 A */
-#define KEYPOS_WASD_S           MATRIX_SLOT(8, 0)     /* WASD 互换：S，物理 C8 R0，现在是 S */
+#define KEYPOS_FCC_BT0          MATRIX_SLOT(4, 4)     /* FCC 测试：进入测试：蓝牙模式下要按的键，物理 C4 R4，现在是 蓝牙 1 */
+#define KEYPOS_FCC_24G          MATRIX_SLOT(7, 0)     /* FCC 测试：进入测试：2.4G 模式下要按的键（没有 2.4G 键时用配对键），物理 C7 R0，现在是 Tab（Fn 层：配对） */
+#define KEYPOS_FCC_TX           MATRIX_SLOT(16, 7)    /* FCC 测试：切换定频收发（右），物理 C16 R7、C18 R7，现在是 →（Fn 层：灯速度+） */
+#define KEYPOS_FCC_FREQ         MATRIX_SLOT(18, 3)    /* FCC 测试：进入跳频（左），物理 C18 R3，现在是 ←（Fn 层：灯速度-） */
+#define KEYPOS_FCC_WAVE         MATRIX_SLOT(18, 2)    /* FCC 测试：切换空载波（上），物理 C18 R2，现在是 ↑ */
+#define KEYPOS_WASD_W           MATRIX_SLOT(10, 0)    /* WASD 互换：W，物理 C10 R0，现在是 W（Fn 层：WASD 互换） */
+#define KEYPOS_WASD_A           MATRIX_SLOT(6, 0)     /* WASD 互换：A，物理 C6 R0，现在是 A（Fn 层：Win 模式） */
+#define KEYPOS_WASD_S           MATRIX_SLOT(8, 0)     /* WASD 互换：S，物理 C8 R0，现在是 S（Fn 层：Mac 模式） */
 #define KEYPOS_WASD_D           MATRIX_SLOT(9, 0)     /* WASD 互换：D，物理 C9 R0，现在是 D */
 #define KEYPOS_WASD_UP          MATRIX_SLOT(18, 2)    /* WASD 互换：↑，物理 C18 R2，现在是 ↑ */
-#define KEYPOS_WASD_LEFT        MATRIX_SLOT(18, 3)    /* WASD 互换：←，物理 C18 R3，现在是 ← */
+#define KEYPOS_WASD_LEFT        MATRIX_SLOT(18, 3)    /* WASD 互换：←，物理 C18 R3，现在是 ←（Fn 层：灯速度-） */
 #define KEYPOS_WASD_DOWN        MATRIX_SLOT(6, 4)     /* WASD 互换：↓，物理 C18 R4，现在是 ↓ */
-#define KEYPOS_WASD_RIGHT       MATRIX_SLOT(16, 7)    /* WASD 互换：→，物理 C16 R7、C18 R7，现在是 → */
+#define KEYPOS_WASD_RIGHT       MATRIX_SLOT(16, 7)    /* WASD 互换：→，物理 C16 R7、C18 R7，现在是 →（Fn 层：灯速度+） */
 
 /* ---- 指示灯 ----
  * LED_x_ON / OFF：点亮 / 熄灭；熄灭时放开引脚（和列线复用时扫描要用）

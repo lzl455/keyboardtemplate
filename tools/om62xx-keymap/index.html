@@ -100,7 +100,7 @@ table.km th.rh{text-align:right;padding-right:4px}
 .legend{display:flex;flex-wrap:wrap;gap:4px 12px;padding:0 12px 10px;font-size:12px;color:var(--muted)}
 .legend span{display:inline-flex;align-items:center;gap:5px}
 .sw{width:12px;height:12px;border-radius:3px;border:1px solid;display:inline-block}
-.pickhint{margin:0 12px 10px;padding:6px 10px;border-radius:6px;background:var(--info-bg);border-left:3px solid var(--info);font-size:12.5px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.pickhint{margin:10px 12px 0;padding:8px 10px;border-radius:6px;background:var(--warn-bg);border-left:3px solid var(--warn);font-weight:600;font-size:12.5px;display:flex;align-items:center;justify-content:space-between;gap:8px}
 /* 检查器 */
 .insp-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
 .insp-h b{font-family:var(--mono);font-size:22px;line-height:1}
@@ -350,7 +350,7 @@ const ROLES = [
   {id:'FCC_FN',     grp:'FCC 测试', name:'进入测试：Fn',            expect:['iMODE_KEY_FN'],  old:'iKEY_FN_C / iKEY_FN_R'},
   {id:'FCC_SWITCH', grp:'FCC 测试', name:'切换频点（下）· 也用于进入测试', expect:['iSTD_DOWN'], old:'iKEY_SWTICH_FREQ_C / _R'},
   {id:'FCC_BT0',    grp:'FCC 测试', name:'进入测试：蓝牙模式下要按的键', expect:['iMODE_KEY_BT0'], old:'iKEY_BT0_C / iKEY_BT0_R'},
-  {id:'FCC_24G',    grp:'FCC 测试', name:'进入测试：2.4G 模式下要按的键', expect:['iMODE_KEY_24G'], old:'iKEY_24G_C / iKEY_24G_R'},
+  {id:'FCC_24G',    grp:'FCC 测试', name:'进入测试：2.4G 模式下要按的键（没有 2.4G 键时用配对键）', expect:['iMODE_KEY_24G','iMODE_KEY_CONN'], old:'iKEY_24G_C / iKEY_24G_R'},
   {id:'FCC_TX',     grp:'FCC 测试', name:'切换定频收发（右）',       expect:['iSTD_RIGHT'],    old:'iKEY_FCC_TX_C / _R'},
   {id:'FCC_FREQ',   grp:'FCC 测试', name:'进入跳频（左）',           expect:['iSTD_LEFT'],     old:'iKEY_FCC_FREQ_C / _R'},
   {id:'FCC_WAVE',   grp:'FCC 测试', name:'切换空载波（上）',         expect:['iSTD_UP'],       old:'iKEY_FCC_WAVE_C / _R'},
@@ -384,8 +384,9 @@ function presetState(){
   const moves = [[0,1,3,6],[0,4,3,7],[1,0,5,4],[1,1,5,5],[1,6,5,6],[0,0,5,7],[2,0,17,2],[2,1,17,3],[2,2,17,4],
                  [19,0,17,7],[18,7,16,7],[18,4,6,4],[18,5,6,5],[18,6,6,6]];
   for (const [pc, pr, lc, lr] of moves) keys['C' + pc + ',' + pr] = slotOf(lc, lr);
-  const roles = {FCC_FN:slotOf(8,7), FCC_BT0:slotOf(7,7), FCC_24G:slotOf(12,7), FCC_TX:slotOf(6,7), FCC_FREQ:slotOf(6,3),
-    FCC_WAVE:slotOf(6,2), FCC_SWITCH:slotOf(6,4), WASD_W:slotOf(10,0), WASD_A:slotOf(6,0), WASD_S:slotOf(8,0), WASD_D:slotOf(9,0),
+  // FCC 测试原来的宏指向旧布局（Fn 在 C8 R7 = N 键等），已按键码改正：Fn、蓝牙 1、配对（2.4G 没有模式键）和 4 个方向键
+  const roles = {FCC_FN:slotOf(9,7), FCC_BT0:slotOf(4,4), FCC_24G:slotOf(7,0), FCC_TX:slotOf(16,7), FCC_FREQ:slotOf(18,3),
+    FCC_WAVE:slotOf(18,2), FCC_SWITCH:slotOf(6,4), WASD_W:slotOf(10,0), WASD_A:slotOf(6,0), WASD_S:slotOf(8,0), WASD_D:slotOf(9,0),
     WASD_UP:slotOf(18,2), WASD_LEFT:slotOf(18,3), WASD_DOWN:slotOf(6,4), WASD_RIGHT:slotOf(16,7)};
   return {
     v:1, cols, rows:[4,5,6,7,8,9,10,11], exPin:26,
@@ -700,7 +701,7 @@ function layerEditor(L, s){
   return '<div class="layer" data-layer="' + L + '">' +
     '<h3><span>' + name + '：' + esc(keyLabel(e) || '无') + '</span>' +
     '<span class="row2">' + (L === 'fn' ? '<button class="btn sm" data-act="same">同基础层</button>' : '') +
-    '<button class="btn sm' + (ui.capture === L ? ' on capture' : '') + '" data-act="cap">' + (ui.capture === L ? '请按键…' : '按键录入') + '</button></span></h3>' +
+    '<button class="btn sm' + (ui.capture === L ? ' on capture' : '') + '" data-act="cap" title="点一下后在键盘上按键；Esc 或点别处取消（Esc 键请在下拉里选）">' + (ui.capture === L ? '请按键…（Esc 取消）' : '按键录入') + '</button></span></h3>' +
     '<div class="row2"><input type="search" placeholder="搜索键名" data-act="q" aria-label="搜索' + name + '键码"><select data-act="pick" aria-label="' + name + '键码">' + pickerOptions(e) + '</select></div>' +
     (showMods ? '<div class="mods"><span class="small muted">修饰键</span>' + MODS.map(([m, t]) => '<label><input type="checkbox" data-mod="' + m + '"' + (mods.some(x => x.endsWith('_' + m)) ? ' checked' : '') + '>' + t + '</label>').join('') +
       '<select data-act="side" aria-label="修饰键左右"><option value="LEFT"' + (side === 'LEFT' ? ' selected' : '') + '>左侧</option><option value="RIGHT"' + (side === 'RIGHT' ? ' selected' : '') + '>右侧</option></select></div>' : '') +
@@ -899,7 +900,8 @@ function genCfg(){
     const s = S.roles[R.id], ok = s != null && s >= 0;
     const at = ok ? src[s].map(posText).join('、') : '';
     o += pad('#define KEYPOS_' + R.id, 32) + pad(ok ? 'MATRIX_SLOT(' + ((s >> 3) + 3) + ', ' + (s & 7) + ')' : 'MATRIX_POS_NONE', 22) +
-      '/* ' + R.grp + '：' + R.name + (ok ? '，' + (at ? '物理 ' + at + '，' : '') + '现在是 ' + (keyLabel(S.win[s]) || '无') : '') + ' */\n';
+      '/* ' + R.grp + '：' + R.name + (ok ? '，' + (at ? '物理 ' + at + '，' : '') + '现在是 ' + (keyLabel(S.win[s]) || '无') +
+      (keyLabel(S.fn[s]) !== keyLabel(S.win[s]) ? '（Fn 层：' + (keyLabel(S.fn[s]) || '无') + '）' : '') : '') + ' */\n';
   }
   o += '\n/* ---- 指示灯 ----\n * LED_x_ON / OFF：点亮 / 熄灭；熄灭时放开引脚（和列线复用时扫描要用）\n * 和列线复用的灯靠 LED 供电脚开关：扫描前关掉供电，扫完再点灯 */\n';
   const drive = (p, hi) => '{OM_GPIO0->' + (hi ? 'DATAOUTSET' : 'DATAOUTCLR') + ' = (1u<<' + p + '); OM_GPIO0->OUTENSET = (1u<<' + p + ');}';
@@ -967,9 +969,9 @@ function cellClick(el){
   else { sel = {c:el.dataset.c, r:+el.dataset.r}; s = state.keys[sel.c + ',' + sel.r]; }
   if (ui.pick){
     if (s == null) return toast('这个位置没有按键，先加一个按键再指定');
-    const id = ui.pick; ui.pick = null;
+    const id = ui.pick, R = ROLES.find(x => x.id === id); ui.pick = null; ui.sel = sel;
     commit(() => { state.roles[id] = s; });
-    return toast('已指定到 ' + slotName(s));
+    return toast('「' + R.name + '」已指定到 ' + slotName(s) + '（点选结束）');
   }
   ui.sel = sel; ui.capture = null; render();
 }
@@ -988,7 +990,10 @@ $('kmWrap').addEventListener('keydown', e => {
 });
 $('pickCancel').addEventListener('click', () => { ui.pick = null; render(); });
 
-function setKey(L, s, k){ commit(() => { state[L][s] = makeKey(k); }); }
+function setKey(L, s, k){
+  commit(() => { state[L][s] = makeKey(k); ui.layer = L; });   // 键位图切到改的那一层，图上能马上看到
+  toast((L === 'win' ? '基础层 ' : 'Fn 层 ') + slotName(s) + ' → ' + (keyLabel(state[L][s]) || '无'));
+}
 $('insp').addEventListener('change', e => {
   const t = e.target, s = curSlot();
   if (t.dataset.act === 'slot'){
@@ -1070,7 +1075,17 @@ function codeToStd(c){
   if ((m = /^Numpad(\d)$/.exec(c))) return 'iSTD_NUMPAD' + m[1];
   return CODE_MAP[c] ? 'iSTD_' + CODE_MAP[c] : null;
 }
+// 取消录入只改按钮，不重绘面板：重绘会换掉刚点中的搜索框 / 下拉框，焦点就丢了
+function stopCapture(){
+  ui.capture = null; ui.capMod = null;
+  document.querySelectorAll('#insp [data-act=cap]').forEach(b => { b.classList.remove('on', 'capture'); b.textContent = '按键录入'; });
+}
+document.addEventListener('mousedown', e => {
+  if (ui.capture && !e.target.closest('[data-act=cap]')) stopCapture();
+}, true);
 document.addEventListener('keydown', e => {
+  if (ui.capture && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) stopCapture();
+  if (ui.capture && e.key === 'Escape'){ e.preventDefault(); stopCapture(); return toast('已取消按键录入'); }
   if (ui.capture){
     e.preventDefault(); e.stopPropagation();
     const s = curSlot(), L = ui.capture;
