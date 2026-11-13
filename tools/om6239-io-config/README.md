@@ -19,9 +19,34 @@
 
 ## 把生成的代码接进工程
 
-1. 把 `io_config.h`、`io_config.c` 放到 `projects/mouse_demo/periph/`，在 Keil 的 periph 组里加上 `io_config.c`。
-2. 在 `main()` 里用 `io_config_init();` 替换 `main.c:197-207` 直接写寄存器的几行。
-3. 进深睡前调用 `io_config_wakeup(true)`，醒来后调用 `io_config_wakeup(false)`。
+1. **保存文件**：在「生成代码」页分别复制 `io_config.h` 和 `io_config.c`，存到 `projects/mouse_demo/periph/`，用 UTF-8 编码保存（工程源码都是 UTF-8）。这个目录已经在 Keil 的头文件路径里。
+2. **加进 Keil 工程**：在 Project 窗口的 `periph` 组上右键 → Add Existing Files to Group，选 `io_config.c`。
+3. **上电初始化**：`main.c` 里加 `#include "io_config.h"`，再把 `main()` 开头直接写寄存器的这几行换成一行 `io_config_init();`：
+
+   ```c
+   // 删除
+   OM_RCC->CLKGATE |= RCC_DEV_CLK_GATE_GPIO_CLK_GATE_MASK;
+   OM_PMU->PAD_PU_CTRL = 0x00AAAA00;
+   OM_PMU->PAD_PU_CTRL_1 = 0x0A0AAA25;
+   OM_PMU->PAD_PD_CTRL = 0x4000000C;
+   OM_PMU->PAD_BUF_EN &= ~LVD_PIN_MASK;
+   OM_PMU->PAD_BUF_EN |= (1<<MODE_PIN);
+   OM_GPIO0->DATAOUT = 0xFFF7FFFE;
+   OM_GPIO0->OUTENSET = 0x040800003;
+   OM_GPIO0->OUTENCLR = ~0x040800003;
+
+   // 换成
+   io_config_init();
+   ```
+
+4. **唤醒脚**（可选）：在 `main.c` 的 `mouse_periph_wakeup_enable()` 里，把逐个设置 8 个矩阵行唤醒的代码换成 `io_config_wakeup(true)`；关闭唤醒的那段换成 `io_config_wakeup(false)`。函数里其余部分（拉低列线、关灯、切换上拉）是休眠时的引脚状态，保留不动。
+5. **编译、上板**：重点看灯效、按键、模式切换、休眠唤醒是否正常。
+
+说明：
+
+- 生成的宏都带 `IO_` 前缀（`IO_KEY_R0_PIN`、`IO_CHR_OK_READ()` 等）。`main.h` 里已有 `USB_5V_PIN`、`CHR_OK_PIN` 这类同名宏，前者是读电平、后者是引脚号，不加前缀会互相覆盖。加了前缀后两套可以共存，旧代码不用一次改完。
+- 载入 SE73K 工程时，`io_config_init()` 写进寄存器的值和原来那几行完全一样，只有 `OUTENSET` 是 `0x04080003`，也就是修正了 `0x040800003` 多一个 0 的笔误（见 `claude/fix-gpio-outenset` 分支）。
+- 以后改引脚：在配置器里改好，重新生成并覆盖这两个文件，再重新编译。配置可以用「导出配置」保存成 JSON，下次「导入配置」接着改。
 
 ## 依据和注意事项
 

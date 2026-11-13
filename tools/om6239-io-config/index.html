@@ -243,9 +243,10 @@ tr.difrow{background:var(--err-bg)}
     <pre class="code" id="codeOut" tabindex="0" aria-label="生成的代码"></pre>
     <div class="howto">
       <div class="panel"><div class="ph"><h2>怎么接进工程</h2></div><div class="pb"><ol>
-        <li>把两个文件放到 <span class="mono">projects/mouse_demo/periph/</span>，在 Keil 的 periph 组里加上 <span class="mono">io_config.c</span>。</li>
-        <li>在 <span class="mono">main()</span> 里用 <span class="mono">io_config_init();</span> 替换 <span class="mono">main.c:197-207</span> 那几行直接写寄存器的代码。</li>
-        <li>进深睡前调用 <span class="mono">io_config_wakeup(true)</span>，醒来后调用 <span class="mono">io_config_wakeup(false)</span>。</li>
+        <li>把两个文件存到 <span class="mono">projects/mouse_demo/periph/</span>（UTF-8 编码），在 Keil 的 periph 组里加上 <span class="mono">io_config.c</span>。</li>
+        <li><span class="mono">main.c</span> 加 <span class="mono">#include "io_config.h"</span>，用 <span class="mono">io_config_init();</span> 替换 <span class="mono">main()</span> 开头直接写 <span class="mono">PAD_PU_CTRL</span> 到 <span class="mono">OUTENCLR</span> 的那几行。</li>
+        <li>唤醒脚：在 <span class="mono">mouse_periph_wakeup_enable()</span> 里，用 <span class="mono">io_config_wakeup(true / false)</span> 替换逐个设置唤醒脚的代码。</li>
+        <li>生成的宏都带 <span class="mono">IO_</span> 前缀，和 <span class="mono">main.h</span> 里的旧宏不冲突，可以逐步替换。</li>
       </ol></div></div>
       <div class="panel"><div class="ph"><h2>生成规则</h2></div><div class="pb"><ol>
         <li>上下拉、驱动、输入缓冲、唤醒都按整寄存器写，每行后面注明涉及哪些脚。</li>
@@ -475,6 +476,10 @@ function defName(i){
   if (/^[0-9]/.test(n)) n = '_' + n;
   return n;
 }
+// 生成的宏统一加 IO_ 前缀，避免和工程里已有的宏重名
+// （main.h 里 USB_5V_PIN、CHR_OK_PIN 是读电平的宏，KEY_R0_PIN 等是引脚号，重名会改变含义）
+const withPrefix = n => n.startsWith('IO_') ? n : 'IO_' + n;
+function macroName(i){ return withPrefix(defName(i)); }
 function shortLabel(i){
   const p = state.pins[i];
   if (p.sig === 'RESET') return '';
@@ -574,7 +579,7 @@ function problems(){
   const ps = perState();
   // duplicate names
   const seen = {};
-  P.forEach((p, i) => { if (p.sig === 'RESET') return; const n = defName(i); (seen[n] = seen[n] || []).push(i); });
+  P.forEach((p, i) => { if (p.sig === 'RESET') return; const n = macroName(i); (seen[n] = seen[n] || []).push(i); });
   Object.keys(seen).forEach(n => { if (seen[n].length > 1) add('err', seen[n][0], '标签重名：' + seen[n].map(pinName).join('、') + ' 都会生成 ' + n + '_PIN'); });
   if (ps.usbBad) add('err', P[2].sig === 'USB_DM' ? 2 : 3, 'USB 只配了一根数据线，D- 和 D+ 必须同时选');
   if (ps.uartBad) add('err', P.findIndex(p => p.sig === 'UART_TX' || p.sig === 'UART_RX'), 'UART 的 TX 和 RX 必须来自同一组：P04/P06、P12/P11 或 P25/P22');
@@ -745,7 +750,7 @@ function renderInspector(){
     h += '<div class="alts">' + spec.map(k => '<button type="button" data-sig="' + k + '" aria-current="' + (k === p.sig) + '"><i class="dot" style="background:' + catColor(k) + '"></i>' + sigLabel(k, i) + '</button>').join('') + '</div>';
   }
   h += '<label class="field"><span>标签</span><input type="text" id="fLabel" value="' + esc(p.label) + '" placeholder="例如 KEY_R0" maxlength="32" spellcheck="false"' + (p.sig === 'RESET' ? ' disabled' : '') + '></label>';
-  h += '<div class="hint mono">' + (p.sig === 'RESET' ? '未使用的脚不生成宏' : '生成 ' + esc(defName(i)) + '_PIN') + '</div>';
+  h += '<div class="hint mono">' + (p.sig === 'RESET' ? '未使用的脚不生成宏' : '生成 ' + esc(macroName(i)) + '_PIN') + '</div>';
   h += '<div class="field"><span>上下拉</span>' + segHTML('pull', [['none','无'],['pu1','上拉 30k'],['pu2','上拉 150k'],['pd','下拉']], p.pull) + '</div>';
   h += '<div class="field"><span>初始电平' + (hasLevel(p.sig) ? (p.sig === 'KEY_COL' ? '（释放时）' : '') : '（只对输出有效）') + '</span>' + segHTML('level', [[0,'低'],[1,'高']], p.level, !hasLevel(p.sig)) + '</div>';
   h += '<div class="field"><span>深睡唤醒' + (isInput ? '' : '（只对输入有效）') + '</span>' + segHTML('wake', [['none','不唤醒'],['rise','上升沿'],['fall','下降沿']], p.wake, !isInput) + '</div>';
@@ -793,7 +798,7 @@ function genH(){
   L.push('');
   L.push('/* ---- 引脚序号 ---------------------------------------------------------- */');
   used.forEach(i => {
-    const n = defName(i) + '_PIN';
+    const n = macroName(i) + '_PIN';
     L.push('#define ' + n.padEnd(24) + ' ' + (i + 'u').padEnd(4) + '    /* ' + pinName(i) + (pinNo(i) ? '  第' + String(pinNo(i)).padStart(2) + '脚' : '  未引出') + '  ' + sigLabel(P[i].sig, i) + ' */');
   });
   const rowM = maskOf(p => p.sig === 'KEY_ROW'), colM = maskOf(p => p.sig === 'KEY_COL');
@@ -825,19 +830,19 @@ function genH(){
     L.push('/* ---- 读写宏 ------------------------------------------------------------ */');
   }
   outs.forEach(i => {
-    const n = defName(i);
+    const n = macroName(i);
     L.push('#define ' + (n + '_HIGH()').padEnd(24) + ' (OM_GPIO0->DATAOUTSET = (1u << ' + n + '_PIN))');
     L.push('#define ' + (n + '_LOW()').padEnd(24) + ' (OM_GPIO0->DATAOUTCLR = (1u << ' + n + '_PIN))');
     L.push('#define ' + (n + '_TOGGLE()').padEnd(24) + ' (OM_GPIO0->DATAOUT ^= (1u << ' + n + '_PIN))');
   });
   ins.forEach(i => {
-    const n = defName(i);
+    const n = macroName(i);
     L.push('#define ' + (n + '_READ()').padEnd(24) + ' ((OM_GPIO0->DATA >> ' + n + '_PIN) & 1u)');
   });
   if (cols.length){
     L.push('/* 矩阵列：扫描时拉低，扫完释放为输入（靠上拉回到高电平） */');
     cols.forEach(i => {
-      const n = defName(i);
+      const n = macroName(i);
       L.push('#define ' + (n + '_SCAN()').padEnd(24) + ' do { OM_GPIO0->DATAOUTCLR = (1u << ' + n + '_PIN); OM_GPIO0->OUTENSET = (1u << ' + n + '_PIN); } while (0)');
       L.push('#define ' + (n + '_RELEASE()').padEnd(24) + ' do { OM_GPIO0->DATAOUTSET = (1u << ' + n + '_PIN); OM_GPIO0->OUTENCLR = (1u << ' + n + '_PIN); } while (0)');
     });
@@ -1097,7 +1102,7 @@ document.addEventListener('input', e => {
     let n = e.target.value.trim().toUpperCase().replace(/[^A-Z0-9_]/g, '_');
     if (!n) n = state.pins[selected].sig + '_' + pinName(selected);
     if (/^[0-9]/.test(n)) n = '_' + n;
-    if (hint) hint.textContent = '生成 ' + n + '_PIN';
+    if (hint) hint.textContent = '生成 ' + withPrefix(n) + '_PIN';
   }
 });
 document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'fLabel') e.target.blur(); });
