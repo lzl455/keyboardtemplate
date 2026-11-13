@@ -246,7 +246,7 @@ tr.difrow{background:var(--err-bg)}
       <div class="panel"><div class="ph"><h2>生成规则</h2></div><div class="pb"><ol>
         <li>上下拉、驱动、输入缓冲、唤醒都按整寄存器写，每行后面注明涉及哪些脚。</li>
         <li>先写 <span class="mono">DATAOUT</span> 再开输出，上电不会出毛刺。非输出脚的 <span class="mono">DATAOUT</span> 位写 1。</li>
-        <li>上拉编码按 SDK 的 <span class="mono">pmu_reg.h</span>：01 = 150k，10 = 30k。</li>
+        <li>上拉编码按手册 V0.1：01 = 30k，10 = 150k。</li>
       </ol></div></div>
     </div>
   </section>
@@ -342,7 +342,7 @@ const LEDC_G = [{p:1,en:'PMU_LEDC_SEL_IO_01'},{p:5,en:'PMU_LEDC_SEL_IO_05'},{p:1
 const ENC_G = [{a:1,b:0,en:'ENCODER_PINMUX_SEL_IO_00_01'},{a:6,b:5,en:'ENCODER_PINMUX_SEL_IO_05_06'},{a:17,b:16,en:'ENCODER_PINMUX_SEL_IO_20_21'},{a:21,b:20,en:'ENCODER_PINMUX_SEL_IO_24_25'}];
 const LVD_G = [{p:19,en:'POF_LVD_PIN_P23'},{p:27,en:'POF_LVD_PIN_P33'}];
 
-const PULL = {none:'无', pu1:'上拉 150k', pu2:'上拉 30k', pd:'下拉'};
+const PULL = {none:'无', pu1:'上拉 30k', pu2:'上拉 150k', pd:'下拉'};   // pu1 = 编码 01，pu2 = 编码 10（手册 V0.1）
 const PU_CODE = {none:0, pu1:1, pu2:2, pd:0};
 const DRV = ['8mA','24mA','32mA','48mA'];
 const WAKE = {none:'不唤醒', rise:'上升沿', fall:'下降沿'};
@@ -680,7 +680,7 @@ function renderInspector(){
   }
   h += '<label class="field"><span>标签</span><input type="text" id="fLabel" value="' + esc(p.label) + '" placeholder="例如 KEY_R0" maxlength="32" spellcheck="false"' + (p.sig === 'RESET' ? ' disabled' : '') + '></label>';
   h += '<div class="hint mono">' + (p.sig === 'RESET' ? '未使用的脚不生成宏' : '生成 ' + esc(defName(i)) + '_PIN') + '</div>';
-  h += '<div class="field"><span>上下拉</span>' + segHTML('pull', [['none','无'],['pu1','上拉 150k'],['pu2','上拉 30k'],['pd','下拉']], p.pull) + '</div>';
+  h += '<div class="field"><span>上下拉</span>' + segHTML('pull', [['none','无'],['pu1','上拉 30k'],['pu2','上拉 150k'],['pd','下拉']], p.pull) + '</div>';
   h += '<div class="field"><span>初始电平' + (hasLevel(p.sig) ? (p.sig === 'KEY_COL' ? '（释放时）' : '') : '（只对输出有效）') + '</span>' + segHTML('level', [[0,'低'],[1,'高']], p.level, !hasLevel(p.sig)) + '</div>';
   h += '<div class="field"><span>深睡唤醒' + (isInput ? '' : '（只对输入有效）') + '</span>' + segHTML('wake', [['none','不唤醒'],['rise','上升沿'],['fall','下降沿']], p.wake, !isInput) + '</div>';
   h += '<label class="field"><span>驱动能力</span><select id="fDrv">' + DRV.map((d, k) => '<option value="' + k + '"' + (k === p.drv ? ' selected' : '') + '>' + d + (k === 1 ? '（复位默认）' : '') + '</option>').join('') + '</select></label>';
@@ -696,7 +696,7 @@ function renderInspector(){
     '<span>' + (i < 16 ? 'PAD_WK_CTRL' : 'PAD_WK_CTRL_1') + '</span><span class="k">[' + (sh + 1) + ':' + sh + ']</span><span>' + wk + '</span>' +
     '<span>GPIO OUTEN</span><span class="k">[' + i + ']</span><span>' + (isOut(p.sig) ? 1 : 0) + '</span>' +
     '</div></div>';
-  h += '<div class="hint">上拉编码按 SDK <span class="mono">pmu_reg.h</span>（01 = 150k，10 = 30k）。手册 V0.1 写的是 01 = 30k、10 = 150k，两边相反，阻值以实测为准。</div>';
+  h += '<div class="hint">上拉编码按手册 V0.1：01 = 30k，10 = 150k。SDK 注释另说 P04-P07 选 01 时是 2M，阻值以实测为准。</div>';
   h += '</div>';
   $('inspector').innerHTML = h;
 }
@@ -787,7 +787,7 @@ function genH(){
 function genC(){
   const P = state.pins, r = regValues(), all = range(0, N);
   const L = [];
-  const puDesc = idxs => { const g = groupBy(idxs, i => P[i].pull === 'pu1' ? '150k' : P[i].pull === 'pu2' ? '30k' : null); const k = Object.keys(g); return k.length ? k.map(x => x + '：' + g[x].join(' ')).join('；') : '无上拉'; };
+  const puDesc = idxs => { const g = groupBy(idxs, i => P[i].pull === 'pu1' ? '30k' : P[i].pull === 'pu2' ? '150k' : null); const k = Object.keys(g); return k.length ? k.map(x => x + '：' + g[x].join(' ')).join('；') : '无上拉'; };
   const drvDesc = idxs => {
     const bonded = idxs.filter(i => QFN[i]);
     const g = groupBy(bonded, i => DRV[P[i].drv]), keys = Object.keys(g);
@@ -808,7 +808,7 @@ function genC(){
   L.push('{');
   L.push('    OM_RCC->CLKGATE |= RCC_DEV_CLK_GATE_GPIO_CLK_GATE_MASK;');
   L.push('');
-  L.push('    /* 上拉，每脚 2 位：00 无，01 150k，10 30k（按 SDK pmu_reg.h） */');
+  L.push('    /* 上拉，每脚 2 位：00 无，01 30k，10 150k（按手册 V0.1） */');
   L.push('    OM_PMU->PAD_PU_CTRL    = ' + hex(r.pu0) + 'u;   /* ' + puDesc(range(0,16)) + ' */');
   L.push('    OM_PMU->PAD_PU_CTRL_1  = ' + hex(r.pu1) + 'u;   /* ' + puDesc(range(16,32)) + ' */');
   L.push('    /* 下拉，每脚 1 位 */');
@@ -880,8 +880,8 @@ function renderCode(){
 
 /* ------------------------------------------------------------------ register decoder */
 const REGS = [
-  {id:'pu0', name:'OM_PMU->PAD_PU_CTRL', w:2, from:0, to:16, dec:v => ['无','150k','30k','11(保留)'][v]},
-  {id:'pu1', name:'OM_PMU->PAD_PU_CTRL_1', w:2, from:16, to:32, dec:v => ['无','150k','30k','11(保留)'][v]},
+  {id:'pu0', name:'OM_PMU->PAD_PU_CTRL', w:2, from:0, to:16, dec:v => ['无','30k','150k','11(保留)'][v]},
+  {id:'pu1', name:'OM_PMU->PAD_PU_CTRL_1', w:2, from:16, to:32, dec:v => ['无','30k','150k','11(保留)'][v]},
   {id:'pd', name:'OM_PMU->PAD_PD_CTRL', w:1, from:0, to:32, dec:v => v ? '下拉' : '—'},
   {id:'buf', name:'OM_PMU->PAD_BUF_EN', w:1, from:0, to:32, dec:v => v ? '开' : '关'},
   {id:'drv0', name:'OM_PMU->PAD_DRV_CTRL', w:2, from:0, to:16, dec:v => DRV[v]},
