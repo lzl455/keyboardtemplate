@@ -12,9 +12,9 @@
 
 #include "main.h"
 #include "light_fx.h"
-#include "light_tables.h"
 
 #if (BOARD_LIGHT != LIGHT_NONE)
+#include "light_tables.h"          /* 灯效表定义在头文件里，必须放在开关里面，否则关灯后还会编进去 */
 
 //-----------------------------------------------------------------------------;
 // 常量定义区
