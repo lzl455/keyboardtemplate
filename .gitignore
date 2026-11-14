@@ -3,6 +3,10 @@ projects/mouse_demo/keil5/out/
 projects/mouse_demo/keil5/_build/
 projects/mouse_demo/keil5/SE73K.bin
 *.o
+# 例外：没有源码的预编译库，Keil 工程直接链接，必须提交
+!projects/mouse_demo/periph/userdefined_key.o
+!mode_24g/rf_protocol.o
+!mode_24g/rf_encryption.o
 *.d
 *.i
 *.lst
