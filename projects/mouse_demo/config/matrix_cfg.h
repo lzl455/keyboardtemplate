@@ -82,17 +82,38 @@
 #define KEYPOS_WASD_DOWN        MATRIX_SLOT(6, 4)     /* WASD 互换：↓，物理 C18 R4，现在是 ↓ */
 #define KEYPOS_WASD_RIGHT       MATRIX_SLOT(16, 7)    /* WASD 互换：→，物理 C16 R7、C18 R7，现在是 →（Fn 层：灯速度+） */
 
+/* ---- 休眠 ----
+ * 休眠时直连列全部拉低（MATRX_ALL_LOW），要关掉这些脚的上拉，不然每根列线都经上拉漏电。
+ * 下面是 PAD_PU_CTRL / PAD_PU_CTRL_1 里直连列对应的位（每脚 2 位），main.c 和 drv_pmu.c 用
+ * 「io_config.h 的上电值去掉这些位」算出休眠时的上拉，换了列线不用改代码。 */
+#define MATRIX_DIRECT_PU_MASK   0x00000000u   /* P00-P17 */
+#define MATRIX_DIRECT_PU_MASK_1 0x000FFF30u   /* P20-P37 */
+/* 深度休眠时输出低 / 高电平的脚：直连列、扩展列控制脚、LED 供电脚（关掉时的电平） */
+#define MATRIX_SLEEP_LOW_MASK   0x07FC0000u   /* P22 P23 P24 P25 P26 P27 P30 P31 P32 */
+#define MATRIX_SLEEP_HIGH_MASK  0x00000000u   /* 无 */
+
 /* ---- 指示灯 ----
  * LED_x_ON / OFF：点亮 / 熄灭；熄灭时放开引脚（和列线复用时扫描要用）
  * 和列线复用的灯靠 LED 供电脚开关：扫描前关掉供电，扫完再点灯 */
+#define MATRIX_LED_VDD_PIN          19      /* P23 */
+#define MATRIX_LED_VDD_ON           1       /* 供电脚输出这个电平时灯有电 */
 #define MATRIX_LED_VDD_EN           {OM_GPIO0->DATAOUTSET = (1u<<19); OM_GPIO0->OUTENSET = (1u<<19);}   /* P23 */
 #define MATRIX_LED_VDD_DIS          {OM_GPIO0->DATAOUTCLR = (1u<<19); OM_GPIO0->OUTENSET = (1u<<19);}
 #define MATRIX_LED_NUM_ON           {OM_GPIO0->DATAOUTCLR = (1u<<20); OM_GPIO0->OUTENSET = (1u<<20);}   /* P24，和列 C18 复用 */
 #define MATRIX_LED_NUM_OFF          {OM_GPIO0->DATAOUTSET = (1u<<20); OM_GPIO0->OUTENCLR = (1u<<20);}
+#define MATRIX_LED_NUM_PIN          20
+#define MATRIX_LED_NUM_LEVEL        0       /* 点亮电平 */
+#define MATRIX_LED_NUM_DEDICATED    0       /* 1 = 独立引脚（不和列线复用） */
 #define MATRIX_LED_CAPS_ON          {OM_GPIO0->DATAOUTCLR = (1u<<21); OM_GPIO0->OUTENSET = (1u<<21);}   /* P25，和列 C1 复用 */
 #define MATRIX_LED_CAPS_OFF         {OM_GPIO0->DATAOUTSET = (1u<<21); OM_GPIO0->OUTENCLR = (1u<<21);}
+#define MATRIX_LED_CAPS_PIN         21
+#define MATRIX_LED_CAPS_LEVEL       0       /* 点亮电平 */
+#define MATRIX_LED_CAPS_DEDICATED   0       /* 1 = 独立引脚（不和列线复用） */
 #define MATRIX_LED_LOW_ON           {OM_GPIO0->DATAOUTCLR = (1u<<22); OM_GPIO0->OUTENSET = (1u<<22);}   /* P26，和列 C2 复用 */
 #define MATRIX_LED_LOW_OFF          {OM_GPIO0->DATAOUTSET = (1u<<22); OM_GPIO0->OUTENCLR = (1u<<22);}
+#define MATRIX_LED_LOW_PIN          22
+#define MATRIX_LED_LOW_LEVEL        0       /* 点亮电平 */
+#define MATRIX_LED_LOW_DEDICATED    0       /* 1 = 独立引脚（不和列线复用） */
 
 /* ---- Mac 独立键表 ----
  * 0：Win / Mac 共用 matrix_key_tbl_win*.h，Mac 模式下 key_process() 把 Alt 和 Win 对调

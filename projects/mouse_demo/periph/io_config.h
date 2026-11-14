@@ -12,7 +12,7 @@
 #include "om_driver.h"
 
 /* ---- 引脚序号 ---------------------------------------------------------- */
-#define IO_ARGB_OFF_PIN          0u      /* P00  第31脚  GPIO 输出 */
+#define IO_ARGB_OFF_PIN          0u      /* P00  第31脚  灯电源开关 */
 #define IO_ARGB_OUT_PIN          1u      /* P01  第32脚  ARGB 数据 (LEDC) */
 #define IO_USB_DN_PIN            2u      /* P02  第35脚  USB D- */
 #define IO_USB_DP_PIN            3u      /* P03  第36脚  USB D+ */
@@ -44,6 +44,15 @@
 #define IO_WAKEUP_RISE_MASK      0x00000000u   /* 无 */
 #define IO_KEY_ROW_MASK          0x00000FF0u   /* P04 P05 P06 P07 P10 P11 P12 P13 */
 #define IO_KEY_COL_MASK          0x03F40000u   /* P22 P24 P25 P26 P27 P30 P31 */
+
+/* ---- 上电寄存器值（和 io_config_init() 写的一样）--------------------------
+ * 休眠代码在这个基础上改（main.c 的 mouse_periph_wakeup_enable()、drv_pmu.c 的深度休眠），
+ * periph/matrix_key.c 用它们在编译时检查矩阵的行列设置。 */
+#define IO_PULLUP_MASK           0x33F70FF0u   /* 有上拉：P04 P05 P06 P07 P10 P11 P12 P13 P20 P21 P22 P24 P25 P26 P27 P30 P31 P34 P35 */
+#define IO_PAD_PU_CTRL_VAL       0x00AAAA00u
+#define IO_PAD_PU_CTRL_1_VAL     0x0A0AAA25u
+#define IO_PAD_PD_CTRL_VAL       0x4000000Cu
+#define IO_DATAOUT_VAL           0xFFF7FFFEu
 
 /* 读矩阵行：按下为 1，返回值的 bit0 对应 P04 */
 #define IO_KEY_ROW_READ()        ((~OM_GPIO0->DATA & IO_KEY_ROW_MASK) >> 4)

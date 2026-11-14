@@ -129,14 +129,22 @@ void mouse_periph_wakeup_enable(uint8_t mask)
         MATRX_ALL_LOW;
         KEY_EX_LOW;
         delayus(2000);
-        OM_PMU->PAD_PU_CTRL_1 = 0x0A000005;
+        // 列线已经拉低，关掉列线的上拉（不然每根列线都经上拉漏电）：
+        // io_config.h 的上电值去掉 matrix_cfg.h 里直连列的上拉位，换了列线不用改这里
+#if (MATRIX_DIRECT_PU_MASK)
+        OM_PMU->PAD_PU_CTRL   = IO_PAD_PU_CTRL_VAL & ~MATRIX_DIRECT_PU_MASK;
+#endif
+        OM_PMU->PAD_PU_CTRL_1 = IO_PAD_PU_CTRL_1_VAL & ~MATRIX_DIRECT_PU_MASK_1;
 
         io_config_wakeup(true);         // 矩阵行下降沿唤醒
     }
     else {
         io_config_wakeup(false);
 
-        OM_PMU->PAD_PU_CTRL_1 = 0x0A0AAA25;
+#if (MATRIX_DIRECT_PU_MASK)
+        OM_PMU->PAD_PU_CTRL   = IO_PAD_PU_CTRL_VAL;      // 恢复上电时的上拉
+#endif
+        OM_PMU->PAD_PU_CTRL_1 = IO_PAD_PU_CTRL_1_VAL;
         MATRX_ALL_IN;
 
         led_status_hint();
