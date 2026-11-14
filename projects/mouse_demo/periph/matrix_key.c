@@ -23,8 +23,8 @@
 //----------------------------------------------------------------------------;
 // 矩阵表配置器（config/matrix_cfg.h）和引脚配置器（periph/io_config.h）各管一半：
 // 前者管扫描哪些脚、键在哪，后者管这些脚的上拉、唤醒、方向。两边对不上时编译报错，
-// 按提示在对应的配置器里改好、重新生成即可。最快的办法：两个配置器都点一次「同步到工程」，
-// 矩阵表配置器的「检查」会列出具体是哪个脚对不上。
+// 以引脚配置器为准：矩阵表配置器跟着它走。改了引脚配置后，两个配置器都点一次「同步到工程」
+// （先引脚配置器，再矩阵表配置器），matrix_cfg.h 就会跟上 io_config.h。
 // 报错信息用英文：Keil 的输出窗口按 GBK 显示，UTF-8 的中文会变成乱码。
 //
 #if !defined(IO_PULLUP_MASK) || !defined(IO_PAD_PU_CTRL_VAL)   /* 旧版引脚配置器生成的 io_config.h 没有这些宏 */
@@ -34,7 +34,7 @@
 #error "io_config.h has no matrix rows (IO_KEY_ROW_MASK is missing): no pin is set to Matrix row in the pin configurator. Check its configuration and regenerate."
 #endif
 #if (MATRIX_ROW_MASK != IO_KEY_ROW_MASK)
-#error "Matrix rows differ: MATRIX_ROW_MASK (matrix_cfg.h, keymap configurator) != IO_KEY_ROW_MASK (io_config.h, pin configurator). Set the same row pins in both tools and regenerate."
+#error "Matrix rows differ: MATRIX_ROW_MASK (matrix_cfg.h) != IO_KEY_ROW_MASK (io_config.h). The pin configurator is the reference: open the keymap configurator (it follows the pin configurator) and Sync to project to regenerate matrix_cfg.h."
 #endif
 #if ((MATRIX_ROW_MASK & IO_PULLUP_MASK) != MATRIX_ROW_MASK)
 #error "Matrix rows need pull-ups: enable pull-up on every row pin in the pin configurator and regenerate io_config.h."
@@ -43,7 +43,7 @@
 #error "Matrix rows must wake on falling edge (or keys cannot wake the board): set it in the pin configurator and regenerate io_config.h."
 #endif
 #if (MATRIX_DIRECT_MASK != IO_KEY_COL_MASK)
-#error "Matrix columns differ: MATRIX_DIRECT_MASK (matrix_cfg.h) != IO_KEY_COL_MASK (io_config.h). Set the same column pins in both tools and regenerate."
+#error "Matrix columns differ: MATRIX_DIRECT_MASK (matrix_cfg.h) != IO_KEY_COL_MASK (io_config.h). The pin configurator is the reference: open the keymap configurator (it follows the pin configurator) and Sync to project to regenerate matrix_cfg.h."
 #endif
 #if ((MATRIX_DIRECT_MASK & IO_PULLUP_MASK) != MATRIX_DIRECT_MASK)
 #error "Matrix columns need pull-ups (released columns rely on them): enable pull-up on every column pin in the pin configurator and regenerate io_config.h."
