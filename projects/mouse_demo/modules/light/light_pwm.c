@@ -2,10 +2,9 @@
  * @file    light_pwm.c
  * @brief   灯光输出后端：PWM 驱动普通 LED（BOARD_LIGHT == LIGHT_PWM）
  *
- * 灯效算法照常输出 BOARD_LED_NUM 颗灯的颜色，这里把它折算成 PWM 占空比：
- *   PWM_LIGHT_MONO  单色背光：每颗灯取 R/G/B 里最亮的一路，再对所有灯取平均
- *   PWM_LIGHT_RGB   一颗 RGB 灯：R、G、B 分别对所有灯取平均
- * 所以流水类灯效在 PWM 灯上表现为整体亮度变化，呼吸、常亮、颜色切换都能直接用。
+ * 灯效由 light_pwm_fx.c 单独计算（不用 ARGB 那套），每一路的点亮占空比在 light_pwm_duty[] 里：
+ *   PWM_LIGHT_MONO  单色背光，用 [0]
+ *   PWM_LIGHT_RGB   一颗 RGB 灯，[0] R、[1] G、[2] B
  */
 #include <stddef.h>                     /* NULL */
 #include "om_driver.h"
@@ -21,7 +20,6 @@
 #if (BOARD_PWM_LIGHT == PWM_LIGHT_RGB)
 #define PWM_CH_NUM          3
 static uint8_t pwm_ch[PWM_CH_NUM]    = {BOARD_PWM_CH_R, BOARD_PWM_CH_G, BOARD_PWM_CH_B};
-static uint8_t pwm_color[PWM_CH_NUM] = {iR_INDEX, iG_INDEX, iB_INDEX};
 #elif (BOARD_PWM_LIGHT == PWM_LIGHT_MONO)
 #define PWM_CH_NUM          1
 static uint8_t pwm_ch[PWM_CH_NUM]    = {BOARD_PWM_CH_MONO};
@@ -71,31 +69,11 @@ void light_port_off(void)
 
 __RAM_CODE void light_port_flush(void)
 {
-    static uint8_t frame[iLED_MAX * 3];
-    uint32_t sum;
-
     if (false == bargb_valid)
         return;
 
-    light_port_scale(frame);
-
-#if (BOARD_PWM_LIGHT == PWM_LIGHT_RGB)
-    for (uint8_t n = 0; n < PWM_CH_NUM; n++) {
-        sum = 0;
-        for (uint8_t led = 0; led < iLED_MAX; led++)
-            sum += frame[led * 3 + pwm_color[n]];
-        OM_PWM->PWMDC[pwm_ch[n]] = PWM_PERIOD - (sum / iLED_MAX);
-    }
-#else
-    sum = 0;
-    for (uint8_t led = 0; led < iLED_MAX; led++) {
-        uint8_t v = frame[led * 3];
-        if (frame[led * 3 + 1] > v) v = frame[led * 3 + 1];
-        if (frame[led * 3 + 2] > v) v = frame[led * 3 + 2];
-        sum += v;
-    }
-    OM_PWM->PWMDC[pwm_ch[0]] = PWM_PERIOD - (sum / iLED_MAX);
-#endif
+    for (uint8_t n = 0; n < PWM_CH_NUM; n++)
+        OM_PWM->PWMDC[pwm_ch[n]] = PWM_PERIOD - light_pwm_duty[n];   /* 寄存器写的是不点亮的宽度 */
 }
 
 #endif /* (BOARD_LIGHT == LIGHT_PWM) */

@@ -566,7 +566,7 @@ __attribute__((noinline)) void hid_process(void)
 // 灯光配置
                 if(out_report_data[8]&(1<<7))
                 {				                // 设置模式
-					if((iMODE_LED_MAX >= (out_report_data[8]&0x1F))
+					if((LIGHT_MODE_MAX >= (out_report_data[8]&0x1F))
 					    &&(led_cur_mode != (out_report_data[8]&0x1F)))
                     {
 					    led_cur_mode = (out_report_data[8]&0x1F);

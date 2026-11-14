@@ -13,8 +13,8 @@
 #include "main.h"
 #include "light_fx.h"
 
-#if (BOARD_LIGHT != LIGHT_NONE)
-#include "light_tables.h"          /* 灯效表定义在头文件里，必须放在开关里面，否则关灯后还会编进去 */
+#if (BOARD_LIGHT == LIGHT_ARGB)         /* 这套灯效只给 ARGB 炫彩灯；PWM 灯用 light_pwm_fx.c */
+#include "light_tables.h"          /* 灯效表定义在头文件里，必须放在开关里面，否则不用时还会编进去 */
 
 //-----------------------------------------------------------------------------;
 // 常量定义区

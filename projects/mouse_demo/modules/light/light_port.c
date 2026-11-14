@@ -11,7 +11,8 @@
 
 bool bargb_valid;
 
-/* 亮度档位换算，算法和原来 drv_ledc_write() 里的一致 */
+#if (BOARD_LIGHT == LIGHT_ARGB)
+/* 亮度档位换算，算法和原来 drv_ledc_write() 里的一致（PWM 灯的亮度在 light_pwm_fx.c 里算） */
 __RAM_CODE void light_port_scale(uint8_t *out)
 {
     memcpy(out, pwm_rgb_tbl, iLED_MAX * 3);
@@ -31,6 +32,7 @@ __RAM_CODE void light_port_scale(uint8_t *out)
             out[i] >>= 1;
     }
 }
+#endif
 
 void light_port_power(bool on)
 {

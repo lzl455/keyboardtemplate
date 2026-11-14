@@ -2,7 +2,8 @@
  * @file    light_port.h
  * @brief   灯光输出层
  *
- * 灯效算法（light.c / light_modes.c）只负责把每颗灯的颜色写进 pwm_rgb_tbl[BOARD_LED_NUM][3]，
+ * ARGB 的灯效算法（light.c / light_modes.c）把每颗灯的颜色写进 pwm_rgb_tbl[BOARD_LED_NUM][3]，
+ * PWM 灯的灯效（light_pwm_fx.c）直接算出每一路的占空比 light_pwm_duty[]，
  * 这一层负责把它送到实际的灯上。按 board_config.h 的 BOARD_LIGHT 编进其中一个后端：
  *   LIGHT_ARGB  light_argb.c   LEDC 外设驱动 WS2812 类灯珠
  *   LIGHT_PWM   light_pwm.c    PWM 驱动单色背光（1 路）或一颗 RGB 灯（3 路）
@@ -25,7 +26,7 @@ void light_port_off(void);      /* 关灯：停外设、关时钟、断电，清
 void light_port_flush(void);    /* 把当前一帧输出到灯上，按灯效节拍调用 */
 
 /* 后端共用 */
-void light_port_scale(uint8_t *out);    /* 按亮度档位把 pwm_rgb_tbl 换算成 0-255，out 长度 BOARD_LED_NUM*3 */
+void light_port_scale(uint8_t *out);    /* 只有 ARGB：按亮度档位把 pwm_rgb_tbl 换算成 0-255，out 长度 BOARD_LED_NUM*3 */
 void light_port_power(bool on);         /* 控制灯电源开关脚 BOARD_LIGHT_PWR_PIN */
 
 #endif /* __LIGHT_PORT_H */

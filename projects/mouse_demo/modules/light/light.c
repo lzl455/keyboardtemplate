@@ -8,6 +8,8 @@
  *   blank  关灯（同步中、休眠前）    logo_off()
  *   busy   灯亮着时不进 STOP1
  * 灯效设置（模式、亮度、速度、颜色、开关）由核心的 led.c 保存，这里只读。
+ * 灯效有两套：ARGB 炫彩灯用这里和 light_modes.c 的（按一排灯珠设计），
+ * PWM 灯（单色背光 / RGB 灯）用 light_pwm_fx.c 的（整体变化），由 BOARD_LIGHT 选。
  * 不需要灯时把 board_config.h / io_board.h 的 BOARD_LIGHT 设成 LIGHT_NONE，
  * 这个目录的文件可以从 Keil 工程里移除。
  */
@@ -24,8 +26,9 @@
 
 #if (BOARD_LIGHT != LIGHT_NONE)
 
+#if (BOARD_LIGHT == LIGHT_ARGB)
 //-----------------------------------------------------------------------------;
-// 灯效引擎的运行状态（原来在 led/led.c）
+// ARGB 灯效引擎的运行状态（原来在 led/led.c）
 //
 bool                            bback_led_status;
 uint8_t                         gtemp_i;
@@ -53,6 +56,7 @@ uint8_t                         pwm_duty_array_0[0x20];
 uint8_t                         pwm_duty_array_1[0x20];
 uint8_t                         pwm_duty_array_2[0x20];
 uint8_t                         pwm_duty_array_3[0x20];
+#endif
 
 extern bool                     b24g_nromal;
 
@@ -61,6 +65,7 @@ void logo_off(void)
     light_port_off();               // 具体怎么关灯由 light_argb.c / light_pwm.c 决定
 }
 
+#if (BOARD_LIGHT == LIGHT_ARGB)
 void clr_rgb(void)
 {
     memset(pwm_rgb_tbl, 0x00, iLED_MAX*3);
@@ -99,6 +104,7 @@ __RAM_CODE void rgb_w_max(void)
     else
         pwm_rgb_tbl[gtemp_j][iB_INDEX] = 0;
 }
+#endif
 
 /******************************************************************************
 * 函数名称: logo_process
@@ -138,7 +144,9 @@ void logo_process(void)
 
     if((false == bled_bright_en) || (iLOW_POWER>=bat_value))
     {
+#if (BOARD_LIGHT == LIGHT_ARGB)
         clr_rgb();
+#endif
         logo_off();
         return;
     }
@@ -146,6 +154,10 @@ void logo_process(void)
     if(false==bargb_valid)
         light_port_init();          // 具体怎么开灯由 light_argb.c / light_pwm.c 决定
 
+#if (BOARD_LIGHT == LIGHT_PWM)
+    light_pwm_fx_frame();           // PWM 灯用自己的一套灯效（light_pwm_fx.c）
+    (void)i;
+#else
     if(led_pre_mode != led_cur_mode)
     {
         led_pre_mode = led_cur_mode;
@@ -284,6 +296,7 @@ void logo_process(void)
                 break;
         }
     }
+#endif
 }
 
 //-----------------------------------------------------------------------------;
