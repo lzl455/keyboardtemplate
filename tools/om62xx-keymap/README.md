@@ -51,7 +51,9 @@
 
 1. `matrix_cfg.h` → `projects/mouse_demo/config/`；键表（两个，打开 Mac 独立键表时四个）→ `projects/mouse_demo/periph/`。用 UTF-8 保存，覆盖原文件，重新编译。Mac 独立键表的开关是 `matrix_cfg.h` 里的 `MATRIX_MAC_KEYMAP`，不用改别的代码。
 2. **键表存在 Flash 里**：固件只在 Flash 里没有键表时才从代码复制，所以烧录后要长按 **Fn + Esc** 2 秒恢复出厂，新键表才生效。
-3. 改了行列或指示灯的引脚，还要到引脚配置器（`tools/om6239-io-config`）里同步改上拉、唤醒和初始电平，重新生成 `io_config.c`。休眠时 `mouse_periph_wakeup_enable()` 里写的 `PAD_PU_CTRL_1` 也要跟着改。
+3. 改了行列或指示灯的引脚，还要到引脚配置器（`tools/om6239-io-config`）里同步改：行线设上拉和下降沿唤醒，列线设上拉，KEY_EX 和 LED 供电脚设成 GPIO 输出，重新生成 `io_config.h` / `io_config.c`。
+   - **两边对不上时编译会报错**（`periph/matrix_key.c` 开头的检查），错误信息会说是哪一项、该去哪个配置器改。
+   - 休眠和深度休眠时的引脚状态不用手改：`main.c` 的 `mouse_periph_wakeup_enable()` 和 `drv_pmu.c` 的深度休眠，都是用 `io_config.h` 的上电寄存器值，去掉 `matrix_cfg.h` 里直连列的上拉位（`MATRIX_DIRECT_PU_MASK`），再按 `MATRIX_SLEEP_LOW_MASK` / `MATRIX_SLEEP_HIGH_MASK` 把列线、KEY_EX、LED 供电设成固定电平。
 
 ## 固件怎么用这些配置
 

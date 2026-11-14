@@ -18,6 +18,40 @@
 #include "flash_process.h"
 #include "key_code_define.h"
 #include "periph.h"
+#include "io_config.h"
+
+//----------------------------------------------------------------------------;
+// 矩阵表配置器（config/matrix_cfg.h）和引脚配置器（periph/io_config.h）各管一半：
+// 前者管扫描哪些脚、键在哪，后者管这些脚的上拉、唤醒、方向。两边对不上时编译报错，
+// 按提示在对应的配置器里改好、重新生成即可。
+//
+#if (MATRIX_ROW_MASK != IO_KEY_ROW_MASK)
+#error "矩阵行线不一致：matrix_cfg.h 的 MATRIX_ROW_MASK 和 io_config.h 的 IO_KEY_ROW_MASK 不同，两个配置器里的行线要设成同样的脚，再重新生成"
+#endif
+#if ((MATRIX_ROW_MASK & IO_PULLUP_MASK) != MATRIX_ROW_MASK)
+#error "矩阵行线没有全部开上拉：在引脚配置器里给行线设上拉，重新生成 io_config.h"
+#endif
+#if ((MATRIX_ROW_MASK & IO_WAKEUP_FALL_MASK) != MATRIX_ROW_MASK)
+#error "矩阵行线没有全部设成下降沿唤醒，休眠后按键唤不醒：在引脚配置器里设好，重新生成 io_config.h"
+#endif
+#if (MATRIX_DIRECT_MASK != IO_KEY_COL_MASK)
+#error "矩阵直连列不一致：matrix_cfg.h 的 MATRIX_DIRECT_MASK 和 io_config.h 的 IO_KEY_COL_MASK 不同，两个配置器里的列线要设成同样的脚，再重新生成"
+#endif
+#if ((MATRIX_DIRECT_MASK & IO_PULLUP_MASK) != MATRIX_DIRECT_MASK)
+#error "矩阵直连列没有全部开上拉（扫完放开后靠上拉回到高电平）：在引脚配置器里给列线设上拉，重新生成 io_config.h"
+#endif
+#if (MATRIX_EX_NUM > 0)
+#if (MATRIX_EX_PIN < 0)
+#error "用了扩展列但没有扩展列控制脚（KEY_EX）：在矩阵表配置器的「矩阵硬件」页设好，重新生成 matrix_cfg.h"
+#elif ((IO_OUTPUT_MASK & (1u << MATRIX_EX_PIN)) == 0)
+#error "扩展列控制脚（KEY_EX）在引脚配置器里不是输出：设成 GPIO 输出，重新生成 io_config.h"
+#endif
+#endif
+#if (MATRIX_LED_VDD_PIN >= 0)
+#if ((IO_OUTPUT_MASK & (1u << MATRIX_LED_VDD_PIN)) == 0)
+#error "LED 供电脚在引脚配置器里不是输出：设成 GPIO 输出，重新生成 io_config.h"
+#endif
+#endif
 
 //----------------------------------------------------------------------------;
 //常量定义

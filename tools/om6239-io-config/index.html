@@ -958,6 +958,18 @@ function genH(){
   L.push('#define ' + 'IO_WAKEUP_RISE_MASK'.padEnd(24) + ' ' + hex(riseM) + 'u   /* ' + joinPins(pinList(riseM)) + ' */');
   if (rowM) L.push('#define ' + 'IO_KEY_ROW_MASK'.padEnd(24) + ' ' + hex(rowM) + 'u   /* ' + joinPins(pinList(rowM)) + ' */');
   if (colM) L.push('#define ' + 'IO_KEY_COL_MASK'.padEnd(24) + ' ' + hex(colM) + 'u   /* ' + joinPins(pinList(colM)) + ' */');
+  // 上电寄存器值：休眠代码（main.c 的 mouse_periph_wakeup_enable、drv_pmu.c 的深度休眠）在这个基础上去掉矩阵列线的上拉，
+  // 矩阵代码再用 IO_PULLUP_MASK 等在编译时检查行列设置（periph/matrix_key.c）
+  const puM = maskOf(p => PU_CODE[p.pull] > 0);
+  L.push('');
+  L.push('/* ---- 上电寄存器值（和 io_config_init() 写的一样）--------------------------');
+  L.push(' * 休眠代码在这个基础上改（main.c 的 mouse_periph_wakeup_enable()、drv_pmu.c 的深度休眠），');
+  L.push(' * periph/matrix_key.c 用它们在编译时检查矩阵的行列设置。 */');
+  L.push('#define ' + 'IO_PULLUP_MASK'.padEnd(24) + ' ' + hex(puM) + 'u   /* 有上拉：' + joinPins(pinList(puM)) + ' */');
+  L.push('#define ' + 'IO_PAD_PU_CTRL_VAL'.padEnd(24) + ' ' + hex(r.pu0) + 'u');
+  L.push('#define ' + 'IO_PAD_PU_CTRL_1_VAL'.padEnd(24) + ' ' + hex(r.pu1) + 'u');
+  L.push('#define ' + 'IO_PAD_PD_CTRL_VAL'.padEnd(24) + ' ' + hex(r.pd) + 'u');
+  L.push('#define ' + 'IO_DATAOUT_VAL'.padEnd(24) + ' ' + hex(r.dout) + 'u');
   if (rowM){
     const lo = Math.clz32(0) - 1 - Math.clz32(rowM & -rowM), hi = 31 - Math.clz32(rowM);
     const contiguous = ((rowM >>> lo) & ((rowM >>> lo) + 1)) === 0;

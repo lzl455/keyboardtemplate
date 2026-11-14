@@ -45,6 +45,7 @@
 #if (RTE_PMU)
 #include "om_driver.h"
 #include "main.h"
+#include "io_config.h"                      /* 深度休眠的引脚状态用上电寄存器值（引脚配置器生成） */
 
 /*******************************************************************************
  * PUBLIC FUNCTIONS
@@ -156,14 +157,18 @@ __RAM_CODE void drv_pmu_set_low_power_mode(pmu_lpm_t lpm)
                 lpms = OM_PMU->LPMS;
                 OM_PMU->LPMS = (lpms & (~PMU_LPMS_LOW_PWR_MODE_EN_MASK)) | (uint32_t)lpm;
                 if (lpm == PMU_LPM_DEEP_SLEEP) {
-                    OM_PMU->PAD_PU_CTRL = 0x00AAAA00;
-                    OM_PMU->PAD_PU_CTRL_1 = 0x02000005;
-                    OM_PMU->PAD_PD_CTRL = 0x6000000C;
+                    /* 深度休眠的引脚状态（板级）：在 io_config.h 的上电值基础上
+                     *   - 关掉直连列线的上拉，直连列、扩展列控制脚输出低，LED 供电关掉（matrix_cfg.h）
+                     *   - 模式开关脚改成下拉、关输入缓冲，USB D-/D+ 输出寄存器置低（main.h）
+                     * 换了矩阵或引脚后重新生成 matrix_cfg.h / io_config.h 即可，不用改这里 */
+                    OM_PMU->PAD_PU_CTRL = IO_PAD_PU_CTRL_VAL & ~MATRIX_DIRECT_PU_MASK;
+                    OM_PMU->PAD_PU_CTRL_1 = IO_PAD_PU_CTRL_1_VAL & ~MATRIX_DIRECT_PU_MASK_1 & ~(3u<<((MODE_PIN-16)*2));
+                    OM_PMU->PAD_PD_CTRL = IO_PAD_PD_CTRL_VAL | (1u<<MODE_PIN);
                     OM_PMU->PAD_BUF_EN &= ~(1<<MODE_PIN);
 
-                    OM_GPIO0->DATAOUT = 0xF803FFF2;
-                    OM_GPIO0->OUTENSET = 0x07FC0003;
-                    OM_GPIO0->OUTENCLR = ~0x07FC0003;
+                    OM_GPIO0->DATAOUT = (IO_DATAOUT_VAL & ~(MATRIX_SLEEP_LOW_MASK | (1u<<USB_DN_PIN) | (1u<<USB_DP_PIN))) | MATRIX_SLEEP_HIGH_MASK;
+                    OM_GPIO0->OUTENSET = IO_OUTPUT_MASK | MATRIX_SLEEP_LOW_MASK | MATRIX_SLEEP_HIGH_MASK;
+                    OM_GPIO0->OUTENCLR = ~(IO_OUTPUT_MASK | MATRIX_SLEEP_LOW_MASK | MATRIX_SLEEP_HIGH_MASK);
                     delayus(3000);
 
                     OM_RCC->CLKGATE = 0x0742;
