@@ -158,6 +158,8 @@ enum pwm_fx_mode
 };
 #define LIGHT_MODE_MIN          0
 #define LIGHT_MODE_MAX          (PWM_FX_NUM - 1)    // 「灯效切换」键在 MIN..MAX 之间循环
+// 快捷键尽量和 ARGB 同名：灯效 1 = 呼吸、灯效 4 = 常亮；PWM 灯的灯效 2 = 心跳、3 = 按键触发。
+// 矩阵表配置器按灯光类型显示这些名字，改这里要同步改它的 LIGHT_FX 表
 #if (BOARD_PWM_LIGHT == PWM_LIGHT_RGB)
 #define LIGHT_MODE_DEFAULT      PWM_FX_SPECTRUM     // 恢复出厂后的灯效
 #define LIGHT_SHORTCUT_0        PWM_FX_SPECTRUM     // Fn 快捷键 灯效 0..4
@@ -166,8 +168,8 @@ enum pwm_fx_mode
 #define LIGHT_SHORTCUT_3        PWM_FX_REACTIVE
 #else
 #define LIGHT_MODE_DEFAULT      PWM_FX_ON
-#define LIGHT_SHORTCUT_0        PWM_FX_BREATH
-#define LIGHT_SHORTCUT_1        PWM_FX_BLINK
+#define LIGHT_SHORTCUT_0        PWM_FX_BLINK        // 单色没有颜色渐变，这个位置放闪烁
+#define LIGHT_SHORTCUT_1        PWM_FX_BREATH
 #define LIGHT_SHORTCUT_2        PWM_FX_HEART
 #define LIGHT_SHORTCUT_3        PWM_FX_REACTIVE
 #endif

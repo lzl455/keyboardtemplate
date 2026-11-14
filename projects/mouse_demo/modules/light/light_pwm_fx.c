@@ -13,7 +13,14 @@
  *   PWM_FX_HEART         心跳            心跳（七彩 = 每跳一次换颜色）
  *   PWM_FX_REACTIVE      按键触发        按键触发（七彩 = 每按一次换颜色）
  *
- * 编号和 Fn 快捷键的对应见 led/led.h 的 LIGHT_MODE_* / LIGHT_SHORTCUT_*。
+ * Fn 快捷键（灯效 0-4）：                 单色背光        RGB 灯
+ *   灯效 0                                闪烁            色彩渐变
+ *   灯效 1                                呼吸            呼吸
+ *   灯效 2                                心跳            心跳
+ *   灯效 3                                按键触发        按键触发
+ *   灯效 4                                常亮            常亮（再按换颜色）
+ * 和 ARGB 同名的放在同一个位置（灯效 1 呼吸、灯效 4 常亮）。对应关系在 led/led.h 的
+ * LIGHT_SHORTCUT_*，矩阵表配置器按灯光类型显示这些名字（tools/om62xx-keymap 的 LIGHT_FX 表）。
  * 亮度（led_light_lev 3 档）、速度（led_speed_lev 3 档，0 最快）、颜色（led_rgb_index 0-7）
  * 沿用原来的按键和 Flash 保存。
  *

@@ -381,6 +381,24 @@ const SPECIAL = [
   ['iKEY_DEFAULT','恢复出厂','func',1],['iKEY_ALT_TAB','Alt+Tab','func',1],['iKEY_CMD_TAB','Cmd+Tab','func',1],
   ['iKEY_CTRL_SPACE','Ctrl+Space','func',1],['iKEY_CMD_SPACE','Cmd+Space','func',1],['iKEY_DESK_MAC','显示桌面(Mac)','func',1]];
 const SP = Object.fromEntries(SPECIAL.map(x => [x[0], {label:x[1], grp:x[2], impl:!!x[3]}]));
+/* 灯效快捷键（灯效 0-4）在不同的灯上对应的灯效，和固件 led/led.h 的 LIGHT_SHORTCUT_* 一致。
+ * 灯光类型从引脚配置器读（选了 ARGB 数据脚 / PWM 单色 / PWM RGB），没有引脚配置时按工程默认的 ARGB */
+const LIGHT_FX = {
+  argb:{name:'ARGB 炫彩灯',  fx:['流光','呼吸','七彩霓虹','霓虹渐变','常亮（再按换色）']},
+  rgb: {name:'PWM RGB 灯',   fx:['色彩渐变','呼吸','心跳','按键触发','常亮（再按换色）']},
+  mono:{name:'PWM 单色背光', fx:['闪烁','呼吸','心跳','按键触发','常亮']},
+  none:{name:'没有灯',       fx:['灯效 0','灯效 1','灯效 2','灯效 3','灯效 4']}};
+function lightType(){
+  const io = state && state.io; if (!io) return 'argb';
+  const sigs = new Set(io.pins.map(p => p.sig));
+  return sigs.has('LEDC_DO') ? 'argb' : (sigs.has('PWM_R') || sigs.has('PWM_G') || sigs.has('PWM_B')) ? 'rgb' : sigs.has('PWM_MONO') ? 'mono' : 'none';
+}
+// 特殊键的显示名：灯效快捷键按当前灯光类型显示实际的灯效
+function spLabel(code){
+  const m = /^iLED_MODE_([0-4])$/.exec(code);
+  if (m) return LIGHT_FX[lightType()].fx[+m[1]];
+  return SP[code] ? SP[code].label : code;
+}
 const SYS = [['iSYS_POWER','系统电源'],['iSYS_SLEEP','系统睡眠'],['iSYS_WAKEUP','系统唤醒']];
 const MODS = [['CTRL','Ctrl'],['SHIFT','Shift'],['ALT','Alt'],['GUI','Win']];
 // Win / Mac 共用键表时，固件在 Mac 模式下把 Alt 和 GUI 对调（左右各自对调）
@@ -528,7 +546,7 @@ function keyLabel(e){
     case 'std':  return (k.mods.length ? k.mods.map(modShort).join('+') + '+' : '') + stdShort(k.code);
     case 'mod':  return k.mods.map(modShort).join('+');
     case 'mmk':  return MMK_LABEL[k.name] || k.name;
-    case 'sp':   return SP[k.code] ? SP[k.code].label : k.code;
+    case 'sp':   return spLabel(k.code);
     case 'sys':  return (SYS.find(x => x[0] === k.code) || [0, k.code])[1];
     default:     return k.code;
   }
@@ -678,7 +696,8 @@ function problems(){
       const sp = SP[k.code];
       if (!sp) add('warn', lname + ' ' + slotName(s) + ' 的特殊键 ' + k.code + ' 不认识', {slot:s, layer:L});
       else {
-        if (!sp.impl) add('warn', lname + ' ' + slotName(s) + ' 的「' + sp.label + '」固件里没有实现，按了没反应', {slot:s, layer:L});
+        if (!sp.impl) add('warn', lname + ' ' + slotName(s) + ' 的「' + spLabel(k.code) + '」固件里没有实现，按了没反应', {slot:s, layer:L});
+        else if (k.code === 'iLED_RGB_SWTICH' && lightType() === 'mono' && src[s].length) add('info', lname + ' ' + slotName(s) + ' 的「切换颜色」：单色背光没有颜色，这个键没反应', {slot:s, layer:L});
         if (sp.grp === 'light' && src[s].length) lightUsed.add((isFnTbl(L) ? 'f' : 'b') + s);
       }
     }
@@ -693,7 +712,8 @@ function problems(){
     for (const L of ['win','fn']){ const T = tbl(L, os); for (let s = 0; s < SLOT_NUM; s++) if (src[s].length && osNote(S[T][s], os)) bad.push((L === 'fn' ? 'Fn+' : '') + slotName(s) + ' ' + keyLabelOS(S[T][s], os)); }
     if (bad.length) add('info', (os === 'mac' ? 'Mac' : 'Win') + ' 模式下效果不对的键：' + bad.join('、') + '（切到「' + (os === 'mac' ? (macSep() ? 'Mac 键表' : 'Mac 预览') : 'Win') + '」看原因）');
   }
-  if (lightUsed.size) add('info', '键表里用了 ' + lightUsed.size + ' 个灯光键，需要固件打开 BOARD_LIGHT_KEYS（有灯时默认打开）');
+  if (lightUsed.size) add('info', '键表里用了 ' + lightUsed.size + ' 个灯光键，按「' + LIGHT_FX[lightType()].name + '」显示灯效名' + (S.io ? '（灯光类型来自引脚配置器）' : '（没有引脚配置，按工程默认的 ARGB）') +
+    (lightType() === 'none' ? '；引脚配置器里没有选灯，这些键没反应' : '；需要固件打开 BOARD_LIGHT_KEYS（有灯时默认打开）'));
   const reach = (Ts, codes) => Ts.some(T => { for (let s = 0; s < SLOT_NUM; s++) if (src[s].length && codes.includes(keyCode(S[T][s]))) return true; return false; });
   for (const [B, F] of macSep() ? [['win','fn'],['mac','macfn']] : [['win','fn']]){
     const fnSlots = [];
@@ -825,7 +845,7 @@ function findCode(codes){
   return null;
 }
 function keyLabelOf(code){
-  if (SP[code]) return SP[code].label;
+  if (SP[code]) return spLabel(code);
   if (code.startsWith('iSTD_')) return stdShort(code);
   return code;
 }
@@ -914,7 +934,10 @@ function pickerOptions(cur){
   }
   h += '<optgroup label="多媒体">' + DATA.mmk.map(n => o('mmk:' + n, (MMK_LABEL[n] || n) + '  (' + n + ')')).join('') + '</optgroup>';
   for (const [g, t] of [['light','灯光（需要 BOARD_LIGHT_KEYS）'],['mode','模式 / 连接'],['func','功能']])
-    h += '<optgroup label="' + t + '">' + SPECIAL.filter(x => x[2] === g).map(x => o('sp:' + x[0], x[1] + (x[3] ? '' : '（未实现）'))).join('') + '</optgroup>';
+    h += '<optgroup label="' + t + (g === 'light' ? '，' + LIGHT_FX[lightType()].name : '') + '">' + SPECIAL.filter(x => x[2] === g).map(x => {
+      const m = /^iLED_MODE_([0-4])$/.exec(x[0]);
+      return o('sp:' + x[0], (m ? '灯效 ' + m[1] + '：' + spLabel(x[0]) : x[1]) + (x[3] ? '' : '（未实现）'));
+    }).join('') + '</optgroup>';
   h += '<optgroup label="系统">' + SYS.map(([c, t]) => o('sys:' + c, t)).join('') + '</optgroup>';
   if (selv === 'raw') h += o('raw', '无法识别：' + cur.join(', '));
   return h;
