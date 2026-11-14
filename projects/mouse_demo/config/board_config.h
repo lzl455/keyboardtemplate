@@ -28,7 +28,7 @@
 #define BOARD_LIGHT             LIGHT_ARGB
 #endif
 #if (BOARD_LIGHT != LIGHT_NONE) && (BOARD_LIGHT != LIGHT_ARGB) && (BOARD_LIGHT != LIGHT_PWM)
-#error "BOARD_LIGHT 只能是 LIGHT_NONE / LIGHT_ARGB / LIGHT_PWM（ARGB 和 PWM 二选一）"
+#error "BOARD_LIGHT must be LIGHT_NONE, LIGHT_ARGB or LIGHT_PWM (ARGB and PWM cannot both be used)"   /* 只能三选一 */
 #endif
 
 /* 灯效缓冲里的灯珠数量（灯效算法按这个数计算） */
