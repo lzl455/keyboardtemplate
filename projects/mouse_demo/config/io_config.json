@@ -1,0 +1,308 @@
+{
+ "tool": "om6239-io-config",
+ "version": 1,
+ "project": "SE73K 键盘",
+ "pkg": "qfn48",
+ "light": {
+  "activeHigh": true
+ },
+ "features": {
+  "fcc": true,
+  "lightKeys": true
+ },
+ "knob": {
+  "action": "volume",
+  "invert": false,
+  "debounce": 4
+ },
+ "pins": [
+  {
+   "sig": "LIGHT_PWR",
+   "label": "ARGB_OFF",
+   "pull": "none",
+   "drv": 1,
+   "level": 0,
+   "wake": "none",
+   "buf": true
+  },
+  {
+   "sig": "LEDC_DO",
+   "label": "ARGB_OUT",
+   "pull": "none",
+   "drv": 1,
+   "level": 1,
+   "wake": "none",
+   "buf": true
+  },
+  {
+   "sig": "USB_DM",
+   "label": "USB_DN",
+   "pull": "pd",
+   "drv": 2,
+   "level": 1,
+   "wake": "none",
+   "buf": true
+  },
+  {
+   "sig": "USB_DP",
+   "label": "USB_DP",
+   "pull": "pd",
+   "drv": 2,
+   "level": 1,
+   "wake": "none",
+   "buf": true
+  },
+  {
+   "sig": "KEY_ROW",
+   "label": "KEY_R0",
+   "pull": "pu2",
+   "drv": 1,
+   "level": 1,
+   "wake": "fall",
+   "buf": true
+  },
+  {
+   "sig": "KEY_ROW",
+   "label": "KEY_R1",
+   "pull": "pu2",
+   "drv": 1,
+   "level": 1,
+   "wake": "fall",
+   "buf": true
+  },
+  {
+   "sig": "KEY_ROW",
+   "label": "KEY_R2",
+   "pull": "pu2",
+   "drv": 1,
+   "level": 1,
+   "wake": "fall",
+   "buf": true
+  },
+  {
+   "sig": "KEY_ROW",
+   "label": "KEY_R3",
+   "pull": "pu2",
+   "drv": 1,
+   "level": 1,
+   "wake": "fall",
+   "buf": true
+  },
+  {
+   "sig": "KEY_ROW",
+   "label": "KEY_R4",
+   "pull": "pu2",
+   "drv": 1,
+   "level": 1,
+   "wake": "fall",
+   "buf": true
+  },
+  {
+   "sig": "KEY_ROW",
+   "label": "KEY_R5",
+   "pull": "pu2",
+   "drv": 1,
+   "level": 1,
+   "wake": "fall",
+   "buf": true
+  },
+  {
+   "sig": "KEY_ROW",
+   "label": "KEY_R6",
+   "pull": "pu2",
+   "drv": 1,
+   "level": 1,
+   "wake": "fall",
+   "buf": true
+  },
+  {
+   "sig": "KEY_ROW",
+   "label": "KEY_R7",
+   "pull": "pu2",
+   "drv": 1,
+   "level": 1,
+   "wake": "fall",
+   "buf": true
+  },
+  {
+   "sig": "FLASH_IO",
+   "label": "",
+   "pull": "none",
+   "drv": 1,
+   "level": 1,
+   "wake": "none",
+   "buf": true
+  },
+  {
+   "sig": "FLASH_IO",
+   "label": "",
+   "pull": "none",
+   "drv": 1,
+   "level": 1,
+   "wake": "none",
+   "buf": false
+  },
+  {
+   "sig": "FLASH_IO",
+   "label": "",
+   "pull": "none",
+   "drv": 1,
+   "level": 1,
+   "wake": "none",
+   "buf": true
+  },
+  {
+   "sig": "FLASH_IO",
+   "label": "",
+   "pull": "none",
+   "drv": 1,
+   "level": 1,
+   "wake": "none",
+   "buf": false
+  },
+  {
+   "sig": "RESET",
+   "label": "",
+   "pull": "pu1",
+   "drv": 1,
+   "level": 1,
+   "wake": "none",
+   "buf": true
+  },
+  {
+   "sig": "RESET",
+   "label": "",
+   "pull": "pu1",
+   "drv": 1,
+   "level": 1,
+   "wake": "none",
+   "buf": true
+  },
+  {
+   "sig": "KEY_COL",
+   "label": "KEY_C19",
+   "pull": "pu2",
+   "drv": 1,
+   "level": 1,
+   "wake": "none",
+   "buf": true
+  },
+  {
+   "sig": "GPIO_OUT",
+   "label": "LED_VDD",
+   "pull": "none",
+   "drv": 1,
+   "level": 0,
+   "wake": "none",
+   "buf": true
+  },
+  {
+   "sig": "KEY_COL",
+   "label": "KEY_C18",
+   "pull": "pu2",
+   "drv": 1,
+   "level": 1,
+   "wake": "none",
+   "buf": true
+  },
+  {
+   "sig": "KEY_COL",
+   "label": "KEY_C1",
+   "pull": "pu2",
+   "drv": 1,
+   "level": 1,
+   "wake": "none",
+   "buf": true
+  },
+  {
+   "sig": "KEY_COL",
+   "label": "KEY_C2",
+   "pull": "pu2",
+   "drv": 1,
+   "level": 1,
+   "wake": "none",
+   "buf": true
+  },
+  {
+   "sig": "KEY_COL",
+   "label": "KEY_C3",
+   "pull": "pu2",
+   "drv": 1,
+   "level": 1,
+   "wake": "none",
+   "buf": true
+  },
+  {
+   "sig": "KEY_COL",
+   "label": "KEY_C4",
+   "pull": "pu2",
+   "drv": 1,
+   "level": 1,
+   "wake": "none",
+   "buf": true
+  },
+  {
+   "sig": "KEY_COL",
+   "label": "KEY_C5",
+   "pull": "pu2",
+   "drv": 1,
+   "level": 1,
+   "wake": "none",
+   "buf": true
+  },
+  {
+   "sig": "GPIO_OUT",
+   "label": "KEY_EX",
+   "pull": "none",
+   "drv": 1,
+   "level": 1,
+   "wake": "none",
+   "buf": true
+  },
+  {
+   "sig": "LVD_IN",
+   "label": "BAT_LVD",
+   "pull": "none",
+   "drv": 1,
+   "level": 1,
+   "wake": "none",
+   "buf": false
+  },
+  {
+   "sig": "GPIO_IN",
+   "label": "CHR_OK",
+   "pull": "pu2",
+   "drv": 1,
+   "level": 1,
+   "wake": "none",
+   "buf": true
+  },
+  {
+   "sig": "GPIO_IN",
+   "label": "MODE_SW",
+   "pull": "pu2",
+   "drv": 1,
+   "level": 1,
+   "wake": "none",
+   "buf": true
+  },
+  {
+   "sig": "GPIO_IN",
+   "label": "USB_5V",
+   "pull": "pd",
+   "drv": 1,
+   "level": 1,
+   "wake": "none",
+   "buf": true
+  },
+  {
+   "sig": "BOOT",
+   "label": "",
+   "pull": "none",
+   "drv": 1,
+   "level": 1,
+   "wake": "none",
+   "buf": true
+  }
+ ]
+}

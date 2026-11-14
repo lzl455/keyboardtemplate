@@ -188,6 +188,7 @@ tr.difrow{background:var(--err-bg)}
       <button class="btn" id="btnBlank">清空</button>
       <button class="btn" id="btnExport">导出配置</button>
       <button class="btn" id="btnImport">导入配置</button>
+      <button class="btn primary" id="btnSync" title="把生成的 io_config.h / io_config.c / io_board.h 直接写进工程（Chrome / Edge）">同步到工程</button>
     </div>
   </header>
 
@@ -1382,8 +1383,9 @@ function openDlg(title, hint, text, buttons){
 const closeDlg = () => { $('dlg').hidden = true; };
 $('dlg').addEventListener('click', e => { if (e.target.id === 'dlg') closeDlg(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('dlg').hidden) closeDlg(); });
+const exportJson = () => JSON.stringify({tool:'om6239-io-config', version:1, project:state.project, pkg:state.pkg, light:state.light, features:state.features, knob:state.knob, pins:state.pins}, null, 1);
 $('btnExport').addEventListener('click', () => {
-  const txt = JSON.stringify({tool:'om6239-io-config', version:1, project:state.project, pkg:state.pkg, light:state.light, features:state.features, knob:state.knob, pins:state.pins}, null, 1);
+  const txt = exportJson();
   openDlg('导出配置', '复制下面的 JSON 存成文件或发给同事，下次用「导入配置」粘贴回来。', txt,
     [{t:'关闭', fn:closeDlg}, {t:'复制', primary:true, fn:() => copyText(txt, '配置 JSON 已复制')}]);
 });
@@ -1395,6 +1397,163 @@ $('btnImport').addEventListener('click', () => {
       closeDlg(); commit(() => { state = o; }, '已导入：' + o.project);
     }}]);
 });
+
+/* ==== 同步到工程（引脚配置器和矩阵表配置器共用同一段代码，改一处要同步另一处） ====
+ * 用 Chrome / Edge 的文件系统访问功能，把生成的文件直接写进工程：
+ *   - 第一次点「同步到工程」时选工程文件夹（仓库根目录，或者 projects/mouse_demo），浏览器记住它，
+ *     以后再点只会问一次是否允许写入
+ *   - 写入前和工程里现有的文件逐个对比，列出新建 / 有改动 / 不变，确认后只写有改动的
+ *   - 配置本身也存进工程（config/*.json），可以跟代码一起提交，换电脑时「从工程载入配置」
+ * Firefox / Safari 和 claude.ai 上的在线版不支持，只能在「生成代码」页复制或下载。 */
+const ProjectSync = (() => {
+  const DB = 'om62xx-project-sync', STORE = 'h', KEY = 'dir';
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  function idb(mode, fn){
+    return new Promise((res, rej) => {
+      const r = indexedDB.open(DB, 1);
+      r.onupgradeneeded = () => r.result.createObjectStore(STORE);
+      r.onerror = () => rej(r.error);
+      r.onsuccess = () => { const tx = r.result.transaction(STORE, mode), q = fn(tx.objectStore(STORE)); tx.oncomplete = () => res(q && q.result); tx.onerror = () => rej(tx.error); };
+    });
+  }
+  const supported = () => typeof window.showDirectoryPicker === 'function' && window.isSecureContext !== false;
+  async function saved(){ try { return await idb('readonly', s => s.get(KEY)); } catch(e){ return null; } }
+  async function remember(h){ try { await idb('readwrite', s => s.put(h, KEY)); } catch(e){} }
+  async function sub(dir, name){ try { return await dir.getDirectoryHandle(name); } catch(e){ return null; } }
+  async function permitted(h){
+    try { const o = {mode:'readwrite'}; if ((await h.queryPermission(o)) === 'granted') return true; return (await h.requestPermission(o)) === 'granted'; }
+    catch(e){ return false; }
+  }
+  // 选的可能是仓库根目录，也可能直接是 projects/mouse_demo
+  async function projectBase(root){
+    const p = await sub(root, 'projects'), m = p && await sub(p, 'mouse_demo');
+    const base = m || root;
+    return (await sub(base, 'config')) && (await sub(base, 'periph')) ? {base, label: root.name + (m ? '/projects/mouse_demo' : '')} : null;
+  }
+  async function open(forcePick){
+    let root = forcePick ? null : await saved();
+    if (root && !(await permitted(root))) root = null;
+    if (!root) root = await window.showDirectoryPicker({id:'om62xx-project', mode:'readwrite'});
+    const b = await projectBase(root);
+    if (!b) throw new Error('「' + root.name + '」不是工程目录：请选仓库根目录（里面有 projects/mouse_demo），或者 projects/mouse_demo 本身');
+    await remember(root);
+    return b;
+  }
+  async function fileAt(base, path, create){
+    const parts = path.split('/'); let d = base;
+    for (const p of parts.slice(0, -1)) d = await d.getDirectoryHandle(p, {create});
+    return d.getFileHandle(parts[parts.length - 1], {create});
+  }
+  async function read(base, path){ try { return await (await (await fileAt(base, path, false)).getFile()).text(); } catch(e){ return null; } }
+  async function write(base, path, text){ const w = await (await fileAt(base, path, true)).createWritable(); await w.write(text); await w.close(); }
+  // 统一格式：去掉行尾空格，结尾一个换行；工程里原来是 CRLF 的，写回去也用 CRLF
+  const norm = t => t.replace(/\r\n/g, '\n').split('\n').map(l => l.replace(/\s+$/, '')).join('\n').replace(/\n*$/, '\n');
+
+  // ---- 对话框（样式用两个配置器共有的颜色变量）
+  let dlg = null;
+  function ensureDlg(){
+    if (dlg) return dlg;
+    const st = document.createElement('style');
+    st.textContent = '.psync-ov{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}' +
+      '.psync{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:10px;width:min(680px,100%);max-height:calc(100vh - 32px);display:flex;flex-direction:column}' +
+      '.psync h2{font-size:14px;margin:0;padding:10px 14px;border-bottom:1px solid var(--line)}' +
+      '.psync .bd{padding:10px 14px;overflow:auto;display:flex;flex-direction:column;gap:10px;font-size:13px}' +
+      '.psync table{border-collapse:collapse;width:100%;font-size:12.5px}.psync td,.psync th{padding:5px 8px;border-bottom:1px solid var(--line);text-align:left}' +
+      '.psync th{font-size:11.5px;color:var(--muted);font-weight:600}.psync td.p{font-family:var(--mono);word-break:break-all}' +
+      '.psync .st{font-size:11.5px;font-weight:600;border-radius:9px;padding:1px 8px;white-space:nowrap}' +
+      '.psync .st.new{background:var(--info-bg);color:var(--info)}.psync .st.changed{background:var(--warn-bg);color:var(--warn)}.psync .st.same{color:var(--muted)}' +
+      '.psync .msg{border-radius:6px;padding:6px 10px;border-left:3px solid}.psync .msg.err{background:var(--err-bg);border-color:var(--err)}' +
+      '.psync .msg.info{background:var(--info-bg);border-color:var(--info)}' +
+      '.psync .ft{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;padding:10px 14px;border-top:1px solid var(--line)}.psync .ft .sp{flex:1}';
+    document.head.appendChild(st);
+    dlg = document.createElement('div'); dlg.className = 'psync-ov'; dlg.hidden = true;
+    dlg.innerHTML = '<div class="psync" role="dialog" aria-modal="true" aria-labelledby="psyncT"><h2 id="psyncT">同步到工程</h2><div class="bd"></div><div class="ft"></div></div>';
+    dlg.addEventListener('click', e => { if (e.target === dlg) close(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && !dlg.hidden) close(); });
+    document.body.appendChild(dlg);
+    return dlg;
+  }
+  const close = () => { if (dlg) dlg.hidden = true; };
+  function show(body, buttons){
+    const d = ensureDlg();
+    d.querySelector('.bd').innerHTML = body;
+    const ft = d.querySelector('.ft'); ft.innerHTML = '';
+    buttons.forEach(b => {
+      if (b.spacer){ const s = document.createElement('span'); s.className = 'sp'; ft.appendChild(s); return; }
+      const el = document.createElement('button'); el.className = 'btn' + (b.primary ? ' primary' : ''); el.textContent = b.t; el.disabled = !!b.disabled;
+      el.addEventListener('click', b.fn); ft.appendChild(el);
+    });
+    d.hidden = false;
+    const p = ft.querySelector('.btn.primary:not(:disabled)') || ft.querySelector('.btn'); if (p) p.focus();
+  }
+  const STATUS = {new:'新建', changed:'有改动', same:'不变'};
+
+  /* opt：
+   *   files()        -> [{path, text, note}]  要写的文件（路径相对 projects/mouse_demo）
+   *   configPath     配置 JSON 在工程里的位置；configText() 生成它，loadConfig(text) 用它替换当前配置（返回提示）
+   *   before(io)     打开工程后、对比前调用（矩阵表配置器在这里读 io_config.json）
+   *   problems()     -> {err, warn}
+   *   after(written) 写完后的提示文字
+   *   toast(msg) */
+  async function run(opt, forcePick){
+    if (!supported()){
+      show('<div class="msg info">这个浏览器不能直接写本地文件。请用 <b>Chrome 或 Edge</b> 打开工程里的配置器（<code>tools/…/index.html</code>）；claude.ai 上的在线版、Firefox、Safari 都不支持。也可以在「生成代码」页复制或下载后手动放进工程。</div>', [{t:'关闭', primary:true, fn:close}]);
+      return;
+    }
+    let b;
+    try { b = await open(forcePick); }
+    catch(e){ if (e && e.name === 'AbortError') return; show('<div class="msg err">' + esc(e.message || e) + '</div>', [{t:'重新选择', fn:() => run(opt, true)}, {t:'关闭', primary:true, fn:close}]); return; }
+    const io = {read: p => read(b.base, p)};
+    if (opt.before) await opt.before(io);
+    const list = opt.files().concat(opt.configPath ? [{path:opt.configPath, text:opt.configText(), note:'配置（可以提交，换电脑时从工程载入）'}] : []);
+    const rows = [];
+    for (const f of list){
+      const t = norm(f.text), old = await read(b.base, f.path);
+      rows.push({path:f.path, note:f.note || '', crlf: old != null && old.includes('\r\n'), text:t, status: old == null ? 'new' : (norm(old) === t ? 'same' : 'changed')});
+    }
+    const todo = rows.filter(r => r.status !== 'same');
+    const pr = opt.problems ? opt.problems() : {err:0, warn:0};
+    const projCfg = opt.configPath ? await read(b.base, opt.configPath) : null;
+    const cfgDiffers = projCfg != null && norm(projCfg) !== norm(opt.configText());
+    const body = '<div>工程目录：<b class="mono">' + esc(b.label) + '</b></div>' +
+      (pr.err ? '<div class="msg err">「检查」里还有 <b>' + pr.err + '</b> 个错误，写进工程后可能编译不过或工作不正常，建议先改好。</div>' : '') +
+      '<table><tr><th>文件（projects/mouse_demo/ 下）</th><th>状态</th></tr>' +
+      rows.map(r => '<tr><td class="p">' + esc(r.path) + (r.note ? '<div class="small muted" style="font-family:var(--sans)">' + esc(r.note) + '</div>' : '') + '</td><td><span class="st ' + r.status + '">' + STATUS[r.status] + '</span></td></tr>').join('') + '</table>' +
+      (todo.length ? '' : '<div class="msg info">工程里的文件已经是最新的，不用写。</div>') +
+      (cfgDiffers ? '<div class="msg info">工程里的 <code>' + esc(opt.configPath) + '</code> 和当前配置不一样（可能是别人改过，或者你在另一台电脑上改过）。要用工程里的，点「从工程载入配置」；要用当前的，直接写入。</div>' : '');
+    const buttons = [];
+    if (cfgDiffers) buttons.push({t:'从工程载入配置', fn:() => { try { const m = opt.loadConfig(projCfg); close(); opt.toast(m || '已从工程载入配置'); } catch(e){ show('<div class="msg err">工程里的配置读不懂：' + esc(e.message || e) + '</div>', [{t:'关闭', primary:true, fn:close}]); } }});
+    buttons.push({t:'换文件夹', fn:() => run(opt, true)}, {spacer:true}, {t:'取消', fn:close});
+    buttons.push({t: todo.length ? '写入 ' + todo.length + ' 个文件' : '已是最新', primary:true, disabled:!todo.length, fn: async () => {
+      try {
+        for (const r of todo) await write(b.base, r.path, r.crlf ? r.text.replace(/\n/g, '\r\n') : r.text);
+        close();
+        opt.toast('已写入 ' + todo.length + ' 个文件' + (opt.after ? '。' + opt.after(todo.map(r => r.path)) : ''));
+      } catch(e){ show('<div class="msg err">写入失败：' + esc(e.message || e) + '</div>', [{t:'关闭', primary:true, fn:close}]); }
+    }});
+    show(body, buttons);
+  }
+  return {run, supported, norm};
+})();
+/* ==== 同步到工程 结束 ==== */
+
+$('btnSync').addEventListener('click', () => ProjectSync.run({
+  files: () => [
+    {path:'periph/io_config.h', text:genH(), note:'引脚定义、分组掩码、上电寄存器值'},
+    {path:'periph/io_config.c', text:genC(), note:'io_config_init()、io_config_wakeup()'},
+    {path:'config/io_board.h', text:genBoard(), note:'灯光、编码器、固件功能开关（board_config.h 会包含）'}],
+  configPath: 'config/io_config.json',          // 矩阵表配置器同步时会读它，检查两边是否一致
+  configText: exportJson,
+  loadConfig: t => {
+    const o = validateState(JSON.parse(t));
+    if (!o) throw new Error('需要包含 32 个引脚的 pins 数组');
+    commit(() => { state = o; }, '已从工程载入：' + o.project);
+    return '已从工程载入：' + o.project;
+  },
+  problems: () => { const pr = problems(); return {err: pr.filter(x => x.lvl === 'err').length, warn: pr.filter(x => x.lvl === 'warn').length}; },
+  after: () => '在 Keil 里重新编译即可；改了矩阵行列的话，矩阵表配置器也要同步一次',
+  toast
+}));
 
 /* boot */
 renderSamples();
