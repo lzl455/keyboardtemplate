@@ -96,14 +96,24 @@
  * LED_x_ON / OFF：点亮 / 熄灭；熄灭时放开引脚（和列线复用时扫描要用）
  * 和列线复用的灯靠 LED 供电脚开关：扫描前关掉供电，扫完再点灯 */
 #define MATRIX_LED_VDD_PIN          19      /* P23 */
+#define MATRIX_LED_VDD_ON           1       /* 供电脚输出这个电平时灯有电 */
 #define MATRIX_LED_VDD_EN           {OM_GPIO0->DATAOUTSET = (1u<<19); OM_GPIO0->OUTENSET = (1u<<19);}   /* P23 */
 #define MATRIX_LED_VDD_DIS          {OM_GPIO0->DATAOUTCLR = (1u<<19); OM_GPIO0->OUTENSET = (1u<<19);}
 #define MATRIX_LED_NUM_ON           {OM_GPIO0->DATAOUTCLR = (1u<<20); OM_GPIO0->OUTENSET = (1u<<20);}   /* P24，和列 C18 复用 */
 #define MATRIX_LED_NUM_OFF          {OM_GPIO0->DATAOUTSET = (1u<<20); OM_GPIO0->OUTENCLR = (1u<<20);}
+#define MATRIX_LED_NUM_PIN          20
+#define MATRIX_LED_NUM_LEVEL        0       /* 点亮电平 */
+#define MATRIX_LED_NUM_DEDICATED    0       /* 1 = 独立引脚（不和列线复用） */
 #define MATRIX_LED_CAPS_ON          {OM_GPIO0->DATAOUTCLR = (1u<<21); OM_GPIO0->OUTENSET = (1u<<21);}   /* P25，和列 C1 复用 */
 #define MATRIX_LED_CAPS_OFF         {OM_GPIO0->DATAOUTSET = (1u<<21); OM_GPIO0->OUTENCLR = (1u<<21);}
+#define MATRIX_LED_CAPS_PIN         21
+#define MATRIX_LED_CAPS_LEVEL       0       /* 点亮电平 */
+#define MATRIX_LED_CAPS_DEDICATED   0       /* 1 = 独立引脚（不和列线复用） */
 #define MATRIX_LED_LOW_ON           {OM_GPIO0->DATAOUTCLR = (1u<<22); OM_GPIO0->OUTENSET = (1u<<22);}   /* P26，和列 C2 复用 */
 #define MATRIX_LED_LOW_OFF          {OM_GPIO0->DATAOUTSET = (1u<<22); OM_GPIO0->OUTENCLR = (1u<<22);}
+#define MATRIX_LED_LOW_PIN          22
+#define MATRIX_LED_LOW_LEVEL        0       /* 点亮电平 */
+#define MATRIX_LED_LOW_DEDICATED    0       /* 1 = 独立引脚（不和列线复用） */
 
 /* ---- Mac 独立键表 ----
  * 0：Win / Mac 共用 matrix_key_tbl_win*.h，Mac 模式下 key_process() 把 Alt 和 Win 对调

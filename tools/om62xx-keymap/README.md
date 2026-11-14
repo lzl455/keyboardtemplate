@@ -32,6 +32,7 @@
   - WASD 互换（`std_decode_callback()`）：W A S D 和 ↑ ← ↓ →。
 
   每个都可以「点选」到任意键，或者按键码自动定位（比如 Fn 自动找到键表里 Fn 所在的位置）。
+- **导入引脚配置**（「矩阵硬件」页）：把引脚配置器「导出配置」得到的 JSON 导入进来（顶部「导入配置」里直接粘也认），就按引脚配置器的实际配置检查，下拉框里也显示每个脚的实际用途；没导入时只按 SE73K 默认用途提示。导入的配置只用来检查，不会改这边的设置；改了引脚配置要重新导入。
 - **检查**：
   - 引脚冲突、扩展步重复、行列没接脚导致扫不到的键。
   - 指示灯和列线复用的电平问题。
@@ -51,8 +52,18 @@
 
 1. `matrix_cfg.h` → `projects/mouse_demo/config/`；键表（两个，打开 Mac 独立键表时四个）→ `projects/mouse_demo/periph/`。用 UTF-8 保存，覆盖原文件，重新编译。Mac 独立键表的开关是 `matrix_cfg.h` 里的 `MATRIX_MAC_KEYMAP`，不用改别的代码。
 2. **键表存在 Flash 里**：固件只在 Flash 里没有键表时才从代码复制，所以烧录后要长按 **Fn + Esc** 2 秒恢复出厂，新键表才生效。
-3. 改了行列或指示灯的引脚，还要到引脚配置器（`tools/om6239-io-config`）里同步改：行线设上拉和下降沿唤醒，列线设上拉，KEY_EX 和 LED 供电脚设成 GPIO 输出，重新生成 `io_config.h` / `io_config.c`。
-   - **两边对不上时编译会报错**（`periph/matrix_key.c` 开头的检查），错误信息会说是哪一项、该去哪个配置器改。
+3. 改了行列或指示灯的引脚，还要到引脚配置器（`tools/om6239-io-config`）里同步改，重新生成 `io_config.h` / `io_config.c`。两边靠下面这些设置认出同一个脚：
+
+   | 矩阵这边 | 引脚配置器里要设成 |
+   |---|---|
+   | 行线 | 「矩阵行」，开上拉，下降沿唤醒 |
+   | 直连列（含和列线复用的指示灯） | 「矩阵列」，开上拉 |
+   | 扩展列控制脚 | 「GPIO 输出」，标签 `KEY_EX` |
+   | LED 供电脚 | 「GPIO 输出」，标签 `LED_VDD`，初始电平 = 关电 |
+   | 独立接线的指示灯 | 「GPIO 输出」，标签 `LED_NUM` / `LED_CAPS` / `LED_LOW`，初始电平 = 灭灯 |
+
+   - 在这边导入引脚配置的 JSON，「检查」里会直接列出对不上的地方。
+   - **两边对不上时编译也会报错**（`periph/matrix_key.c` 开头的检查），错误信息会说是哪一项、该去哪个配置器改。
    - 休眠和深度休眠时的引脚状态不用手改：`main.c` 的 `mouse_periph_wakeup_enable()` 和 `drv_pmu.c` 的深度休眠，都是用 `io_config.h` 的上电寄存器值，去掉 `matrix_cfg.h` 里直连列的上拉位（`MATRIX_DIRECT_PU_MASK`），再按 `MATRIX_SLEEP_LOW_MASK` / `MATRIX_SLEEP_HIGH_MASK` 把列线、KEY_EX、LED 供电设成固定电平。
 
 ## 固件怎么用这些配置

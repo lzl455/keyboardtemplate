@@ -45,11 +45,39 @@
 #error "用了扩展列但没有扩展列控制脚（KEY_EX）：在矩阵表配置器的「矩阵硬件」页设好，重新生成 matrix_cfg.h"
 #elif ((IO_OUTPUT_MASK & (1u << MATRIX_EX_PIN)) == 0)
 #error "扩展列控制脚（KEY_EX）在引脚配置器里不是输出：设成 GPIO 输出，重新生成 io_config.h"
+#elif !defined(IO_KEY_EX_PIN) || (IO_KEY_EX_PIN != MATRIX_EX_PIN)
+#error "扩展列控制脚（KEY_EX）两边不是同一个脚：引脚配置器里要把 MATRIX_EX_PIN 这个脚设成 GPIO 输出、标签 KEY_EX，重新生成 io_config.h"
 #endif
 #endif
 #if (MATRIX_LED_VDD_PIN >= 0)
 #if ((IO_OUTPUT_MASK & (1u << MATRIX_LED_VDD_PIN)) == 0)
 #error "LED 供电脚在引脚配置器里不是输出：设成 GPIO 输出，重新生成 io_config.h"
+#elif !defined(IO_LED_VDD_PIN) || (IO_LED_VDD_PIN != MATRIX_LED_VDD_PIN)
+#error "LED 供电脚两边不是同一个脚：引脚配置器里要把 MATRIX_LED_VDD_PIN 这个脚设成 GPIO 输出、标签 LED_VDD，重新生成 io_config.h"
+#elif (((IO_DATAOUT_VAL >> MATRIX_LED_VDD_PIN) & 1u) == MATRIX_LED_VDD_ON)
+#error "LED 供电脚上电时是开的，开机时指示灯会亮一下：在引脚配置器里把它的初始电平设成关电的电平，重新生成 io_config.h"
+#endif
+#endif
+// 独立接线（不和列线复用）的指示灯：引脚配置器里要设成 GPIO 输出、标签 LED_NUM / LED_CAPS / LED_LOW，初始电平是灭灯
+#if (MATRIX_LED_NUM_DEDICATED)
+#if !defined(IO_LED_NUM_PIN) || (IO_LED_NUM_PIN != MATRIX_LED_NUM_PIN) || ((IO_OUTPUT_MASK & (1u << MATRIX_LED_NUM_PIN)) == 0)
+#error "Num Lock 灯接在独立引脚上：引脚配置器里要把 MATRIX_LED_NUM_PIN 这个脚设成 GPIO 输出、标签 LED_NUM，重新生成 io_config.h"
+#elif (((IO_DATAOUT_VAL >> MATRIX_LED_NUM_PIN) & 1u) == MATRIX_LED_NUM_LEVEL)
+#error "Num Lock 灯上电时是亮的：在引脚配置器里把初始电平设成灭灯的电平，重新生成 io_config.h"
+#endif
+#endif
+#if (MATRIX_LED_CAPS_DEDICATED)
+#if !defined(IO_LED_CAPS_PIN) || (IO_LED_CAPS_PIN != MATRIX_LED_CAPS_PIN) || ((IO_OUTPUT_MASK & (1u << MATRIX_LED_CAPS_PIN)) == 0)
+#error "Caps Lock 灯接在独立引脚上：引脚配置器里要把 MATRIX_LED_CAPS_PIN 这个脚设成 GPIO 输出、标签 LED_CAPS，重新生成 io_config.h"
+#elif (((IO_DATAOUT_VAL >> MATRIX_LED_CAPS_PIN) & 1u) == MATRIX_LED_CAPS_LEVEL)
+#error "Caps Lock 灯上电时是亮的：在引脚配置器里把初始电平设成灭灯的电平，重新生成 io_config.h"
+#endif
+#endif
+#if (MATRIX_LED_LOW_DEDICATED)
+#if !defined(IO_LED_LOW_PIN) || (IO_LED_LOW_PIN != MATRIX_LED_LOW_PIN) || ((IO_OUTPUT_MASK & (1u << MATRIX_LED_LOW_PIN)) == 0)
+#error "低电灯接在独立引脚上：引脚配置器里要把 MATRIX_LED_LOW_PIN 这个脚设成 GPIO 输出、标签 LED_LOW，重新生成 io_config.h"
+#elif (((IO_DATAOUT_VAL >> MATRIX_LED_LOW_PIN) & 1u) == MATRIX_LED_LOW_LEVEL)
+#error "低电灯上电时是亮的：在引脚配置器里把初始电平设成灭灯的电平，重新生成 io_config.h"
 #endif
 #endif
 

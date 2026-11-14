@@ -234,6 +234,13 @@ dialog .pb textarea{width:100%;min-height:300px;font-family:var(--mono);font-siz
           </div>
         </div>
         <div class="panel">
+          <div class="ph"><h2>引脚配置（引脚配置器）</h2><div class="bar"><button class="btn sm" id="btnIoImport">导入引脚配置 JSON</button><button class="btn sm" id="btnIoClear">清除</button></div></div>
+          <div class="pb">
+            <p class="note" style="margin:0" id="ioStat"></p>
+            <p class="note" style="margin:0">在引脚配置器（tools/om6239-io-config）里点「导出配置」，把 JSON 导入这里，就能按实际配置检查：行线要设成「矩阵行」并开上拉、下降沿唤醒，列线要设成「矩阵列」并开上拉，KEY_EX、LED 供电脚和独立接线的指示灯要设成「GPIO 输出」并用约定的标签（KEY_EX、LED_VDD、LED_NUM、LED_CAPS、LED_LOW），灯的初始电平要是灭灯的电平。引脚下拉框里也会显示每个脚的实际用途。编译时 <code>periph/matrix_key.c</code> 也会检查同样的内容。</p>
+          </div>
+        </div>
+        <div class="panel">
           <div class="ph"><h2>指示灯（和列线复用）</h2></div>
           <div class="pb">
             <p class="note" style="margin:0">SE73K 的指示灯阳极接 LED 供电脚（P23），阴极接在列线上：扫描时先关掉供电，扫完再按状态把列线拉低点灯。供电脚可以换成别的脚，也可以不用（阳极直接接电源）；每个灯也可以接到不和列复用的独立脚上。</p>
@@ -319,7 +326,27 @@ const pinName = n => 'P' + (n >> 3) + (n & 7);
 // OM6252 QFN48 引出的 GPIO（P14-P17 是内部 Flash，P37 是 BOOT，不能用）
 const PINS = [0,1,2,3,4,5,6,7,8,9,10,11,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30];
 // SE73K 板子上这些脚另有用途，拿来做矩阵要先在引脚配置器里改掉
+// 没导入引脚配置时，按 SE73K 默认用途提示（导入后按引脚配置器的实际配置）
 const BOARD_USE = {0:'ARGB_OFF',1:'ARGB_OUT',2:'USB_DN',3:'USB_DP',26:'KEY_EX',27:'BAT_LVD',28:'CHR_OK',29:'MODE_SW',30:'USB_5V'};
+// 引脚配置器（tools/om6239-io-config）的功能名，导入它导出的 JSON 后用来显示和检查
+const IO_SIG = {RESET:'未使用', GPIO_IN:'GPIO 输入', GPIO_OUT:'GPIO 输出', KEY_ROW:'矩阵行', KEY_COL:'矩阵列', USB_DM:'USB D-', USB_DP:'USB D+',
+  UART_TX:'UART TX', UART_RX:'UART RX', LEDC_DO:'ARGB 数据', PWM_MONO:'背光 PWM', PWM_R:'RGB 灯 R', PWM_G:'RGB 灯 G', PWM_B:'RGB 灯 B',
+  LIGHT_PWR:'灯电源开关', ENC_A:'编码器 A', ENC_B:'编码器 B', LVD_IN:'电压检测', SWCLK:'SWD 时钟', SWDIO:'SWD 数据',
+  SNS_CSN:'传感器 CSN', SNS_SCK:'传感器 SCK', SNS_MOSI:'传感器 MOSI', SNS_MISO:'传感器 MISO', FLASH_IO:'Flash', BOOT:'BOOT'};
+const IO_PULLUP = p => p.pull === 'pu1' || p.pull === 'pu2';
+// 引脚配置器里约定的标签：两边靠它认出同一个脚（io_config.h 的宏名就是 IO_ + 标签 + _PIN）
+const IO_LABEL = {ex:'KEY_EX', vdd:'LED_VDD', num:'LED_NUM', caps:'LED_CAPS', low:'LED_LOW'};
+function ioUse(p){                 // 这个脚在引脚配置里的用途，空 = 没用
+  const q = state.io && state.io.pins[p]; if (!q || q.sig === 'RESET') return '';
+  return (IO_SIG[q.sig] || q.sig) + (q.label ? ' ' + q.label : '');
+}
+const pinUseText = p => state.io ? (ioUse(p) ? '（引脚配置：' + ioUse(p) + '）' : '') : (BOARD_USE[p] ? '（板上：' + BOARD_USE[p] + '）' : '');
+function parseIoJson(o){           // 引脚配置器「导出配置」的 JSON
+  if (!o || o.tool !== 'om6239-io-config' || !Array.isArray(o.pins) || o.pins.length !== 32) throw new Error('不是引脚配置器导出的配置');
+  return {project: String(o.project || '').slice(0, 60), pkg: String(o.pkg || ''), at: new Date().toISOString().slice(0, 16).replace('T', ' '),
+    pins: o.pins.map(p => ({sig: String(p && p.sig || 'RESET'), label: String(p && p.label || ''), pull: String(p && p.pull || 'none'),
+      wake: String(p && p.wake || 'none'), level: p && p.level === 0 ? 0 : 1}))};
+}
 // 扩展列：翻转顺序（main.h 注释），由 PA5 控制
 const EXT_ORDER = ['PA7','PA6','PA4','PA3','PA2','PB0','PB1','PB2','PB3','PB4','PB5','PA0','PA1'];
 
@@ -420,7 +447,8 @@ function presetState(){
     keys, roles,
     win: DATA.win.map(e => e.slice()), fn: DATA.fn.map(e => e.slice()),
     // Mac 独立键表（可选，默认关）：从 Win 键表换算，打开后 Mac 下的效果和原来一样
-    macKeymap:false, macTouched:false, mac: swapTable(DATA.win), macfn: swapTable(DATA.fn)
+    macKeymap:false, macTouched:false, mac: swapTable(DATA.win), macfn: swapTable(DATA.fn),
+    io:null       // 导入的引脚配置（引脚配置器导出的 JSON），用来按实际用途检查引脚
   };
 }
 const ORIG_TBL = {win: DATA.win, fn: DATA.fn, mac: swapTable(DATA.win), macfn: swapTable(DATA.fn)};
@@ -448,6 +476,7 @@ function migrate(s){              // 旧版配置没有 Mac 键表：从 Win 键
   if (!(Array.isArray(s.mac) && s.mac.length === SLOT_NUM)) s.mac = swapTable(s.win);
   if (!(Array.isArray(s.macfn) && s.macfn.length === SLOT_NUM)) s.macfn = swapTable(s.fn);
   s.macKeymap = !!s.macKeymap; s.macTouched = !!s.macTouched;
+  if (!(s.io && Array.isArray(s.io.pins) && s.io.pins.length === 32)) s.io = null;
   return s;
 }
 function validState(s){
@@ -599,8 +628,10 @@ function problems(){
   for (const [pin, w] of Object.entries(use)){
     const real = w.filter(x => !/^指示灯/.test(x));
     if (w.length > 1) add('err', pinName(+pin) + ' 同时用作：' + w.join('、'));
-    if (BOARD_USE[pin] && !(+pin === 26 && w.length === 1 && w[0].startsWith('扩展列'))) add('warn', pinName(+pin) + ' 在 SE73K 板上是 ' + BOARD_USE[pin] + '，现在用作' + real.join('、') + '，记得在引脚配置器里改掉原来的用途');
+    if (!S.io && BOARD_USE[pin] && !(+pin === 26 && w.length === 1 && w[0].startsWith('扩展列'))) add('warn', pinName(+pin) + ' 在 SE73K 板上是 ' + BOARD_USE[pin] + '，现在用作' + real.join('、') + '，记得在引脚配置器里改掉原来的用途');
   }
+  if (S.io) ioProblems(add, exNum);
+  else add('info', '没有导入引脚配置：引脚冲突只按 SE73K 默认用途提示。在「矩阵硬件」页导入引脚配置器导出的 JSON，就能按实际配置检查上拉、唤醒和功能冲突');
   if (!S.rows.some(p => p >= 0)) add('err', '一根行线都没有');
   if (exNum && !(S.exPin >= 0)) add('err', '用了扩展列，但没有设扩展列控制脚（KEY_EX）');
   const names = new Set();
@@ -687,6 +718,46 @@ function problems(){
     }
   }
   return P;
+}
+// 和引脚配置器的配置对一遍（编译时 matrix_key.c 也会检查同样的内容）
+function ioProblems(add, exNum){
+  const S = state, IO = S.io.pins, nm = p => pinName(p), cfgOf = p => IO[p] || {sig:'RESET', label:'', pull:'none', wake:'none', level:1};
+  const now = p => '它在引脚配置器里是「' + (ioUse(p) || '未使用') + '」';
+  const tail = '，到引脚配置器里改好，重新导出 JSON 导入这里，并重新生成 io_config.h / io_config.c';
+  const rowPins = new Set(), colPins = new Set();
+  S.rows.forEach((p, r) => {
+    if (!(p >= 0)) return; rowPins.add(p); const q = cfgOf(p);
+    if (q.sig !== 'KEY_ROW') add('err', '行 R' + r + ' 接 ' + nm(p) + '，' + now(p) + '，要设成「矩阵行」' + tail);
+    else {
+      if (!IO_PULLUP(q)) add('err', '行 R' + r + '（' + nm(p) + '）在引脚配置器里没有上拉，按键会乱跳' + tail);
+      if (q.wake !== 'fall') add('err', '行 R' + r + '（' + nm(p) + '）在引脚配置器里没设下降沿唤醒，休眠后按这一行的键唤不醒' + tail);
+    }
+  });
+  S.cols.forEach(c => {
+    if (c.pin == null) return; colPins.add(c.pin); const q = cfgOf(c.pin);
+    if (q.sig !== 'KEY_COL') add('err', '列 ' + c.name + ' 接 ' + nm(c.pin) + '，' + now(c.pin) + '，要设成「矩阵列」' + tail);
+    else if (!IO_PULLUP(q)) add('err', '列 ' + c.name + '（' + nm(c.pin) + '）在引脚配置器里没有上拉（扫完放开后靠上拉回到高电平）' + tail);
+  });
+  const outLabel = (p, label, what, offLevel) => {
+    const q = cfgOf(p);
+    if (q.sig !== 'GPIO_OUT' || q.label !== label) add('err', what + '接 ' + nm(p) + '，' + now(p) + '，要设成「GPIO 输出」、标签 ' + label + tail);
+    else if (offLevel != null && q.level !== offLevel) add('err', what + '（' + nm(p) + '）在引脚配置器里的初始电平会让灯一上电就亮，要设成' + (offLevel ? '高' : '低') + '电平' + tail);
+  };
+  if (exNum && S.exPin >= 0) outLabel(S.exPin, IO_LABEL.ex, '扩展列控制脚 KEY_EX ', null);
+  if (S.led.vdd >= 0) outLabel(S.led.vdd, IO_LABEL.vdd, 'LED 供电脚', S.led.vddOn ? 0 : 1);
+  const dedicated = {};
+  for (const [id, what] of [['num','Num Lock 灯'],['caps','Caps Lock 灯'],['low','低电灯']]){
+    const L = S.led[id]; if (!(L.pin >= 0) || colPins.has(L.pin)) continue;
+    dedicated[L.pin] = id; outLabel(L.pin, IO_LABEL[id], what + '（独立引脚）', L.on ? 0 : 1);
+  }
+  // 反过来：引脚配置器里有、矩阵这边没有的
+  IO.forEach((q, p) => {
+    if (q.sig === 'KEY_ROW' && !rowPins.has(p)) add('warn', nm(p) + ' 在引脚配置器里是「矩阵行」，但矩阵这边没用它当行线');
+    if (q.sig === 'KEY_COL' && !colPins.has(p)) add('warn', nm(p) + ' 在引脚配置器里是「矩阵列」，但矩阵这边没用它当直连列');
+    if (q.label === IO_LABEL.ex && exNum && p !== S.exPin) add('warn', nm(p) + ' 在引脚配置器里标签是 KEY_EX，但矩阵这边的扩展列控制脚是 ' + (S.exPin >= 0 ? nm(S.exPin) : '没有'));
+    if (q.label === IO_LABEL.vdd && p !== S.led.vdd) add('warn', nm(p) + ' 在引脚配置器里标签是 LED_VDD，但矩阵这边的 LED 供电脚是 ' + (S.led.vdd >= 0 ? nm(S.led.vdd) : '没有'));
+  });
+  if (S.io.pkg && S.io.pkg !== 'qfn48') add('info', '导入的引脚配置是 ' + S.io.pkg.toUpperCase() + ' 封装，这里的引脚列表按 OM6252 QFN48，没引出的脚以引脚配置器的检查为准');
 }
 function findCode(codes){
   const src = slotSources();
@@ -864,7 +935,7 @@ function renderProblems(){
 
 function pinOptions(cur, allowNone, noneText){
   let h = allowNone ? '<option value="-1"' + (!(cur >= 0) ? ' selected' : '') + '>' + (noneText || '不用') + '</option>' : '';
-  for (const p of PINS) h += '<option value="' + p + '"' + (p === cur ? ' selected' : '') + '>' + pinName(p) + (BOARD_USE[p] ? '（板上：' + BOARD_USE[p] + '）' : '') + '</option>';
+  for (const p of PINS) h += '<option value="' + p + '"' + (p === cur ? ' selected' : '') + '>' + pinName(p) + pinUseText(p) + '</option>';
   return h;
 }
 function renderHW(){
@@ -875,7 +946,7 @@ function renderHW(){
     const n = Object.keys(state.keys).filter(p => p.split(',')[0] === c.name).length;
     const v = c.pin != null ? 'p' + c.pin : c.ext != null ? 'e' + c.ext : 'x';
     let opts = '<option value="x"' + (v === 'x' ? ' selected' : '') + '>不用（列保留，键扫不到）</option><optgroup label="GPIO 直连">';
-    for (const p of PINS) opts += '<option value="p' + p + '"' + (v === 'p' + p ? ' selected' : '') + '>' + pinName(p) + (BOARD_USE[p] ? '（板上：' + BOARD_USE[p] + '）' : '') + '</option>';
+    for (const p of PINS) opts += '<option value="p' + p + '"' + (v === 'p' + p ? ' selected' : '') + '>' + pinName(p) + pinUseText(p) + '</option>';
     opts += '</optgroup><optgroup label="扩展列（由 PA5 控制）">';
     EXT_ORDER.forEach((nm, k) => { opts += '<option value="e' + k + '"' + (v === 'e' + k ? ' selected' : '') + '>第 ' + (k + 1) + ' 步：' + nm + '</option>'; });
     opts += '</optgroup>';
@@ -898,6 +969,9 @@ function renderHW(){
     l += '<tr data-led="' + id + '"><td>' + nm + '</td><td><select data-act="lpin" aria-label="' + nm + ' 灯引脚">' + pinOptions(L.pin, true, '没有') + '</select></td><td>' + lv(L.on, '低电平点亮', '高电平点亮') + '</td><td class="small muted">' + (col ? '和列 ' + esc(col.name) + ' 复用' : L.pin >= 0 ? '独立引脚' : '') + ' · ' + use + '</td></tr>';
   }
   $('ledTbl').innerHTML = l;
+  $('ioStat').innerHTML = state.io ? '已导入：<b>' + esc(state.io.project || '未命名工程') + '</b>（' + esc((state.io.pkg || '').toUpperCase()) + '，' + esc(state.io.at) + ' 导入）。改了引脚配置后要重新导入。'
+    : '<b>还没有导入</b>：现在只按 SE73K 默认用途提示冲突。';
+  $('btnIoClear').disabled = !state.io;
 }
 
 function renderRoles(){
@@ -1029,6 +1103,7 @@ function genCfg(){
   const drive = (p, hi) => '{OM_GPIO0->' + (hi ? 'DATAOUTSET' : 'DATAOUTCLR') + ' = (1u<<' + p + '); OM_GPIO0->OUTENSET = (1u<<' + p + ');}';
   const release = (p, hi) => '{OM_GPIO0->' + (hi ? 'DATAOUTSET' : 'DATAOUTCLR') + ' = (1u<<' + p + '); OM_GPIO0->OUTENCLR = (1u<<' + p + ');}';
   o += '#define MATRIX_LED_VDD_PIN          ' + (S.led.vdd >= 0 ? S.led.vdd + '      /* ' + pinName(S.led.vdd) + ' */' : '(-1)    /* 没有 LED 供电脚 */') + '\n';
+  o += '#define MATRIX_LED_VDD_ON           ' + (S.led.vddOn ? 1 : 0) + '       /* 供电脚输出这个电平时灯有电 */\n';
   if (S.led.vdd >= 0){
     o += '#define MATRIX_LED_VDD_EN           ' + drive(S.led.vdd, S.led.vddOn) + '   /* ' + pinName(S.led.vdd) + ' */\n';
     o += '#define MATRIX_LED_VDD_DIS          ' + drive(S.led.vdd, !S.led.vddOn) + '\n';
@@ -1040,6 +1115,11 @@ function genCfg(){
       o += pad('#define MATRIX_LED_' + nm + '_ON', 36) + drive(L.pin, L.on) + '   /* ' + pinName(L.pin) + (col ? '，和列 ' + col.name + ' 复用' : '') + ' */\n';
       o += pad('#define MATRIX_LED_' + nm + '_OFF', 36) + release(L.pin, !L.on) + '\n';
     } else o += pad('#define MATRIX_LED_' + nm + '_ON', 36) + '{}      /* 没有这个灯 */\n' + pad('#define MATRIX_LED_' + nm + '_OFF', 36) + '{}\n';
+    // 给 matrix_key.c 的编译检查用：独立接线的灯要在引脚配置器里设成 GPIO 输出、标签 LED_NUM / LED_CAPS / LED_LOW
+    const ded = L.pin >= 0 && !S.cols.some(c => c.pin != null && c.pin === L.pin);
+    o += pad('#define MATRIX_LED_' + nm + '_PIN', 36) + (L.pin >= 0 ? String(L.pin) : '(-1)') + '\n';
+    o += pad('#define MATRIX_LED_' + nm + '_LEVEL', 36) + (L.on ? 1 : 0) + '       /* 点亮电平 */\n';
+    o += pad('#define MATRIX_LED_' + nm + '_DEDICATED', 36) + (ded ? 1 : 0) + '       /* 1 = 独立引脚（不和列线复用） */\n';
   }
   o += '\n/* ---- Mac 独立键表 ----\n' +
     ' * 0：Win / Mac 共用 matrix_key_tbl_win*.h，Mac 模式下 key_process() 把 Alt 和 Win 对调\n' +
@@ -1407,7 +1487,12 @@ function parseTableH(text){
 $('dlgOk').addEventListener('click', () => {
   const text = $('dlgText').value;
   try {
-    if (dlgMode === 'json'){
+    if (dlgMode === 'io' || (dlgMode === 'json' && /"tool"\s*:\s*"om6239-io-config"/.test(text))){
+      const io = parseIoJson(JSON.parse(text));     // 「导入配置」里粘的是引脚配置器的 JSON 也认
+      commit(() => { state.io = io; });
+      const n = problems().filter(p => p.lvl === 'err').length;
+      toast('已导入引脚配置' + (n ? '，有 ' + n + ' 个问题，见「检查」' : '，和矩阵配置一致'));
+    } else if (dlgMode === 'json'){
       const s = JSON.parse(text);
       if (!validState(s)) throw new Error('不是这个配置器导出的配置');
       commit(() => { state = migrate(s); }); toast('已导入配置');
@@ -1419,7 +1504,9 @@ $('dlgOk').addEventListener('click', () => {
     $('dlg').close();
   } catch(err){ alert('导入失败：' + err.message); }
 });
-$('btnPreset').addEventListener('click', () => { commit(() => { state = presetState(); }); toast('已载入 SE73K 默认配置'); });
+$('btnPreset').addEventListener('click', () => { commit(() => { const io = state.io; state = presetState(); state.io = io; }); toast('已载入 SE73K 默认配置' + (state.io ? '（导入的引脚配置保留）' : '')); });
+$('btnIoImport').addEventListener('click', () => openDlg('io', '导入引脚配置', '粘贴引脚配置器「导出配置」得到的 JSON，或者从文件读取。只用来检查和显示引脚用途，不会改这边的配置。'));
+$('btnIoClear').addEventListener('click', () => { commit(() => { state.io = null; }); toast('已清除引脚配置'); });
 $('btnUndo').addEventListener('click', undo);
 
 load();
