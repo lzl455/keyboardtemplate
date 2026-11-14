@@ -462,34 +462,46 @@ function presetState(){
 }
 
 const LS_KEY = 'om6239-io-config-v1';
-/* 矩阵表配置器的配置（工程里的 config/keymap_config.json），同步到工程时读取。
- * 用来检查矩阵用到的脚在这边还是不是矩阵行列 / KEY_EX / LED 供电，避免被灯光、编码器等占掉 */
-const LS_MATRIX = 'om6239-io-config-matrix';
+/* ---- 和矩阵表配置器的关系：以这里为准 ----
+ * 矩阵表配置器跟着这里走：行 Rn = 标签 KEY_Rn 的「矩阵行」，直连列 = 标签 KEY_<列名> 的「矩阵列」，
+ * KEY_EX / LED 供电 / 独立指示灯按标签对应。同一个浏览器里两个配置器都打开时，这里一改那边马上跟着变。
+ * 这里读矩阵表配置器的配置（同一浏览器里存的，或者同步时从工程 config/keymap_config.json 读的），
+ * 用来提示：这样改会让矩阵表配置器里哪一行、哪一列的键扫不到。 */
+const KM_LIVE_KEY = 'om62xx-keymap';            // 矩阵表配置器存在浏览器里的状态
+const LS_MATRIX = 'om6239-io-config-matrix';    // 同步时从工程读到的（矩阵表配置器不在这个浏览器里时用）
 let matrixRef = null;
-try { const m = JSON.parse(localStorage.getItem(LS_MATRIX) || 'null'); if (m && Array.isArray(m.rows) && Array.isArray(m.cols)) matrixRef = m; } catch(e){}
-function setMatrixRef(m){ matrixRef = m; try { if (m) localStorage.setItem(LS_MATRIX, JSON.stringify(m)); else localStorage.removeItem(LS_MATRIX); } catch(e){} }
+function matrixFrom(o){ return o && Array.isArray(o.rows) && Array.isArray(o.cols) ? {rows:o.rows, cols:o.cols, exPin:o.exPin, led:o.led, keys:o.keys || {}} : null; }
+function readMatrixRef(){
+  try { const m = matrixFrom(JSON.parse(localStorage.getItem(KM_LIVE_KEY) || 'null')); if (m) return Object.assign(m, {src:'live'}); } catch(e){}
+  try { const m = matrixFrom(JSON.parse(localStorage.getItem(LS_MATRIX) || 'null')); if (m) return Object.assign(m, {src:'project'}); } catch(e){}
+  return null;
+}
+matrixRef = readMatrixRef();
+function setMatrixRef(m){ try { if (m) localStorage.setItem(LS_MATRIX, JSON.stringify(m)); else localStorage.removeItem(LS_MATRIX); } catch(e){} matrixRef = readMatrixRef(); }
 function matrixProblems(add){
   if (!matrixRef) return;
-  const P = state.pins, M = matrixRef;
+  const P = state.pins, M = matrixRef, keys = Object.keys(M.keys || {});
+  const rowKeys = r => keys.filter(k => k.split(',')[1] === String(r)).length;
+  const colKeys = n => keys.filter(k => k.split(',')[0] === n).length;
   const now = i => P[i].sig === 'RESET' ? '未使用' : (P[i].label ? P[i].label + '（' + SIG[P[i].sig].label + '）' : SIG[P[i].sig].label);
-  const tail = '：两边要一致（矩阵表配置器里改了矩阵就要同步一次），否则编译时 matrix_key.c 会报错';
-  const rowSet = new Set(), colSet = new Set();
-  M.rows.forEach((p, r) => { if (!(p >= 0) || p >= N) return; rowSet.add(p);
-    if (P[p].sig !== 'KEY_ROW') add('err', p, pinName(p) + ' 在矩阵表配置器里是行 R' + r + '，这里却是「' + now(p) + '」，这一行的键会失灵' + tail); });
-  M.cols.forEach(c => { if (c.pin == null || c.pin >= N) return; colSet.add(c.pin);
-    if (P[c.pin].sig !== 'KEY_COL') add('err', c.pin, pinName(c.pin) + ' 在矩阵表配置器里是列 ' + c.name + '，这里却是「' + now(c.pin) + '」，这一列的键会失灵' + tail); });
-  const out = (p, label, what) => { if (!(p >= 0) || p >= N) return;
-    if (P[p].sig !== 'GPIO_OUT' || P[p].label !== label) add('err', p, pinName(p) + ' 在矩阵表配置器里是' + what + '，这里要设成「GPIO 输出」、标签 ' + label + '，现在是「' + now(p) + '」' + tail); };
-  if (M.cols.some(c => c.ext != null)) out(M.exPin, 'KEY_EX', '扩展列控制脚 KEY_EX');
-  if (M.led){
-    out(M.led.vdd, 'LED_VDD', ' LED 供电脚');
-    [['num','LED_NUM','Num Lock 灯'],['caps','LED_CAPS','Caps Lock 灯'],['low','LED_LOW','低电灯']].forEach(([k, label, what]) => {
-      const L = M.led[k]; if (L && L.pin >= 0 && !colSet.has(L.pin)) out(L.pin, label, what + '（独立引脚）'); });
-  }
-  P.forEach((p, i) => {
-    if (p.sig === 'KEY_ROW' && !rowSet.has(i)) add('warn', i, pinName(i) + ' 这里是矩阵行，但矩阵表配置器里没用它当行线');
-    if (p.sig === 'KEY_COL' && !colSet.has(i)) add('warn', i, pinName(i) + ' 这里是矩阵列，但矩阵表配置器里没用它当直连列');
-  });
+  const first = P.findIndex(p => p.sig === 'KEY_ROW' || p.sig === 'KEY_COL');
+  // 行：矩阵表配置器会按标签 KEY_Rn 对应，没标签的矩阵行按脚号补到空着的行
+  const rows = Array(8).fill(-1);
+  P.forEach((p, i) => { const m = /^KEY_R(\d)$/.exec(p.label); if (p.sig === 'KEY_ROW' && m && +m[1] < 8 && rows[+m[1]] < 0) rows[+m[1]] = i; });
+  P.forEach((p, i) => { if (p.sig === 'KEY_ROW' && !rows.includes(i)){ const r = rows.indexOf(-1); if (r >= 0) rows[r] = i; else add('warn', i, pinName(i) + ' 是矩阵行，但已经有 8 根行线了，矩阵最多 8 行，这根用不上'); } });
+  rows.forEach((p, r) => { const n = rowKeys(r); if (p >= 0 || !n) return;
+    const old = M.rows[r];
+    add('warn', old >= 0 && old < N ? old : first, '行 R' + r + ' 没有对应的「矩阵行」（标签 KEY_R' + r + '）' + (old >= 0 && old < N ? '：原来接 ' + pinName(old) + '，现在是「' + now(old) + '」' : '') +
+      '。矩阵表配置器会跟着把这一行改成不用，上面 ' + n + ' 个键扫不到'); });
+  // 直连列：按标签 KEY_<列名> 对应
+  const colName = i => (P[i].label || pinName(i)).replace(/^KEY_/, '');
+  const ioCols = new Set(); P.forEach((p, i) => { if (p.sig === 'KEY_COL') ioCols.add(colName(i)); });
+  M.cols.forEach(c => { if (c.ext != null || ioCols.has(c.name)) return; const n = colKeys(c.name); if (!n) return;
+    add('warn', c.pin != null && c.pin < N ? c.pin : first, '列 ' + c.name + ' 没有对应的「矩阵列」（标签 KEY_' + c.name + '）' + (c.pin != null && c.pin < N ? '：原来接 ' + pinName(c.pin) + '，现在是「' + now(c.pin) + '」' : '') +
+      '。矩阵表配置器会跟着把这一列改成不用，上面 ' + n + ' 个键扫不到'); });
+  const outLabel = l => P.findIndex(p => p.sig === 'GPIO_OUT' && p.label === l);
+  if (M.cols.some(c => c.ext != null) && outLabel('KEY_EX') < 0) add('err', first, '矩阵用了扩展列，需要一个「GPIO 输出」、标签 KEY_EX 的脚（扩展列控制，SE73K 是 P32），不然编译时 matrix_key.c 会报错');
+  if (M.led && (M.led.vdd >= 0) && outLabel('LED_VDD') < 0) add('warn', M.led.vdd < N ? M.led.vdd : first, '没有标签 LED_VDD 的「GPIO 输出」：矩阵表配置器会跟着去掉 LED 供电脚，和列线复用的指示灯在扫描时会跟着闪');
 }
 let state = load() || presetState();
 let selected = 4;
@@ -1525,6 +1537,7 @@ const ProjectSync = (() => {
    *   configPath     配置 JSON 在工程里的位置；configText() 生成它，loadConfig(text) 用它替换当前配置（返回提示）
    *   before(io)     打开工程后、对比前调用（矩阵表配置器在这里读 io_config.json）
    *   problems()     -> {err, warn}
+ *   note()         -> 额外提示（可选）
    *   after(written) 写完后的提示文字
    *   toast(msg) */
   async function run(opt, forcePick){
@@ -1551,6 +1564,7 @@ const ProjectSync = (() => {
       (pr.err ? '<div class="msg err">「检查」里还有 <b>' + pr.err + '</b> 个错误，写进工程后可能编译不过或工作不正常，建议先改好。</div>' : '') +
       '<table><tr><th>文件（projects/mouse_demo/ 下）</th><th>状态</th></tr>' +
       rows.map(r => '<tr><td class="p">' + esc(r.path) + (r.note ? '<div class="small muted" style="font-family:var(--sans)">' + esc(r.note) + '</div>' : '') + '</td><td><span class="st ' + r.status + '">' + STATUS[r.status] + '</span></td></tr>').join('') + '</table>' +
+      (opt.note && opt.note() ? '<div class="msg info">' + esc(opt.note()) + '</div>' : '') +
       (todo.length ? '' : '<div class="msg info">工程里的文件已经是最新的，不用写。</div>') +
       (cfgDiffers ? '<div class="msg info">工程里的 <code>' + esc(opt.configPath) + '</code> 和当前配置不一样（可能是别人改过，或者你在另一台电脑上改过）。要用工程里的，点「从工程载入配置」；要用当前的，直接写入。</div>' : '');
     const buttons = [];
@@ -1574,10 +1588,10 @@ $('btnSync').addEventListener('click', () => ProjectSync.run({
     {path:'periph/io_config.h', text:genH(), note:'引脚定义、分组掩码、上电寄存器值'},
     {path:'periph/io_config.c', text:genC(), note:'io_config_init()、io_config_wakeup()'},
     {path:'config/io_board.h', text:genBoard(), note:'灯光、编码器、固件功能开关（board_config.h 会包含）'}],
-  before: async fs => {                          // 读矩阵表配置器同步进去的配置，检查矩阵用到的脚有没有被占
+  before: async fs => {                          // 读矩阵表配置器同步进去的配置，提示这样改会让哪些键扫不到
     const t = await fs.read('config/keymap_config.json');
     let m = null;
-    if (t != null) try { const o = JSON.parse(t); if (Array.isArray(o.rows) && Array.isArray(o.cols)) m = {rows:o.rows, cols:o.cols, exPin:o.exPin, led:o.led}; } catch(e){}
+    if (t != null) try { m = matrixFrom(JSON.parse(t)); } catch(e){}
     setMatrixRef(m); renderAll();
   },
   configPath: 'config/io_config.json',          // 矩阵表配置器同步时会读它，检查两边是否一致
@@ -1589,9 +1603,13 @@ $('btnSync').addEventListener('click', () => ProjectSync.run({
     return '已从工程载入：' + o.project;
   },
   problems: () => { const pr = problems(); return {err: pr.filter(x => x.lvl === 'err').length, warn: pr.filter(x => x.lvl === 'warn').length}; },
-  after: () => '在 Keil 里重新编译即可；改了矩阵行列的话，矩阵表配置器也要同步一次',
+  after: () => '改了矩阵行列、KEY_EX、LED 供电的话，矩阵表配置器也要点一次「同步到工程」（它会跟着这里改），然后在 Keil 里重新编译',
   toast
 }));
+
+// 矩阵表配置器在别的标签页里改了：马上更新提示
+window.addEventListener('storage', e => { if (e.key === KM_LIVE_KEY){ matrixRef = readMatrixRef(); renderAll(); } });
+document.addEventListener('visibilitychange', () => { if (!document.hidden){ matrixRef = readMatrixRef(); renderAll(); } });
 
 /* boot */
 renderSamples();

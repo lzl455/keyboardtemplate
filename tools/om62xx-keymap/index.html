@@ -342,9 +342,9 @@ function ioUse(p){                 // 这个脚在引脚配置里的用途，空
   return (IO_SIG[q.sig] || q.sig) + (q.label ? ' ' + q.label : '');
 }
 const pinUseText = p => state.io ? (ioUse(p) ? '（引脚配置：' + ioUse(p) + '）' : '') : (BOARD_USE[p] ? '（板上：' + BOARD_USE[p] + '）' : '');
-function parseIoJson(o){           // 引脚配置器「导出配置」的 JSON
-  if (!o || o.tool !== 'om6239-io-config' || !Array.isArray(o.pins) || o.pins.length !== 32) throw new Error('不是引脚配置器导出的配置');
-  return {project: String(o.project || '').slice(0, 60), pkg: String(o.pkg || ''), at: new Date().toISOString().slice(0, 16).replace('T', ' '),
+function parseIoJson(o, src){      // 引脚配置器「导出配置」的 JSON，或者它存在浏览器里的状态
+  if (!o || (o.tool && o.tool !== 'om6239-io-config') || !Array.isArray(o.pins) || o.pins.length !== 32) throw new Error('不是引脚配置器导出的配置');
+  return {project: String(o.project || '').slice(0, 60), pkg: String(o.pkg || ''), at: new Date().toISOString().slice(0, 16).replace('T', ' '), src: src || '手动导入',
     pins: o.pins.map(p => ({sig: String(p && p.sig || 'RESET'), label: String(p && p.label || ''), pull: String(p && p.pull || 'none'),
       wake: String(p && p.wake || 'none'), level: p && p.level === 0 ? 0 : 1}))};
 }
@@ -721,10 +721,69 @@ function problems(){
   return P;
 }
 // 和引脚配置器的配置对一遍（编译时 matrix_key.c 也会检查同样的内容）
+/* ---- 以引脚配置器为准 ----
+ * 读到引脚配置后，矩阵用到的脚全部按它来（这几个下拉框变成只读）：
+ *   行 Rn = 标签 KEY_Rn 的「矩阵行」（没标签的矩阵行按脚号补到空着的行）
+ *   直连列 = 标签 KEY_<列名> 的「矩阵列」，没有同名列就新加一列
+ *   KEY_EX / LED 供电 / 独立指示灯 = 标签 KEY_EX / LED_VDD / LED_NUM、LED_CAPS、LED_LOW 的脚
+ * 引脚配置器里不再是矩阵行列的脚，这边改成不用，上面的键扫不到（「检查」里列出）。
+ * 扩展列（PA/PB）不经 GPIO，仍在这里设。 */
+const IO_LIVE_KEY = 'om6239-io-config-v1';      // 引脚配置器存在浏览器里的状态，同一浏览器打开时实时读取
+function adoptIo(){
+  const S = state, IO = S.io.pins, ch = [];
+  const lab = (p, l) => IO[p] && IO[p].label === l;
+  const sigAt = (p, sig) => p >= 0 && IO[p] && IO[p].sig === sig;
+  // 行
+  const rows = Array(8).fill(-1), used = new Set();
+  for (let r = 0; r < 8; r++){ const p = IO.findIndex(q => q.sig === 'KEY_ROW' && q.label === 'KEY_R' + r); if (p >= 0){ rows[r] = p; used.add(p); } }
+  for (let r = 0; r < 8; r++) if (rows[r] < 0 && sigAt(S.rows[r], 'KEY_ROW') && !used.has(S.rows[r]) && !/^KEY_R\d$/.test(IO[S.rows[r]].label)){ rows[r] = S.rows[r]; used.add(S.rows[r]); }
+  IO.forEach((q, p) => { if (q.sig === 'KEY_ROW' && !used.has(p)){ const r = rows.indexOf(-1); if (r >= 0){ rows[r] = p; used.add(p); } } });
+  rows.forEach((p, r) => { if (p !== S.rows[r]) ch.push('R' + r + '：' + (S.rows[r] >= 0 ? pinName(S.rows[r]) : '不用') + ' → ' + (p >= 0 ? pinName(p) : '不用')); });
+  S.rows = rows;
+  // 直连列
+  const colName = p => (IO[p].label || pinName(p)).replace(/^KEY_/, '');
+  const ioCols = IO.map((q, p) => q.sig === 'KEY_COL' ? p : -1).filter(p => p >= 0), taken = new Set();
+  S.cols.forEach(c => {
+    if (c.pin == null) return;
+    const mine = ioCols.find(p => colName(p) === c.name);
+    const np = mine != null ? mine : (sigAt(c.pin, 'KEY_COL') && !ioCols.some(p => colName(p) === colName(c.pin) && S.cols.some(x => x !== c && x.name === colName(p))) ? c.pin : null);
+    if (np == null || taken.has(np)){ ch.push('列 ' + c.name + '：' + pinName(c.pin) + ' → 不用'); delete c.pin; }
+    else { if (np !== c.pin) ch.push('列 ' + c.name + '：' + pinName(c.pin) + ' → ' + pinName(np)); c.pin = np; taken.add(np); }
+  });
+  ioCols.forEach(p => {
+    if (taken.has(p)) return;
+    let c = S.cols.find(x => x.name === colName(p) && x.pin == null && x.ext == null);
+    if (!c){ let nm = colName(p); if (S.cols.some(x => x.name === nm)) nm += '_' + pinName(p); c = {name:nm}; S.cols.push(c); ch.push('新加列 ' + nm); }
+    c.pin = p; taken.add(p); ch.push('列 ' + c.name + ' → ' + pinName(p));
+  });
+  // KEY_EX、LED 供电、独立指示灯
+  const byLabel = l => IO.findIndex(q => q.sig === 'GPIO_OUT' && q.label === l);
+  const ex = byLabel(IO_LABEL.ex);
+  if (S.cols.some(c => c.ext != null) && ex !== S.exPin){ ch.push('KEY_EX：' + (S.exPin >= 0 ? pinName(S.exPin) : '没有') + ' → ' + (ex >= 0 ? pinName(ex) : '没有')); S.exPin = ex; }
+  const vdd = byLabel(IO_LABEL.vdd);
+  if (vdd !== S.led.vdd){ ch.push('LED 供电：' + (S.led.vdd >= 0 ? pinName(S.led.vdd) : '没有') + ' → ' + (vdd >= 0 ? pinName(vdd) : '没有')); S.led.vdd = vdd; }
+  for (const id of ['num','caps','low']){
+    const L = S.led[id], ded = byLabel(IO_LABEL[id]);
+    const np = ded >= 0 ? ded : (taken.has(L.pin) ? L.pin : -1);   // 没有独立脚就只能和列复用
+    if (np !== L.pin){ ch.push({num:'Num',caps:'Caps',low:'低电'}[id] + ' 灯：' + (L.pin >= 0 ? pinName(L.pin) : '没有') + ' → ' + (np >= 0 ? pinName(np) : '没有')); L.pin = np; }
+  }
+  return ch;
+}
+// 换上新的引脚配置并跟着改；quiet = 开机时不弹提示
+function followIo(io, quiet){
+  if (!io) return;
+  if (ioKey(io) === ioKey(state.io)){ if (state.io && state.io.src !== io.src){ state.io.src = io.src; save(); render(); } return; }
+  let ch = [];
+  commit(() => { state.io = io; ch = adoptIo(); });
+  if (!quiet) toast('引脚配置变了' + (ch.length ? '，矩阵跟着改：' + ch.slice(0, 6).join('；') + (ch.length > 6 ? ' 等 ' + ch.length + ' 处' : '') : '，矩阵用到的脚没有变化'));
+}
+function readLiveIo(){
+  try { const t = localStorage.getItem(IO_LIVE_KEY); return t ? parseIoJson(JSON.parse(t), '引脚配置器（同一浏览器，实时）') : null; } catch(e){ return null; }
+}
 function ioProblems(add, exNum){
   const S = state, IO = S.io.pins, nm = p => pinName(p), cfgOf = p => IO[p] || {sig:'RESET', label:'', pull:'none', wake:'none', level:1};
   const now = p => '它在引脚配置器里是「' + (ioUse(p) || '未使用') + '」';
-  const tail = '，到引脚配置器里改好，重新导出 JSON 导入这里，并重新生成 io_config.h / io_config.c';
+  const tail = '，到引脚配置器里改好（这边会跟着变），两个配置器都同步到工程';
   const rowPins = new Set(), colPins = new Set();
   S.rows.forEach((p, r) => {
     if (!(p >= 0)) return; rowPins.add(p); const q = cfgOf(p);
@@ -947,7 +1006,7 @@ function renderHW(){
     const n = Object.keys(state.keys).filter(p => p.split(',')[0] === c.name).length;
     const v = c.pin != null ? 'p' + c.pin : c.ext != null ? 'e' + c.ext : 'x';
     let opts = '<option value="x"' + (v === 'x' ? ' selected' : '') + '>不用（列保留，键扫不到）</option><optgroup label="GPIO 直连">';
-    for (const p of PINS) opts += '<option value="p' + p + '"' + (v === 'p' + p ? ' selected' : '') + '>' + pinName(p) + pinUseText(p) + '</option>';
+    for (const p of PINS) opts += '<option value="p' + p + '"' + (v === 'p' + p ? ' selected' : '') + (state.io && v !== 'p' + p ? ' disabled' : '') + '>' + pinName(p) + pinUseText(p) + '</option>';
     opts += '</optgroup><optgroup label="扩展列（由 PA5 控制）">';
     EXT_ORDER.forEach((nm, k) => { opts += '<option value="e' + k + '"' + (v === 'e' + k ? ' selected' : '') + '>第 ' + (k + 1) + ' 步：' + nm + '</option>'; });
     opts += '</optgroup>';
@@ -959,19 +1018,21 @@ function renderHW(){
   });
   $('colTbl').innerHTML = h;
   $('exPin').innerHTML = pinOptions(state.exPin, true, '没有（不用扩展列）');
+  $('exPin').disabled = !!state.io;
   let r = '<tr><th>行</th><th>引脚</th></tr>';
-  state.rows.forEach((p, i) => { r += '<tr><td class="mono">R' + i + '</td><td><select data-row="' + i + '" aria-label="R' + i + ' 引脚">' + pinOptions(p, true) + '</select></td></tr>'; });
+  state.rows.forEach((p, i) => { r += '<tr><td class="mono">R' + i + '</td><td><select data-row="' + i + '" aria-label="R' + i + ' 引脚"' + (state.io ? ' disabled' : '') + '>' + pinOptions(p, true) + '</select></td></tr>'; });
   $('rowTbl').innerHTML = r;
   const lv = (v, a, b) => '<select data-act="lvl" aria-label="点亮电平"><option value="0"' + (v ? '' : ' selected') + '>' + a + '</option><option value="1"' + (v ? ' selected' : '') + '>' + b + '</option></select>';
   let l = '<tr><th>灯</th><th>引脚</th><th>点亮电平</th><th></th></tr>';
-  l += '<tr data-led="vdd"><td>LED 供电</td><td><select data-act="lpin" aria-label="LED 供电脚">' + pinOptions(state.led.vdd, true, '没有（阳极直接接电源）') + '</select></td><td>' + lv(state.led.vddOn, '低电平供电', '高电平供电') + '</td><td class="small muted">扫描时关掉</td></tr>';
+  l += '<tr data-led="vdd"><td>LED 供电</td><td><select data-act="lpin" aria-label="LED 供电脚"' + (state.io ? ' disabled' : '') + '>' + pinOptions(state.led.vdd, true, '没有（阳极直接接电源）') + '</select></td><td>' + lv(state.led.vddOn, '低电平供电', '高电平供电') + '</td><td class="small muted">扫描时关掉</td></tr>';
   for (const [id, nm, use] of [['num','Num Lock','蓝牙 1 提示'],['caps','Caps Lock','蓝牙 2 提示'],['low','低电','2.4G 提示']]){
     const L = state.led[id], col = state.cols.find(c => c.pin != null && c.pin === L.pin);
     l += '<tr data-led="' + id + '"><td>' + nm + '</td><td><select data-act="lpin" aria-label="' + nm + ' 灯引脚">' + pinOptions(L.pin, true, '没有') + '</select></td><td>' + lv(L.on, '低电平点亮', '高电平点亮') + '</td><td class="small muted">' + (col ? '和列 ' + esc(col.name) + ' 复用' : L.pin >= 0 ? '独立引脚' : '') + ' · ' + use + '</td></tr>';
   }
   $('ledTbl').innerHTML = l;
-  $('ioStat').innerHTML = state.io ? '已导入：<b>' + esc(state.io.project || '未命名工程') + '</b>（' + esc((state.io.pkg || '').toUpperCase()) + '，' + esc(state.io.at) + ' 导入）。改了引脚配置后要重新导入。'
-    : '<b>还没有导入</b>：现在只按 SE73K 默认用途提示冲突。';
+  $('ioStat').innerHTML = state.io ? '<b>引脚以引脚配置器为准</b>（来源：' + esc(state.io.src || '手动导入') + '，' + esc(state.io.project || '未命名工程') + '，' + esc(state.io.at) + '）。行线、直连列、KEY_EX、LED 供电的脚跟着引脚配置器走，这里只读；要改请到引脚配置器改' +
+      (/实时/.test(state.io.src || '') ? '，这里会马上跟着变。' : '。同一个浏览器里打开引脚配置器的话，它的改动会实时同步过来。')
+    : '<b>还没有引脚配置</b>：引脚可以在这里手动设。在同一个浏览器里打开过引脚配置器、或者同步到工程时读到 config/io_config.json，就会改成以引脚配置器为准。';
   $('btnIoClear').disabled = !state.io;
 }
 
@@ -1489,8 +1550,8 @@ $('dlgOk').addEventListener('click', () => {
   const text = $('dlgText').value;
   try {
     if (dlgMode === 'io' || (dlgMode === 'json' && /"tool"\s*:\s*"om6239-io-config"/.test(text))){
-      const io = parseIoJson(JSON.parse(text));     // 「导入配置」里粘的是引脚配置器的 JSON 也认
-      commit(() => { state.io = io; });
+      const io = parseIoJson(JSON.parse(text), '手动导入');     // 「导入配置」里粘的是引脚配置器的 JSON 也认
+      followIo(io, true);
       const n = problems().filter(p => p.lvl === 'err').length;
       toast('已导入引脚配置' + (n ? '，有 ' + n + ' 个问题，见「检查」' : '，和矩阵配置一致'));
     } else if (dlgMode === 'json'){
@@ -1505,7 +1566,10 @@ $('dlgOk').addEventListener('click', () => {
     $('dlg').close();
   } catch(err){ alert('导入失败：' + err.message); }
 });
-$('btnPreset').addEventListener('click', () => { commit(() => { const io = state.io; state = presetState(); state.io = io; }); toast('已载入 SE73K 默认配置' + (state.io ? '（导入的引脚配置保留）' : '')); });
+$('btnPreset').addEventListener('click', () => {
+  commit(() => { const io = state.io; state = presetState(); state.io = io; if (io) adoptIo(); });
+  toast('已载入 SE73K 默认配置' + (state.io ? '（引脚仍按引脚配置器）' : ''));
+});
 $('btnIoImport').addEventListener('click', () => openDlg('io', '导入引脚配置', '粘贴引脚配置器「导出配置」得到的 JSON，或者从文件读取。只用来检查和显示引脚用途，不会改这边的配置。'));
 $('btnIoClear').addEventListener('click', () => { commit(() => { state.io = null; }); toast('已清除引脚配置'); });
 $('btnUndo').addEventListener('click', undo);
@@ -1605,6 +1669,7 @@ const ProjectSync = (() => {
    *   configPath     配置 JSON 在工程里的位置；configText() 生成它，loadConfig(text) 用它替换当前配置（返回提示）
    *   before(io)     打开工程后、对比前调用（矩阵表配置器在这里读 io_config.json）
    *   problems()     -> {err, warn}
+ *   note()         -> 额外提示（可选）
    *   after(written) 写完后的提示文字
    *   toast(msg) */
   async function run(opt, forcePick){
@@ -1631,6 +1696,7 @@ const ProjectSync = (() => {
       (pr.err ? '<div class="msg err">「检查」里还有 <b>' + pr.err + '</b> 个错误，写进工程后可能编译不过或工作不正常，建议先改好。</div>' : '') +
       '<table><tr><th>文件（projects/mouse_demo/ 下）</th><th>状态</th></tr>' +
       rows.map(r => '<tr><td class="p">' + esc(r.path) + (r.note ? '<div class="small muted" style="font-family:var(--sans)">' + esc(r.note) + '</div>' : '') + '</td><td><span class="st ' + r.status + '">' + STATUS[r.status] + '</span></td></tr>').join('') + '</table>' +
+      (opt.note && opt.note() ? '<div class="msg info">' + esc(opt.note()) + '</div>' : '') +
       (todo.length ? '' : '<div class="msg info">工程里的文件已经是最新的，不用写。</div>') +
       (cfgDiffers ? '<div class="msg info">工程里的 <code>' + esc(opt.configPath) + '</code> 和当前配置不一样（可能是别人改过，或者你在另一台电脑上改过）。要用工程里的，点「从工程载入配置」；要用当前的，直接写入。</div>' : '');
     const buttons = [];
@@ -1650,12 +1716,15 @@ const ProjectSync = (() => {
 /* ==== 同步到工程 结束 ==== */
 
 // 同步时会先读工程里的 config/io_config.json（引脚配置器同步进去的），按它检查两边是否一致
-const ioKey = io => io ? JSON.stringify([io.project, io.pkg, io.pins]) : '';
+const ioKey = io => io ? JSON.stringify([io.pkg, io.pins.map(p => [p.sig, p.label, p.pull, p.wake, p.level])]) : '';
+let syncNote = '';
 $('btnSync').addEventListener('click', () => ProjectSync.run({
   before: async fs => {
+    const live = readLiveIo();
     const t = await fs.read('config/io_config.json');
-    if (t == null) return;
-    try { const io = parseIoJson(JSON.parse(t)); if (ioKey(io) !== ioKey(state.io)) commit(() => { state.io = io; }); } catch(e){}
+    let proj = null; if (t != null) try { proj = parseIoJson(JSON.parse(t), '工程 config/io_config.json'); } catch(e){}
+    followIo(live || proj);
+    syncNote = live && proj && ioKey(live) !== ioKey(proj) ? '引脚配置器里的改动还没同步到工程（io_config.h 等），记得在引脚配置器里也点一次「同步到工程」，不然编译时两边对不上' : '';
   },
   files: () => {
     const f = [{path:'config/matrix_cfg.h', text:genCfg(), note:'矩阵引脚、物理键到键表的对应、特殊键位置、指示灯、休眠引脚'},
@@ -1674,6 +1743,7 @@ $('btnSync').addEventListener('click', () => ProjectSync.run({
     return '已从工程载入矩阵表配置';
   },
   problems: () => { const P = problems(); return {err: P.filter(p => p.lvl === 'err').length, warn: P.filter(p => p.lvl === 'warn').length}; },
+  note: () => syncNote,
   after: paths => paths.some(p => /matrix_key_tbl/.test(p))
     ? '键表变了：重新编译、烧录后，长按 Fn+Esc 2 秒恢复出厂，新键表才生效'
     : '在 Keil 里重新编译即可',
@@ -1681,6 +1751,9 @@ $('btnSync').addEventListener('click', () => ProjectSync.run({
 }));
 
 load();
+followIo(readLiveIo(), true);           // 同一浏览器里打开过引脚配置器：以它当前的配置为准
+window.addEventListener('storage', e => { if (e.key === IO_LIVE_KEY) followIo(readLiveIo()); });   // 引脚配置器在别的标签页里改了
+document.addEventListener('visibilitychange', () => { if (!document.hidden) followIo(readLiveIo()); });
 render();
 </script>
 </body>
