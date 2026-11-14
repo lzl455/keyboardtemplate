@@ -136,6 +136,57 @@ extern enum led_level           led_light_lev;
 
 extern uint8_t                  hint_time_count;
 
+//-----------------------------------------------------------------------------;
+// 灯效编号（led_cur_mode）
+//   ARGB 炫彩灯：上面的 iMODE_LED_*（灯效在 modules/light/light_modes.c）
+//   PWM 灯：下面的 PWM_FX_*，单色背光和 RGB 灯各有一套（灯效在 modules/light/light_pwm_fx.c）
+// 按键（userdefined_key_callback.c）、Flash 默认值和 USB 配置协议都用 LIGHT_MODE_* / LIGHT_SHORTCUT_*，
+// 不直接写某一套的编号。
+//
+#if (BOARD_LIGHT == LIGHT_PWM)
+enum pwm_fx_mode
+{
+    PWM_FX_ON = 0,                                  // 常亮
+    PWM_FX_BREATH,                                  // 呼吸
+#if (BOARD_PWM_LIGHT == PWM_LIGHT_RGB)
+    PWM_FX_SPECTRUM,                                // 色彩渐变（只有 RGB 灯）
+#endif
+    PWM_FX_BLINK,                                   // 闪烁
+    PWM_FX_HEART,                                   // 心跳
+    PWM_FX_REACTIVE,                                // 按键触发：按键时亮，松开后慢慢熄灭
+    PWM_FX_NUM
+};
+#define LIGHT_MODE_MIN          0
+#define LIGHT_MODE_MAX          (PWM_FX_NUM - 1)    // 「灯效切换」键在 MIN..MAX 之间循环
+// 快捷键尽量和 ARGB 同名：灯效 1 = 呼吸、灯效 4 = 常亮；PWM 灯的灯效 2 = 心跳、3 = 按键触发。
+// 矩阵表配置器按灯光类型显示这些名字，改这里要同步改它的 LIGHT_FX 表
+#if (BOARD_PWM_LIGHT == PWM_LIGHT_RGB)
+#define LIGHT_MODE_DEFAULT      PWM_FX_SPECTRUM     // 恢复出厂后的灯效
+#define LIGHT_SHORTCUT_0        PWM_FX_SPECTRUM     // Fn 快捷键 灯效 0..4
+#define LIGHT_SHORTCUT_1        PWM_FX_BREATH
+#define LIGHT_SHORTCUT_2        PWM_FX_HEART
+#define LIGHT_SHORTCUT_3        PWM_FX_REACTIVE
+#else
+#define LIGHT_MODE_DEFAULT      PWM_FX_ON
+#define LIGHT_SHORTCUT_0        PWM_FX_BLINK        // 单色没有颜色渐变，这个位置放闪烁
+#define LIGHT_SHORTCUT_1        PWM_FX_BREATH
+#define LIGHT_SHORTCUT_2        PWM_FX_HEART
+#define LIGHT_SHORTCUT_3        PWM_FX_REACTIVE
+#endif
+#define LIGHT_SHORTCUT_4        PWM_FX_ON           // 灯效 4 = 常亮，已经是常亮时再按换颜色（和 ARGB 一样）
+extern void light_pwm_fx_frame(void);
+extern uint8_t                  light_pwm_duty[3];
+#else
+#define LIGHT_MODE_MIN          iMODE_LED_MIN
+#define LIGHT_MODE_MAX          iMODE_LED_MAX
+#define LIGHT_MODE_DEFAULT      iMODE_LED_SBZL
+#define LIGHT_SHORTCUT_0        iMODE_LED_LG_L_R    // 流光
+#define LIGHT_SHORTCUT_1        iMODE_LED_BREATH    // 呼吸
+#define LIGHT_SHORTCUT_2        iMODE_LED_QCNH      // 七彩霓虹
+#define LIGHT_SHORTCUT_3        iMODE_LED_NHJB      // 霓虹渐变
+#define LIGHT_SHORTCUT_4        iMODE_LED_ON        // 常亮，再按换颜色
+#endif
+
 
 
 

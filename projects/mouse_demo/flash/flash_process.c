@@ -191,7 +191,7 @@ void laod_defaut_status(void)
     key_ctrl &= ~bwin_lock_status;
     key_ctrl |= bwin_mac_sataus;
 
-    led_cur_mode = iMODE_LED_SBZL;
+    led_cur_mode = LIGHT_MODE_DEFAULT;          // ARGB：随波逐流；PWM 灯见 led.h
     bled_bright_en = true;
 }
 
@@ -234,6 +234,8 @@ void laod_mouse_status(void)
             win_mac_load();                     // 按当前通道取 Win/Mac
 
             led_cur_mode = (flash_fifo[i+5]&0x1F);
+            if(LIGHT_MODE_MAX < led_cur_mode)     // 超出当前灯光的灯效范围（比如从 ARGB 固件换成 PWM 固件）
+                led_cur_mode = LIGHT_MODE_DEFAULT;
             bled_bright_en = false;
             if(flash_fifo[i+5]&(1<<7))
                 bled_bright_en = true;

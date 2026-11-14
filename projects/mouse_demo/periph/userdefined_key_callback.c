@@ -171,8 +171,8 @@ void __attribute__((noinline)) key_decode_cmd_0x10(void)
             {
                 special_key_bak |= bkey_mode_cyc_bak;
                 led_cur_mode++;
-                if(iMODE_LED_MAX<led_cur_mode)
-                    led_cur_mode = iMODE_LED_MIN;
+                if(LIGHT_MODE_MAX<led_cur_mode)       // 灯效编号范围见 led.h（ARGB / PWM 各一套）
+                    led_cur_mode = LIGHT_MODE_MIN;
 
                 hid_ctrl_reg |= bdevice_status_change;
                 key_ctrl |= bfn_save_status;
@@ -242,36 +242,36 @@ void __attribute__((noinline)) key_decode_cmd_0x20(void)
     switch(decode_data_l&0x0F)
     {
         case iLED_MODE_0&0x0F:
-            if(iMODE_LED_LG_L_R != led_cur_mode)
+            if(LIGHT_SHORTCUT_0 != led_cur_mode)
             {
-                led_cur_mode = iMODE_LED_LG_L_R;
+                led_cur_mode = LIGHT_SHORTCUT_0;
                 hid_ctrl_reg |= bdevice_status_change;
                 key_ctrl |= bfn_save_status;
             }
 
             break;
         case iLED_MODE_1&0x0F:
-            if(iMODE_LED_BREATH != led_cur_mode)
+            if(LIGHT_SHORTCUT_1 != led_cur_mode)
             {
-                led_cur_mode = iMODE_LED_BREATH;
+                led_cur_mode = LIGHT_SHORTCUT_1;
                 hid_ctrl_reg |= bdevice_status_change;
                 key_ctrl |= bfn_save_status;
             }
 
             break;
         case iLED_MODE_2&0x0F:
-            if(iMODE_LED_QCNH != led_cur_mode)
+            if(LIGHT_SHORTCUT_2 != led_cur_mode)
             {
-                led_cur_mode = iMODE_LED_QCNH;
+                led_cur_mode = LIGHT_SHORTCUT_2;
                 hid_ctrl_reg |= bdevice_status_change;
                 key_ctrl |= bfn_save_status;
             }
 
             break;
         case iLED_MODE_3&0x0F:
-            if(iMODE_LED_NHJB != led_cur_mode)
+            if(LIGHT_SHORTCUT_3 != led_cur_mode)
             {
-                led_cur_mode = iMODE_LED_NHJB;
+                led_cur_mode = LIGHT_SHORTCUT_3;
                 hid_ctrl_reg |= bdevice_status_change;
                 key_ctrl |= bfn_save_status;
             }
@@ -282,9 +282,9 @@ void __attribute__((noinline)) key_decode_cmd_0x20(void)
             if(0==(special_key_bak&bled_mode_on_bak))
             {
                 special_key_bak |= bled_mode_on_bak;
-                if(iMODE_LED_ON != led_cur_mode)
+                if(LIGHT_SHORTCUT_4 != led_cur_mode)
                 {
-                    led_cur_mode = iMODE_LED_ON;
+                    led_cur_mode = LIGHT_SHORTCUT_4;
                     hid_ctrl_reg |= bdevice_status_change;
                     key_ctrl |= bfn_save_status;
                 }
