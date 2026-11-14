@@ -462,6 +462,35 @@ function presetState(){
 }
 
 const LS_KEY = 'om6239-io-config-v1';
+/* 矩阵表配置器的配置（工程里的 config/keymap_config.json），同步到工程时读取。
+ * 用来检查矩阵用到的脚在这边还是不是矩阵行列 / KEY_EX / LED 供电，避免被灯光、编码器等占掉 */
+const LS_MATRIX = 'om6239-io-config-matrix';
+let matrixRef = null;
+try { const m = JSON.parse(localStorage.getItem(LS_MATRIX) || 'null'); if (m && Array.isArray(m.rows) && Array.isArray(m.cols)) matrixRef = m; } catch(e){}
+function setMatrixRef(m){ matrixRef = m; try { if (m) localStorage.setItem(LS_MATRIX, JSON.stringify(m)); else localStorage.removeItem(LS_MATRIX); } catch(e){} }
+function matrixProblems(add){
+  if (!matrixRef) return;
+  const P = state.pins, M = matrixRef;
+  const now = i => P[i].sig === 'RESET' ? '未使用' : (P[i].label ? P[i].label + '（' + SIG[P[i].sig].label + '）' : SIG[P[i].sig].label);
+  const tail = '：两边要一致（矩阵表配置器里改了矩阵就要同步一次），否则编译时 matrix_key.c 会报错';
+  const rowSet = new Set(), colSet = new Set();
+  M.rows.forEach((p, r) => { if (!(p >= 0) || p >= N) return; rowSet.add(p);
+    if (P[p].sig !== 'KEY_ROW') add('err', p, pinName(p) + ' 在矩阵表配置器里是行 R' + r + '，这里却是「' + now(p) + '」，这一行的键会失灵' + tail); });
+  M.cols.forEach(c => { if (c.pin == null || c.pin >= N) return; colSet.add(c.pin);
+    if (P[c.pin].sig !== 'KEY_COL') add('err', c.pin, pinName(c.pin) + ' 在矩阵表配置器里是列 ' + c.name + '，这里却是「' + now(c.pin) + '」，这一列的键会失灵' + tail); });
+  const out = (p, label, what) => { if (!(p >= 0) || p >= N) return;
+    if (P[p].sig !== 'GPIO_OUT' || P[p].label !== label) add('err', p, pinName(p) + ' 在矩阵表配置器里是' + what + '，这里要设成「GPIO 输出」、标签 ' + label + '，现在是「' + now(p) + '」' + tail); };
+  if (M.cols.some(c => c.ext != null)) out(M.exPin, 'KEY_EX', '扩展列控制脚 KEY_EX');
+  if (M.led){
+    out(M.led.vdd, 'LED_VDD', ' LED 供电脚');
+    [['num','LED_NUM','Num Lock 灯'],['caps','LED_CAPS','Caps Lock 灯'],['low','LED_LOW','低电灯']].forEach(([k, label, what]) => {
+      const L = M.led[k]; if (L && L.pin >= 0 && !colSet.has(L.pin)) out(L.pin, label, what + '（独立引脚）'); });
+  }
+  P.forEach((p, i) => {
+    if (p.sig === 'KEY_ROW' && !rowSet.has(i)) add('warn', i, pinName(i) + ' 这里是矩阵行，但矩阵表配置器里没用它当行线');
+    if (p.sig === 'KEY_COL' && !colSet.has(i)) add('warn', i, pinName(i) + ' 这里是矩阵列，但矩阵表配置器里没用它当直连列');
+  });
+}
 let state = load() || presetState();
 let selected = 4;
 let undo = [];
@@ -618,7 +647,7 @@ function clearSigs(sigs){
   state.pins.forEach((p, i) => { if (sigs.includes(p.sig)) state.pins[i] = blankPin(i); });
 }
 function setLightMode(mode){
-  const replaced = [];
+  const replaced = [], missing = [];
   commit(() => {
     const prev = {};
     LIGHT_SIGS.forEach(s => { prev[s] = sigPin(s); });
@@ -628,13 +657,15 @@ function setLightMode(mode){
     const used = new Set();
     want.forEach(sig => {
       const c = SIG[sig].pins.filter(i => pinNo(i) && !used.has(i));
-      const pick = [prev[sig]].concat(prevAny, c.filter(i => state.pins[i].sig === 'RESET'), c.filter(i => state.pins[i].sig !== 'LIGHT_PWR'), c)
+      // 只用原来就是灯光的脚和空闲的脚；不够就留空让用户自己选，不悄悄占用矩阵行列等已用的脚
+      const pick = [prev[sig]].concat(prevAny, c.filter(i => state.pins[i].sig === 'RESET'))
         .find(i => i >= 0 && c.includes(i));
-      if (pick == null) return;
+      if (pick == null){ missing.push(SIG[sig].label); return; }
       placeSig(pick, sig, replaced); used.add(pick);
       if (selected == null || want[0] === sig) selected = pick;
     });
-  }, () => '灯光：' + LIGHT_MODES[mode] + (replaced.length ? '，替换了 ' + replaced.join('、') : ''));
+  }, () => '灯光：' + LIGHT_MODES[mode] + (replaced.length ? '，替换了 ' + replaced.join('、') : '') +
+      (missing.length ? '。空闲的 PWM 脚不够，' + missing.join('、') + ' 没有分配，请在下面手动选（会占用原来的功能）' : ''));
 }
 function moveSig(sig, i){
   const replaced = [];
@@ -702,6 +733,7 @@ function problems(){
   const rows = count('KEY_ROW'), cols = count('KEY_COL');
   if ((rows > 0) !== (cols > 0)) add('warn', P.findIndex(p => p.sig === 'KEY_ROW' || p.sig === 'KEY_COL'), '键盘矩阵只配了' + (rows ? '行' : '列') + '，还缺' + (rows ? '列' : '行'));
   const order = {err:0, warn:1, info:2};
+  matrixProblems(add);
   return out.sort((a, b) => order[a.lvl] - order[b.lvl]);
 }
 
@@ -1542,6 +1574,12 @@ $('btnSync').addEventListener('click', () => ProjectSync.run({
     {path:'periph/io_config.h', text:genH(), note:'引脚定义、分组掩码、上电寄存器值'},
     {path:'periph/io_config.c', text:genC(), note:'io_config_init()、io_config_wakeup()'},
     {path:'config/io_board.h', text:genBoard(), note:'灯光、编码器、固件功能开关（board_config.h 会包含）'}],
+  before: async fs => {                          // 读矩阵表配置器同步进去的配置，检查矩阵用到的脚有没有被占
+    const t = await fs.read('config/keymap_config.json');
+    let m = null;
+    if (t != null) try { const o = JSON.parse(t); if (Array.isArray(o.rows) && Array.isArray(o.cols)) m = {rows:o.rows, cols:o.cols, exPin:o.exPin, led:o.led}; } catch(e){}
+    setMatrixRef(m); renderAll();
+  },
   configPath: 'config/io_config.json',          // 矩阵表配置器同步时会读它，检查两边是否一致
   configText: exportJson,
   loadConfig: t => {
