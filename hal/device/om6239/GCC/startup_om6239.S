@@ -184,6 +184,7 @@ Default_Handler:
 
                 Set_Default_Handler  RTC_IRQHandler
                 Set_Default_Handler  USB_IRQHandler
+                Set_Default_Handler  USB_WK_IRQHandler        /* hal_usb_decs.c 提供；关掉 USB（BOARD_HAS_USB=0）时用默认的 */
                 Set_Default_Handler  RF_IRQHandler
                 Set_Default_Handler  WAKEUP_GPIO0_IRQHandler
                 Set_Default_Handler  TIMER0_IRQHandler
@@ -194,5 +195,7 @@ Default_Handler:
                 Set_Default_Handler  UART0_TX_IRQHandler
                 Set_Default_Handler  LEDC_IRQHandler
                 Set_Default_Handler  ENCODER_IRQHandler
+                Set_Default_Handler  UART0_IRQHandler
+                Set_Default_Handler  SENSCAN_IRQHandler
 
                 .end

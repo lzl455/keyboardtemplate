@@ -7,6 +7,7 @@
  *   PWM_LIGHT_RGB   一颗 RGB 灯：R、G、B 分别对所有灯取平均
  * 所以流水类灯效在 PWM 灯上表现为整体亮度变化，呼吸、常亮、颜色切换都能直接用。
  */
+#include <stddef.h>                     /* NULL */
 #include "om_driver.h"
 #include "main.h"
 #include "light_fx.h"
